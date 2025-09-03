@@ -216,15 +216,25 @@ export default function FontCatalog() {
       if (font.url) {
         const style = document.createElement('style')
         style.setAttribute('data-uploaded-font', font.name)
+        const fontFormat = font.format === 'otf' ? 'opentype' : 'truetype'
         style.textContent = `
           @font-face {
             font-family: "${font.family}";
-            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
-            font-weight: ${font.weight};
+            src: url("${font.url}") format("${fontFormat}");
+            font-weight: ${font.weight || 400};
             font-style: normal;
+            font-display: swap;
+          }
+          
+          /* Ensure font is used correctly */
+          .font-${font.name.replace(/\s+/g, '-').toLowerCase()} {
+            font-family: "${font.family}", system-ui, sans-serif !important;
           }
         `
         document.head.appendChild(style)
+        
+        // Debug log
+        console.log(`Loaded font: ${font.family} from ${font.url}`)
       }
     })
   }, [])
@@ -238,10 +248,12 @@ export default function FontCatalog() {
         const data = await response.json()
         if (data.success && data.fonts) {
           setUploadedFonts(data.fonts)
-          // Load CSS for uploaded fonts
-          loadFontCSS(data.fonts)
-          // Use only uploaded fonts (remove hardcoded fonts)
-          setAllFonts(data.fonts)
+          // Filter only published fonts for public display
+          const publishedFonts = data.fonts.filter((font: any) => font.published !== false)
+          // Load CSS for published fonts
+          loadFontCSS(publishedFonts)
+          // Use only published fonts
+          setAllFonts(publishedFonts)
         }
       }
     } catch (error) {
@@ -665,7 +677,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.010
+                  v.0.011
                 </span>
               </nav>
 

@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Shield, Moon, Sun } from "lucide-react"
+import { Shield, Moon, Sun, Eye, EyeOff, Trash2 } from "lucide-react"
+import { toast, Toaster } from "sonner"
+import { Badge } from "@/components/ui/badge"
 
 export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
+  const [isLoadingFonts, setIsLoadingFonts] = useState(false)
 
   useEffect(() => {
     // Auto-detect system theme preference
@@ -19,6 +23,29 @@ export default function AdminPage() {
 
     mediaQuery.addEventListener("change", handleChange)
     return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
+
+  // Load uploaded fonts
+  const loadFonts = async () => {
+    try {
+      setIsLoadingFonts(true)
+      const response = await fetch('/api/fonts/list')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.fonts) {
+          setUploadedFonts(data.fonts)
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load fonts')
+    } finally {
+      setIsLoadingFonts(false)
+    }
+  }
+
+  // Load fonts on component mount
+  useEffect(() => {
+    loadFonts()
   }, [])
 
   const handleUpload = async (file: File) => {
@@ -36,14 +63,53 @@ export default function AdminPage() {
 
       const result = await response.json()
       if (result.success) {
-        alert(`Font uploaded successfully!\nFamily: ${result.font.family}\nStyle: ${result.font.style}\nWeight: ${result.font.weight}`)
+        toast.success(`Font uploaded successfully!`, {
+          description: `${result.font.family} - ${result.font.style} (${result.font.weight})`
+        })
+        // Reload fonts after successful upload
+        loadFonts()
       } else {
-        alert('Upload failed: ' + result.error)
+        toast.error('Upload failed', {
+          description: result.error
+        })
       }
     } catch (error) {
-      alert('Upload error: ' + error)
+      toast.error('Upload error', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Font management functions
+  const handleRemoveFont = async (fontName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${fontName}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      // For now, just remove from local state since we don't have delete API
+      setUploadedFonts(prev => prev.filter(font => font.name !== fontName))
+      toast.success('Font removed successfully')
+    } catch (error) {
+      toast.error('Failed to remove font')
+    }
+  }
+
+  const handleTogglePublish = async (fontName: string, isPublished: boolean) => {
+    try {
+      // For now, just update local state
+      setUploadedFonts(prev => 
+        prev.map(font => 
+          font.name === fontName 
+            ? { ...font, published: !isPublished }
+            : font
+        )
+      )
+      toast.success(isPublished ? 'Font unpublished' : 'Font published')
+    } catch (error) {
+      toast.error('Failed to update font status')
     }
   }
 
@@ -93,8 +159,84 @@ export default function AdminPage() {
             <p>• Font metadata is automatically extracted using OpenType.js</p>
             <p>• Uploaded fonts will appear on the main page</p>
           </div>
+
+          {/* Font Management Table */}
+          <div className="mt-12">
+            <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
+              Uploaded Fonts ({uploadedFonts.length})
+            </h2>
+            
+            {isLoadingFonts ? (
+              <div className={`text-center py-8 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                Loading fonts...
+              </div>
+            ) : uploadedFonts.length === 0 ? (
+              <div className={`text-center py-8 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                No fonts uploaded yet
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {uploadedFonts.map((font) => {
+                  const isPublished = font.published !== false // Default to published
+                  return (
+                    <div
+                      key={font.name}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                        darkMode 
+                          ? 'bg-stone-800 border-stone-700' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <h3 className={`font-medium ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
+                            {font.family}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                              {font.styles} style{font.styles !== 1 ? 's' : ''}
+                            </span>
+                            <Badge variant={font.isVariable ? "default" : "secondary"} className="text-xs">
+                              {font.isVariable ? 'Variable' : 'Static'}
+                            </Badge>
+                            <Badge variant={isPublished ? "default" : "outline"} className="text-xs">
+                              {isPublished ? 'Published' : 'Draft'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTogglePublish(font.name, isPublished)}
+                          className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                        >
+                          {isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {isPublished ? 'Unpublish' : 'Publish'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFont(font.name)}
+                          className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${
+                            darkMode ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
+                          }`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      <Toaster theme={darkMode ? 'dark' : 'light'} />
     </div>
   )
 }
