@@ -266,7 +266,7 @@ export default function FontCatalog() {
   }, [themeMode])
 
   useEffect(() => {
-    const randomFont = fonts[Math.floor(Math.random() * fonts.length)]
+    const randomFont = allFonts[Math.floor(Math.random() * allFonts.length)]
     setLogoFont(randomFont.name)
   }, [])
 
@@ -423,7 +423,7 @@ export default function FontCatalog() {
       return [100, 200, 300, 400, 500, 600, 700, 800, 900]
     }
 
-    const relevantFonts = fonts.filter((font) =>
+    const relevantFonts = allFonts.filter((font) =>
       selectedCategories.some((cat) => font.category.toLowerCase().includes(cat.toLowerCase())),
     )
 
@@ -546,11 +546,11 @@ export default function FontCatalog() {
 
   const availableLanguages = useMemo(() => {
     const languages = new Set<string>()
-    fonts.forEach((font) => {
-      font.languages.forEach((lang) => languages.add(lang))
+    allFonts.forEach((font) => {
+      (font.languageSupport || font.languages)?.forEach((lang: string) => languages.add(lang))
     })
     return Array.from(languages).sort()
-  }, [])
+  }, [allFonts])
 
   const getControlStyles = () => ({
     base: "h-8 px-3 text-sm tracking-tighter transition-all duration-300",
