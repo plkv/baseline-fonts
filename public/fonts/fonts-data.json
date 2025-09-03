@@ -1,0 +1,51 @@
+{
+  "fonts": [
+    {
+      "name": "Geist Mono SemiBold",
+      "family": "Geist Mono SemiBold",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "ttf",
+      "fileSize": 69900,
+      "uploadedAt": "2025-09-03T19:42:00.619Z",
+      "filename": "GeistMono-SemiBold.ttf",
+      "path": "/fonts/uploads/GeistMono-SemiBold.ttf",
+      "url": "/fonts/GeistMono-SemiBold.ttf"
+    },
+    {
+      "name": "Geist Mono UltraLight",
+      "family": "Geist Mono UltraLight",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "ttf",
+      "fileSize": 70528,
+      "uploadedAt": "2025-09-03T19:43:04.064Z",
+      "filename": "GeistMono-UltraLight.ttf",
+      "path": "/fonts/uploads/GeistMono-UltraLight.ttf",
+      "styles": 1,
+      "features": [
+        "liga",
+        "kern"
+      ],
+      "category": "Monospace",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        400
+      ],
+      "openTypeFeatures": [
+        "Standard Ligatures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin"
+      ],
+      "url": "/fonts/GeistMono-UltraLight.ttf"
+    }
+  ],
+  "lastUpdated": "2025-09-03T19:43:04.065Z"
+}

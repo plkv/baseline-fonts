@@ -25,7 +25,13 @@ export async function POST(request: NextRequest) {
     // Parse font metadata
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     
-    // Store in database (we can store metadata even without files)
+    // Try to save the font file to public/fonts/ directory
+    const fontUrl = await fontStorage.saveFontFile(bytes, file.name)
+    if (fontUrl) {
+      fontMetadata.url = fontUrl // Add download URL to metadata
+    }
+    
+    // Store in database
     await fontStorage.addFont(fontMetadata)
     
     return NextResponse.json({ 

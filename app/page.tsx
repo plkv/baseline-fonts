@@ -295,6 +295,15 @@ export default function FontCatalog() {
     loadUploadedFonts()
   }, [loadUploadedFonts])
 
+  // Add polling to check for new fonts every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadUploadedFonts()
+    }, 5000) // Check every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [loadUploadedFonts])
+
   const filteredFonts = allFonts.filter((font) => {
     const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory =
