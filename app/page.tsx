@@ -595,6 +595,13 @@ export default function FontCatalog() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"}`}
+                >
+                  About <span className="ml-1 text-xs opacity-60">v0.004</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`}
                 >
                   About
