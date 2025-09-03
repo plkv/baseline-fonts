@@ -217,41 +217,42 @@ export default function FontCatalog() {
         const style = document.createElement('style')
         style.setAttribute('data-uploaded-font', font.name)
         
-        // Determine font format - TTF files should use 'truetype'
-        let fontFormat = 'truetype'
-        let srcFormat = `url("${font.url}") format("truetype")`
+        // Create normalized font family name for CSS
+        const normalizedName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
         
-        if (font.format === 'otf') {
-          fontFormat = 'opentype'
-          srcFormat = `url("${font.url}") format("opentype")`
-        }
-        
-        // Create normalized font family name
-        const normalizedName = `uploaded-font-${index}-${font.name.replace(/[^a-zA-Z0-9]/g, '-')}`
-        
+        // Create CSS with proper font-face and selectors
         style.textContent = `
           @font-face {
             font-family: "${normalizedName}";
-            src: url("${font.url}");
+            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
             font-weight: ${font.weight || 400};
             font-style: normal;
             font-display: swap;
           }
           
-          /* Map original family name to normalized name */
+          /* Primary selector using data attribute */
           .uploaded-font[data-font-family="${font.family}"] {
-            font-family: "${normalizedName}", "${font.family}", monospace, system-ui, sans-serif !important;
+            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
           }
           
-          /* Additional fallback without data attribute */
-          .font-${font.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()} {
-            font-family: "${normalizedName}", "${font.family}", monospace, system-ui, sans-serif !important;
+          /* Fallback selector using normalized class name */
+          .font-${normalizedName.toLowerCase()} {
+            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
+          }
+          
+          /* Additional debugging selector */
+          textarea[data-font-family="${font.family}"] {
+            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
           }
         `
         document.head.appendChild(style)
         
-        console.log(`✓ Loaded font: ${font.family} -> ${normalizedName} (${fontFormat})`)
+        console.log(`✓ Font CSS loaded: ${font.family}`)
+        console.log(`  Family: ${normalizedName}`)
         console.log(`  URL: ${font.url}`)
+        console.log(`  Selector: .uploaded-font[data-font-family="${font.family}"]`)
+      } else {
+        console.warn(`⚠️ Font ${font.family} has no URL, skipping CSS generation`)
       }
     })
   }, [])
@@ -260,21 +261,27 @@ export default function FontCatalog() {
   const loadUploadedFonts = useCallback(async () => {
     try {
       setIsLoadingFonts(true)
+      console.log('🔄 Loading fonts from API...')
       const response = await fetch('/api/fonts/list')
       if (response.ok) {
         const data = await response.json()
+        console.log('📋 API Response:', data)
         if (data.success && data.fonts) {
           setUploadedFonts(data.fonts)
           // Filter only published fonts for public display
           const publishedFonts = data.fonts.filter((font: any) => font.published !== false)
+          console.log(`📝 Found ${data.fonts.length} total fonts, ${publishedFonts.length} published`)
           // Load CSS for published fonts
           loadFontCSS(publishedFonts)
           // Use only published fonts
           setAllFonts(publishedFonts)
+          console.log('✅ Fonts loaded and CSS applied')
         }
+      } else {
+        console.error('❌ API request failed:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('Failed to load uploaded fonts:', error)
+      console.error('❌ Failed to load uploaded fonts:', error)
     } finally {
       setIsLoadingFonts(false)
     }
@@ -476,9 +483,8 @@ export default function FontCatalog() {
     // This function is mainly used for logo fonts
     const uploadedFont = uploadedFonts.find(font => font.name === fontName || font.family === fontName)
     if (uploadedFont) {
-      // Return the normalized font family name
-      const fontIndex = uploadedFonts.findIndex(font => font.name === fontName || font.family === fontName)
-      const normalizedName = `uploaded-font-${fontIndex}-${uploadedFont.name.replace(/[^a-zA-Z0-9]/g, '-')}`
+      // Return the normalized font family name that matches our CSS
+      const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
       return `"${normalizedName}", "${uploadedFont.family}", monospace, system-ui, sans-serif`
     }
     
@@ -698,7 +704,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.014
+                  v.0.016
                 </span>
               </nav>
 
@@ -1110,7 +1116,11 @@ export default function FontCatalog() {
             </div>
 
             <div className="space-y-6">
-              {sortedFonts.length === 0 ? (
+              {isLoadingFonts ? (
+                <div className={`text-center py-12 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
+                  <p className="text-lg tracking-tighter">Loading fonts...</p>
+                </div>
+              ) : sortedFonts.length === 0 ? (
                 <div
                   className={`text-center py-12 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}
                 >
