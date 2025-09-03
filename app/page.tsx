@@ -212,29 +212,46 @@ export default function FontCatalog() {
     existingStyles.forEach(style => style.remove())
 
     // Add CSS for each uploaded font
-    fonts.forEach(font => {
+    fonts.forEach((font, index) => {
       if (font.url) {
         const style = document.createElement('style')
         style.setAttribute('data-uploaded-font', font.name)
-        const fontFormat = font.format === 'otf' ? 'opentype' : 'truetype'
+        
+        // Determine font format - TTF files should use 'truetype'
+        let fontFormat = 'truetype'
+        let srcFormat = `url("${font.url}") format("truetype")`
+        
+        if (font.format === 'otf') {
+          fontFormat = 'opentype'
+          srcFormat = `url("${font.url}") format("opentype")`
+        }
+        
+        // Create normalized font family name
+        const normalizedName = `uploaded-font-${index}-${font.name.replace(/[^a-zA-Z0-9]/g, '-')}`
+        
         style.textContent = `
           @font-face {
-            font-family: "${font.family}";
-            src: url("${font.url}") format("${fontFormat}");
+            font-family: "${normalizedName}";
+            src: url("${font.url}");
             font-weight: ${font.weight || 400};
             font-style: normal;
             font-display: swap;
           }
           
-          /* Ensure font is used correctly */
-          .font-${font.name.replace(/\s+/g, '-').toLowerCase()} {
-            font-family: "${font.family}", system-ui, sans-serif !important;
+          /* Map original family name to normalized name */
+          .uploaded-font[data-font-family="${font.family}"] {
+            font-family: "${normalizedName}", "${font.family}", monospace, system-ui, sans-serif !important;
+          }
+          
+          /* Additional fallback without data attribute */
+          .font-${font.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()} {
+            font-family: "${normalizedName}", "${font.family}", monospace, system-ui, sans-serif !important;
           }
         `
         document.head.appendChild(style)
         
-        // Debug log
-        console.log(`Loaded font: ${font.family} from ${font.url}`)
+        console.log(`✓ Loaded font: ${font.family} -> ${normalizedName} (${fontFormat})`)
+        console.log(`  URL: ${font.url}`)
       }
     })
   }, [])
@@ -455,13 +472,17 @@ export default function FontCatalog() {
   }
 
   const getFontFamily = (fontName: string) => {
-    // Check if this is an uploaded font
+    // For uploaded fonts, we'll handle font loading via CSS classes
+    // This function is mainly used for logo fonts
     const uploadedFont = uploadedFonts.find(font => font.name === fontName || font.family === fontName)
     if (uploadedFont) {
-      return `"${uploadedFont.family}", system-ui, sans-serif`
+      // Return the normalized font family name
+      const fontIndex = uploadedFonts.findIndex(font => font.name === fontName || font.family === fontName)
+      const normalizedName = `uploaded-font-${fontIndex}-${uploadedFont.name.replace(/[^a-zA-Z0-9]/g, '-')}`
+      return `"${normalizedName}", "${uploadedFont.family}", monospace, system-ui, sans-serif`
     }
     
-    // Fallback for any other fonts
+    // Fallback for any other fonts  
     return `"${fontName}", system-ui, sans-serif`
   }
 
@@ -677,7 +698,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.011
+                  v.0.012
                 </span>
               </nav>
 
@@ -1150,9 +1171,9 @@ export default function FontCatalog() {
                                 setExpandedCards((prev) => [...prev, font.name])
                               }
                             }}
-                            className={`w-full resize-none border-0 bg-transparent p-4 focus:outline-none focus:ring-0 tracking-[0em] transition-all duration-300 ${getThemeText()} overflow-hidden`}
+                            className={`w-full resize-none border-0 bg-transparent p-4 focus:outline-none focus:ring-0 tracking-[0em] transition-all duration-300 ${getThemeText()} overflow-hidden uploaded-font`}
+                            data-font-family={font.family}
                             style={{
-                              fontFamily: font.name,
                               fontSize: `${fontSize[0]}px`,
                               fontWeight: selectedWeight,
                               textAlign: textAlign,
