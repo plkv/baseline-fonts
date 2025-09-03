@@ -67,43 +67,66 @@ export class VercelFontStorage {
   }
 
   private async fallbackAddFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
-    try {
-      // Save font file to public/fonts/ directory
-      const fs = require('fs').promises
-      const path = require('path')
-      
-      const fontsDir = path.join(process.cwd(), 'public', 'fonts')
-      await fs.mkdir(fontsDir, { recursive: true })
-      
-      const fontPath = path.join(fontsDir, fontMetadata.filename)
-      await fs.writeFile(fontPath, new Uint8Array(fontBuffer))
-      
-      // Enhanced metadata with local URL
-      const enhancedMetadata = {
-        ...fontMetadata,
-        url: `/fonts/${fontMetadata.filename}`,
-        uploadedAt: new Date().toISOString(),
-        storage: 'local'
+    // Check if we're in a Node.js environment with filesystem access
+    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+    
+    if (hasFileSystem) {
+      try {
+        // Development: Save font file to public/fonts/ directory
+        const fs = require('fs').promises
+        const path = require('path')
+        
+        const fontsDir = path.join(process.cwd(), 'public', 'fonts')
+        await fs.mkdir(fontsDir, { recursive: true })
+        
+        const fontPath = path.join(fontsDir, fontMetadata.filename)
+        await fs.writeFile(fontPath, new Uint8Array(fontBuffer))
+        
+        // Enhanced metadata with local URL
+        const enhancedMetadata = {
+          ...fontMetadata,
+          url: `/fonts/${fontMetadata.filename}`,
+          uploadedAt: new Date().toISOString(),
+          storage: 'local'
+        }
+        
+        // Store in memory for development
+        memoryFonts = memoryFonts.filter(f => f.filename !== fontMetadata.filename)
+        memoryFonts.push(enhancedMetadata)
+        
+        // Also save to JSON file for persistence during development
+        const dataFile = path.join(fontsDir, 'fonts-data.json')
+        await fs.writeFile(dataFile, JSON.stringify({
+          fonts: memoryFonts,
+          lastUpdated: new Date().toISOString()
+        }, null, 2))
+        
+        console.log(`✅ Development: Font stored locally: ${fontMetadata.family} -> ${enhancedMetadata.url}`)
+        return enhancedMetadata
+        
+      } catch (error) {
+        console.error('Local file storage error:', error)
+        // Fall through to memory-only storage
       }
-      
-      // Store in memory for development
-      memoryFonts = memoryFonts.filter(f => f.filename !== fontMetadata.filename)
-      memoryFonts.push(enhancedMetadata)
-      
-      // Also save to JSON file for persistence during development
-      const dataFile = path.join(fontsDir, 'fonts-data.json')
-      await fs.writeFile(dataFile, JSON.stringify({
-        fonts: memoryFonts,
-        lastUpdated: new Date().toISOString()
-      }, null, 2))
-      
-      console.log(`✅ Development: Font stored locally: ${fontMetadata.family} -> ${enhancedMetadata.url}`)
-      return enhancedMetadata
-      
-    } catch (error) {
-      console.error('Fallback storage error:', error)
-      throw error
     }
+    
+    // Production fallback: Memory-only storage (no persistence)
+    const enhancedMetadata = {
+      ...fontMetadata,
+      url: null, // No file URL available
+      uploadedAt: new Date().toISOString(),
+      storage: 'memory-only',
+      note: 'Font stored in memory only. Enable Vercel KV+Blob for persistence.'
+    }
+    
+    // Store in memory (will be lost on restart)
+    memoryFonts = memoryFonts.filter(f => f.filename !== fontMetadata.filename)
+    memoryFonts.push(enhancedMetadata)
+    
+    console.log(`⚠️ Production fallback: Font stored in memory only: ${fontMetadata.family}`)
+    console.log('💡 To enable persistent storage, configure Vercel KV and Blob in your dashboard')
+    
+    return enhancedMetadata
   }
 
   async getAllFonts(): Promise<FontMetadata[]> {
@@ -123,22 +146,30 @@ export class VercelFontStorage {
   }
 
   private async fallbackGetAllFonts(): Promise<FontMetadata[]> {
-    try {
-      // First try to load from JSON file
-      const fs = require('fs').promises
-      const path = require('path')
-      
-      const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
-      const data = await fs.readFile(dataFile, 'utf-8')
-      const db = JSON.parse(data)
-      
-      // Update memory cache
-      memoryFonts = db.fonts || []
-      return memoryFonts
-      
-    } catch (error) {
-      // If file doesn't exist, return memory cache
-      console.log('No local font data file, returning memory cache')
+    // Check if we're in a Node.js environment with filesystem access
+    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+    
+    if (hasFileSystem) {
+      try {
+        // Development: Load from JSON file
+        const fs = require('fs').promises
+        const path = require('path')
+        
+        const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
+        const data = await fs.readFile(dataFile, 'utf-8')
+        const db = JSON.parse(data)
+        
+        // Update memory cache
+        memoryFonts = db.fonts || []
+        return memoryFonts
+        
+      } catch (error) {
+        console.log('No local font data file, returning memory cache')
+        return memoryFonts
+      }
+    } else {
+      // Production: Return memory cache only
+      console.log('Production environment: returning memory-only font cache')
       return memoryFonts
     }
   }
@@ -166,27 +197,43 @@ export class VercelFontStorage {
   }
 
   private async fallbackRemoveFont(filename: string): Promise<boolean> {
-    try {
-      const fs = require('fs').promises
-      const path = require('path')
-      
-      // Remove font file
-      const fontPath = path.join(process.cwd(), 'public', 'fonts', filename)
-      await fs.unlink(fontPath)
-      
-      // Update memory and JSON
+    // Check if we're in a Node.js environment with filesystem access
+    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+    
+    if (hasFileSystem) {
+      try {
+        const fs = require('fs').promises
+        const path = require('path')
+        
+        // Remove font file
+        const fontPath = path.join(process.cwd(), 'public', 'fonts', filename)
+        await fs.unlink(fontPath)
+        
+        // Update memory and JSON
+        memoryFonts = memoryFonts.filter(f => f.filename !== filename)
+        
+        const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
+        await fs.writeFile(dataFile, JSON.stringify({
+          fonts: memoryFonts,
+          lastUpdated: new Date().toISOString()
+        }, null, 2))
+        
+        console.log(`✅ Development: Font removed: ${filename}`)
+        return true
+      } catch (error) {
+        console.error('Fallback removal error:', error)
+        return false
+      }
+    } else {
+      // Production: Remove from memory cache only
+      const initialLength = memoryFonts.length
       memoryFonts = memoryFonts.filter(f => f.filename !== filename)
+      const removed = memoryFonts.length < initialLength
       
-      const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
-      await fs.writeFile(dataFile, JSON.stringify({
-        fonts: memoryFonts,
-        lastUpdated: new Date().toISOString()
-      }, null, 2))
-      
-      return true
-    } catch (error) {
-      console.error('Fallback removal error:', error)
-      return false
+      if (removed) {
+        console.log(`⚠️ Production: Font removed from memory only: ${filename}`)
+      }
+      return removed
     }
   }
 
@@ -211,26 +258,44 @@ export class VercelFontStorage {
   }
 
   private async fallbackUpdateMetadata(filename: string, updates: Partial<FontMetadata>): Promise<boolean> {
-    try {
-      // Update memory
+    // Check if we're in a Node.js environment with filesystem access
+    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+    
+    if (hasFileSystem) {
+      try {
+        // Update memory
+        memoryFonts = memoryFonts.map(font => 
+          font.filename === filename ? { ...font, ...updates } : font
+        )
+        
+        // Update JSON file
+        const fs = require('fs').promises
+        const path = require('path')
+        const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
+        
+        await fs.writeFile(dataFile, JSON.stringify({
+          fonts: memoryFonts,
+          lastUpdated: new Date().toISOString()
+        }, null, 2))
+        
+        console.log(`✅ Development: Font metadata updated: ${filename}`)
+        return true
+      } catch (error) {
+        console.error('Fallback metadata update error:', error)
+        return false
+      }
+    } else {
+      // Production: Update memory cache only
+      const initialFonts = [...memoryFonts]
       memoryFonts = memoryFonts.map(font => 
         font.filename === filename ? { ...font, ...updates } : font
       )
       
-      // Update JSON file
-      const fs = require('fs').promises
-      const path = require('path')
-      const dataFile = path.join(process.cwd(), 'public', 'fonts', 'fonts-data.json')
-      
-      await fs.writeFile(dataFile, JSON.stringify({
-        fonts: memoryFonts,
-        lastUpdated: new Date().toISOString()
-      }, null, 2))
-      
-      return true
-    } catch (error) {
-      console.error('Fallback metadata update error:', error)
-      return false
+      const updated = JSON.stringify(initialFonts) !== JSON.stringify(memoryFonts)
+      if (updated) {
+        console.log(`⚠️ Production: Font metadata updated in memory only: ${filename}`)
+      }
+      return updated
     }
   }
 
