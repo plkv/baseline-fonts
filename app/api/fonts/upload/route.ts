@@ -19,39 +19,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file type. Only TTF and OTF files allowed.' }, { status: 400 })
     }
 
-    // Create upload directory
-    const uploadDir = path.join(process.cwd(), 'public', 'fonts', 'uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-
     // Get file data
     const bytes = await file.arrayBuffer()
     
-    // Parse font metadata
+    // Parse font metadata (but don't store file yet - Vercel limitation)
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     
-    // Generate unique filename
-    const timestamp = Date.now()
-    const filename = `${file.name.replace(/\.[^/.]+$/, "")}_${timestamp}${path.extname(file.name)}`
-    const filepath = path.join(uploadDir, filename)
-
-    // Update metadata with actual filename
-    fontMetadata.filename = filename
-    fontMetadata.path = `/fonts/uploads/${filename}`
-
-    // Save file
-    await fs.writeFile(filepath, Buffer.from(bytes))
-    
-    // Store in database
-    await fontStorage.addFont(fontMetadata)
-
+    // For now, just return the parsed metadata
+    // TODO: Implement proper file storage (e.g., cloud storage)
     return NextResponse.json({ 
       success: true, 
-      message: 'Font uploaded successfully',
-      font: fontMetadata
+      message: 'Font parsed successfully (file storage coming soon)',
+      font: fontMetadata,
+      note: 'Font metadata extracted but file not stored yet due to Vercel limitations'
     })
 
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Font parsing failed', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
