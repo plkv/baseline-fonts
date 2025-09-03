@@ -84,30 +84,63 @@ export default function AdminPage() {
 
   // Font management functions
   const handleRemoveFont = async (fontName: string) => {
+    const font = uploadedFonts.find(f => f.name === fontName)
+    if (!font) return
+    
     if (!confirm(`Are you sure you want to permanently delete "${fontName}"? This action cannot be undone.`)) {
       return
     }
 
     try {
-      // For now, just remove from local state since we don't have delete API
-      setUploadedFonts(prev => prev.filter(font => font.name !== fontName))
-      toast.success('Font removed successfully')
+      const response = await fetch(`/api/fonts/delete?filename=${encodeURIComponent(font.filename)}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setUploadedFonts(prev => prev.filter(f => f.name !== fontName))
+        toast.success('Font removed successfully')
+      } else {
+        const error = await response.json()
+        toast.error('Failed to remove font', {
+          description: error.error
+        })
+      }
     } catch (error) {
       toast.error('Failed to remove font')
     }
   }
 
   const handleTogglePublish = async (fontName: string, isPublished: boolean) => {
+    const font = uploadedFonts.find(f => f.name === fontName)
+    if (!font) return
+    
     try {
-      // For now, just update local state
-      setUploadedFonts(prev => 
-        prev.map(font => 
-          font.name === fontName 
-            ? { ...font, published: !isPublished }
-            : font
+      const response = await fetch('/api/fonts/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: font.filename,
+          updates: { published: !isPublished }
+        })
+      })
+      
+      if (response.ok) {
+        setUploadedFonts(prev => 
+          prev.map(f => 
+            f.name === fontName 
+              ? { ...f, published: !isPublished }
+              : f
+          )
         )
-      )
-      toast.success(isPublished ? 'Font unpublished' : 'Font published')
+        toast.success(isPublished ? 'Font unpublished' : 'Font published')
+      } else {
+        const error = await response.json()
+        toast.error('Failed to update font status', {
+          description: error.error
+        })
+      }
     } catch (error) {
       toast.error('Failed to update font status')
     }

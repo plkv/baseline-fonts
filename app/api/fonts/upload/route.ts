@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
 import { parseFontFile } from '@/lib/font-parser'
-import { fontStorage } from '@/lib/font-database'
+import { vercelFontStorage } from '@/lib/vercel-font-storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,20 +23,13 @@ export async function POST(request: NextRequest) {
     // Parse font metadata
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     
-    // Try to save the font file to public/fonts/ directory
-    const fontUrl = await fontStorage.saveFontFile(bytes, file.name)
-    if (fontUrl) {
-      fontMetadata.url = fontUrl // Add download URL to metadata
-    }
-    
-    // Store in database
-    await fontStorage.addFont(fontMetadata)
+    // Store font file and metadata using Vercel storage
+    const storedFont = await vercelFontStorage.addFont(fontMetadata, bytes)
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Font parsed and added to catalog successfully',
-      font: fontMetadata,
-      note: 'Font metadata stored. File download will be added in future update.'
+      message: 'Font uploaded to Vercel storage successfully',
+      font: storedFont
     })
 
   } catch (error) {
