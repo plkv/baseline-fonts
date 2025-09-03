@@ -28,6 +28,7 @@ export interface FontMetadata {
   }>
   openTypeFeatures: string[]
   languages: string[]
+  foundry?: string
 }
 
 export async function parseFontFile(buffer: ArrayBuffer, originalName: string, fileSize: number): Promise<FontMetadata> {
@@ -37,6 +38,7 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const name = font.names.fontFamily?.en || font.names.fullName?.en || originalName
     const family = font.names.fontFamily?.en || name
     const style = font.names.fontSubfamily?.en || 'Regular'
+    const foundry = font.names.manufacturer?.en || font.names.designer?.en || 'Unknown'
     
     // Basic weight detection
     let weight = 400
@@ -96,7 +98,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       availableWeights,
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
       openTypeFeatures: ['Standard Ligatures', 'Kerning'], // Basic features
-      languages: ['Latin'] // Basic language support
+      languages: ['Latin'], // Basic language support
+      foundry
     }
   } catch (error) {
     console.error('Font parsing error:', error)
@@ -125,7 +128,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       availableStyles: ['Regular'],
       availableWeights: [400],
       openTypeFeatures: ['Standard Ligatures', 'Kerning'],
-      languages: ['Latin']
+      languages: ['Latin'],
+      foundry: 'Unknown'
     }
   }
 }

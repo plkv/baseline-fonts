@@ -9,8 +9,16 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark')
-    setDarkMode(isDark)
+    // Auto-detect system theme preference
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    setDarkMode(mediaQuery.matches)
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setDarkMode(e.matches)
+    }
+
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
   }, [])
 
   const handleUpload = async (file: File) => {
@@ -53,14 +61,10 @@ export default function AdminPage() {
                 <p className={`${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>Upload and manage font files</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDarkMode(!darkMode)}
-              className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </Button>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-md ${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>
+              {darkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              <span className="text-xs">{darkMode ? 'Dark' : 'Light'}</span>
+            </div>
           </div>
           
           <div className="mb-8">

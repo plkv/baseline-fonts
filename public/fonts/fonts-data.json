@@ -1,19 +1,6 @@
 {
   "fonts": [
     {
-      "name": "Geist Mono SemiBold",
-      "family": "Geist Mono SemiBold",
-      "style": "Regular",
-      "weight": 400,
-      "isVariable": false,
-      "format": "ttf",
-      "fileSize": 69900,
-      "uploadedAt": "2025-09-03T19:42:00.619Z",
-      "filename": "GeistMono-SemiBold.ttf",
-      "path": "/fonts/uploads/GeistMono-SemiBold.ttf",
-      "url": "/fonts/GeistMono-SemiBold.ttf"
-    },
-    {
       "name": "Geist Mono UltraLight",
       "family": "Geist Mono UltraLight",
       "style": "Regular",
@@ -45,7 +32,41 @@
         "Latin"
       ],
       "url": "/fonts/GeistMono-UltraLight.ttf"
+    },
+    {
+      "name": "Geist Mono SemiBold",
+      "family": "Geist Mono SemiBold",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "ttf",
+      "fileSize": 69900,
+      "uploadedAt": "2025-09-03T19:50:05.494Z",
+      "filename": "GeistMono-SemiBold.ttf",
+      "path": "/fonts/uploads/GeistMono-SemiBold.ttf",
+      "styles": 1,
+      "features": [
+        "liga",
+        "kern"
+      ],
+      "category": "Monospace",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        400
+      ],
+      "openTypeFeatures": [
+        "Standard Ligatures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin"
+      ],
+      "foundry": "Basement.studio, Vercel, Andrés Briganti, Guido Ferreyra, Mateo Zaragoza",
+      "url": "/fonts/GeistMono-SemiBold.ttf"
     }
   ],
-  "lastUpdated": "2025-09-03T19:43:04.065Z"
+  "lastUpdated": "2025-09-03T19:50:05.495Z"
 }

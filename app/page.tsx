@@ -205,6 +205,30 @@ export default function FontCatalog() {
     setVariableAxisValues({})
   }
 
+  // Dynamically load font CSS for uploaded fonts
+  const loadFontCSS = useCallback((fonts: any[]) => {
+    // Remove existing uploaded font styles
+    const existingStyles = document.querySelectorAll('style[data-uploaded-font]')
+    existingStyles.forEach(style => style.remove())
+
+    // Add CSS for each uploaded font
+    fonts.forEach(font => {
+      if (font.url) {
+        const style = document.createElement('style')
+        style.setAttribute('data-uploaded-font', font.name)
+        style.textContent = `
+          @font-face {
+            font-family: "${font.family}";
+            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
+            font-weight: ${font.weight};
+            font-style: normal;
+          }
+        `
+        document.head.appendChild(style)
+      }
+    })
+  }, [])
+
   // Load uploaded fonts from API
   const loadUploadedFonts = useCallback(async () => {
     try {
@@ -214,8 +238,10 @@ export default function FontCatalog() {
         const data = await response.json()
         if (data.success && data.fonts) {
           setUploadedFonts(data.fonts)
-          // Combine hardcoded fonts with uploaded fonts
-          setAllFonts([...hardcodedFonts, ...data.fonts])
+          // Load CSS for uploaded fonts
+          loadFontCSS(data.fonts)
+          // Use only uploaded fonts (remove hardcoded fonts)
+          setAllFonts(data.fonts)
         }
       }
     } catch (error) {
@@ -223,7 +249,7 @@ export default function FontCatalog() {
     } finally {
       setIsLoadingFonts(false)
     }
-  }, [])
+  }, [loadFontCSS])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     isResizing.current = true
@@ -266,9 +292,11 @@ export default function FontCatalog() {
   }, [themeMode])
 
   useEffect(() => {
-    const randomFont = allFonts[Math.floor(Math.random() * allFonts.length)]
-    setLogoFont(randomFont.name)
-  }, [])
+    if (allFonts.length > 0) {
+      const randomFont = allFonts[Math.floor(Math.random() * allFonts.length)]
+      setLogoFont(randomFont.name)
+    }
+  }, [allFonts])
 
   useEffect(() => {
     const handleResize = () => {
@@ -415,15 +443,14 @@ export default function FontCatalog() {
   }
 
   const getFontFamily = (fontName: string) => {
-    const fontMap: { [key: string]: string } = {
-      Inter: "Inter, system-ui, sans-serif",
-      "Funnel Sans": "system-ui, sans-serif",
-      "Spline Sans": "system-ui, sans-serif",
-      "Playfair Display": '"Playfair Display", serif',
-      "JetBrains Mono": '"JetBrains Mono", monospace',
-      "Crimson Text": '"Crimson Text", serif',
+    // Check if this is an uploaded font
+    const uploadedFont = uploadedFonts.find(font => font.name === fontName || font.family === fontName)
+    if (uploadedFont) {
+      return `"${uploadedFont.family}", system-ui, sans-serif`
     }
-    return fontMap[fontName] || "system-ui, sans-serif"
+    
+    // Fallback for any other fonts
+    return `"${fontName}", system-ui, sans-serif`
   }
 
   const getAvailableWeights = () => {
@@ -635,15 +662,11 @@ export default function FontCatalog() {
                   size="sm"
                   className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"}`}
                 >
-                  About <span className="ml-1 text-xs opacity-60">v0.009</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`}
-                >
                   About
                 </Button>
+                <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
+                  v.0.009
+                </span>
               </nav>
 
               <div className="flex-1 flex justify-center">
