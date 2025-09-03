@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { parseFontFile } from '@/lib/font-parser'
+import { fontStorage } from '@/lib/font-database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,20 +23,31 @@ export async function POST(request: NextRequest) {
     const uploadDir = path.join(process.cwd(), 'public', 'fonts', 'uploads')
     await fs.mkdir(uploadDir, { recursive: true })
 
+    // Get file data
+    const bytes = await file.arrayBuffer()
+    
+    // Parse font metadata
+    const fontMetadata = await parseFontFile(bytes, file.name, file.size)
+    
     // Generate unique filename
     const timestamp = Date.now()
     const filename = `${file.name.replace(/\.[^/.]+$/, "")}_${timestamp}${path.extname(file.name)}`
     const filepath = path.join(uploadDir, filename)
 
+    // Update metadata with actual filename
+    fontMetadata.filename = filename
+    fontMetadata.path = `/fonts/uploads/${filename}`
+
     // Save file
-    const bytes = await file.arrayBuffer()
     await fs.writeFile(filepath, Buffer.from(bytes))
+    
+    // Store in database
+    await fontStorage.addFont(fontMetadata)
 
     return NextResponse.json({ 
       success: true, 
       message: 'Font uploaded successfully',
-      filename,
-      path: `/fonts/uploads/${filename}`
+      font: fontMetadata
     })
 
   } catch (error) {
