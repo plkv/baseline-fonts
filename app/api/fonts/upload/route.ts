@@ -22,16 +22,17 @@ export async function POST(request: NextRequest) {
     // Get file data
     const bytes = await file.arrayBuffer()
     
-    // Parse font metadata (but don't store file yet - Vercel limitation)
+    // Parse font metadata
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     
-    // For now, just return the parsed metadata
-    // TODO: Implement proper file storage (e.g., cloud storage)
+    // Store in database (we can store metadata even without files)
+    await fontStorage.addFont(fontMetadata)
+    
     return NextResponse.json({ 
       success: true, 
-      message: 'Font parsed successfully (file storage coming soon)',
+      message: 'Font parsed and added to catalog successfully',
       font: fontMetadata,
-      note: 'Font metadata extracted but file not stored yet due to Vercel limitations'
+      note: 'Font metadata stored. File download will be added in future update.'
     })
 
   } catch (error) {

@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Moon, Sun, RotateCcw, Palette, Monitor, Menu } from "lucide-react"
 
-const fonts = [
+// Fonts are now loaded dynamically from uploaded fonts
+const hardcodedFonts = [
   {
     name: "Inter",
     styles: 18,
@@ -166,6 +167,9 @@ export default function FontCatalog() {
   const [isLineHeightHovered, setIsLineHeightHovered] = useState(false)
   const [isFontSizeHovered, setIsFontSizeHovered] = useState(false)
   const [logoFont, setLogoFont] = useState("")
+  const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
+  const [allFonts, setAllFonts] = useState<any[]>(hardcodedFonts)
+  const [isLoadingFonts, setIsLoadingFonts] = useState(false)
   const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
 
   const letterSpacingPresets = [-0.05, -0.025, 0, 0.025, 0.05, 0.1, 0.15, 0.2]
@@ -200,6 +204,26 @@ export default function FontCatalog() {
     setPresetLineHeight("1.2")
     setVariableAxisValues({})
   }
+
+  // Load uploaded fonts from API
+  const loadUploadedFonts = useCallback(async () => {
+    try {
+      setIsLoadingFonts(true)
+      const response = await fetch('/api/fonts/list')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.fonts) {
+          setUploadedFonts(data.fonts)
+          // Combine hardcoded fonts with uploaded fonts
+          setAllFonts([...hardcodedFonts, ...data.fonts])
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load uploaded fonts:', error)
+    } finally {
+      setIsLoadingFonts(false)
+    }
+  }, [])
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     isResizing.current = true
@@ -266,7 +290,12 @@ export default function FontCatalog() {
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  const filteredFonts = fonts.filter((font) => {
+  // Load uploaded fonts on component mount
+  useEffect(() => {
+    loadUploadedFonts()
+  }, [loadUploadedFonts])
+
+  const filteredFonts = allFonts.filter((font) => {
     const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory =
       selectedCategories.length === 0 ||
@@ -597,7 +626,7 @@ export default function FontCatalog() {
                   size="sm"
                   className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"}`}
                 >
-                  About <span className="ml-1 text-xs opacity-60">v0.007</span>
+                  About <span className="ml-1 text-xs opacity-60">v0.008</span>
                 </Button>
                 <Button
                   variant="ghost"
