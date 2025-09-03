@@ -168,8 +168,8 @@ export default function FontCatalog() {
   const [isFontSizeHovered, setIsFontSizeHovered] = useState(false)
   const [logoFont, setLogoFont] = useState("")
   const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
-  const [allFonts, setAllFonts] = useState<any[]>(hardcodedFonts)
-  const [isLoadingFonts, setIsLoadingFonts] = useState(false)
+  const [allFonts, setAllFonts] = useState<any[]>([])
+  const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
 
   const letterSpacingPresets = [-0.05, -0.025, 0, 0.025, 0.05, 0.1, 0.15, 0.2]
@@ -698,7 +698,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.013
+                  v.0.014
                 </span>
               </nav>
 
