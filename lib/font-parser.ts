@@ -32,8 +32,27 @@ export interface FontMetadata {
 }
 
 export async function parseFontFile(buffer: ArrayBuffer, originalName: string, fileSize: number): Promise<FontMetadata> {
+  console.log(`🔍 Parsing font: ${originalName} (${fileSize} bytes)`)
+  
   try {
+    // Validate buffer
+    if (!buffer || buffer.byteLength === 0) {
+      throw new Error('Empty or invalid font buffer')
+    }
+    
+    if (buffer.byteLength < 100) {
+      throw new Error('Font file too small to be valid')
+    }
+    
+    console.log(`📦 Font buffer size: ${buffer.byteLength} bytes`)
+    
     const font = opentype.parse(buffer)
+    
+    if (!font) {
+      throw new Error('OpenType.js failed to parse font')
+    }
+    
+    console.log(`✅ OpenType.js successfully parsed font: ${font.names?.fontFamily?.en || 'Unknown'}`)
     
     const name = font.names.fontFamily?.en || font.names.fullName?.en || originalName
     const family = font.names.fontFamily?.en || name
@@ -102,34 +121,25 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       foundry
     }
   } catch (error) {
-    console.error('Font parsing error:', error)
+    console.error('❌ Font parsing error:', error)
+    console.error('📁 File details:', { 
+      name: originalName, 
+      size: fileSize,
+      bufferSize: buffer?.byteLength || 0
+    })
     
-    // Fallback metadata
-    const family = originalName.replace(/\.[^/.]+$/, "")
-    const format = originalName.toLowerCase().endsWith('.otf') ? 'otf' : 'ttf'
-    const category = family.toLowerCase().includes('mono') ? 'Monospace' : 'Sans Serif'
+    // Check if it's a valid font file extension
+    const validExtensions = ['.ttf', '.otf', '.woff', '.woff2']
+    const hasValidExtension = validExtensions.some(ext => 
+      originalName.toLowerCase().endsWith(ext)
+    )
     
-    return {
-      name: family,
-      family,
-      style: 'Regular',
-      weight: 400,
-      isVariable: false,
-      format,
-      fileSize,
-      uploadedAt: new Date().toISOString(),
-      filename: originalName,
-      path: `/fonts/uploads/${originalName}`,
-      // UI compatibility fields
-      styles: 1,
-      features: ['liga', 'kern'],
-      category,
-      price: 'Free',
-      availableStyles: ['Regular'],
-      availableWeights: [400],
-      openTypeFeatures: ['Standard Ligatures', 'Kerning'],
-      languages: ['Latin'],
-      foundry: 'Unknown'
+    if (!hasValidExtension) {
+      throw new Error(`Invalid font file format. Supported formats: ${validExtensions.join(', ')}`)
     }
+    
+    // If OpenType.js fails but it's a valid extension, provide detailed error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error'
+    throw new Error(`Font parsing failed: ${errorMessage}. The file might be corrupted or use an unsupported font format variant.`)
   }
 }
