@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { fontStorage } from '@/lib/font-database'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -8,7 +8,7 @@ export async function POST() {
     console.log('🧹 Starting font database cleanup...')
     
     // Get all fonts
-    const fonts = await fontStorage.getAllFonts()
+    const fonts = await blobOnlyStorage.getAllFonts()
     console.log(`📊 Found ${fonts.length} fonts to validate`)
     
     // Track issues found
@@ -93,12 +93,12 @@ export async function POST() {
     
     // Force a save operation to trigger validation and cleanup
     if (fonts.length > 0) {
-      // Re-add a font to trigger the save/validation process
-      await fontStorage.addFont(fonts[0])
+      // Update a font to trigger the save/validation process
+      await blobOnlyStorage.updateFont(fonts[0].filename, { uploadedAt: new Date().toISOString() })
     }
     
     // Get updated fonts after cleanup
-    const cleanedFonts = await fontStorage.getAllFonts()
+    const cleanedFonts = await blobOnlyStorage.getAllFonts()
     
     console.log('✅ Cleanup completed')
     

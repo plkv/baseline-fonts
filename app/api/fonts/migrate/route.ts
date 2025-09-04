@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
-import { fontStorage } from '@/lib/font-database'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -8,14 +7,27 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Starting font migration to Vercel Blob...')
     
-    // Get all fonts from local storage
-    const localFonts = await fontStorage.getAllFonts()
-    console.log(`📋 Found ${localFonts.length} fonts in local storage`)
+    // Get all fonts from blob storage (no migration needed - already in blob)
+    const existingFonts = await blobOnlyStorage.getAllFonts()
+    console.log(`📋 Found ${existingFonts.length} fonts already in blob storage`)
     
-    if (localFonts.length === 0) {
+    // Check for local fonts that might need migration
+    const fontsDir = path.join(process.cwd(), 'public', 'fonts')
+    let localFontFiles: string[] = []
+    
+    try {
+      localFontFiles = (await fs.readdir(fontsDir))
+        .filter(file => file.match(/\.(ttf|otf|woff|woff2)$/i))
+        .filter(file => !existingFonts.some(font => font.filename === file))
+    } catch {
+      console.log('📝 No local fonts directory found')
+    }
+    
+    if (localFontFiles.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'No fonts to migrate',
+        message: 'All fonts already in blob storage - no migration needed',
+        existing: existingFonts.length,
         migrated: 0
       })
     }
@@ -24,47 +36,34 @@ export async function POST(request: NextRequest) {
     let successCount = 0
     let errorCount = 0
 
-    for (const font of localFonts) {
+    for (const filename of localFontFiles) {
       try {
-        console.log(`🔄 Migrating: ${font.family} (${font.filename})`)
+        console.log(`🔄 Migrating local file: ${filename}`)
         
-        // Check if font file exists locally
-        const fontPath = path.join(process.cwd(), 'public', 'fonts', font.filename)
+        const fontPath = path.join(fontsDir, filename)
+        const fontBuffer = await fs.readFile(fontPath)
         
-        try {
-          // Read the font file
-          const fontBuffer = await fs.readFile(fontPath)
-          
-          // Upload to Vercel Blob using existing metadata
-          const migratedFont = await vercelFontStorage.addFont(font, fontBuffer.buffer)
-          
-          migrationResults.push({
-            filename: font.filename,
-            family: font.family,
-            status: 'success',
-            oldUrl: font.url,
-            newUrl: migratedFont.url
-          })
-          
-          successCount++
-          console.log(`✅ Migrated: ${font.family} -> ${migratedFont.url}`)
-          
-        } catch (fileError) {
-          console.warn(`⚠️ Font file not found: ${font.filename}`)
-          migrationResults.push({
-            filename: font.filename,
-            family: font.family,
-            status: 'file_not_found',
-            error: 'Font file not found in local storage'
-          })
-          errorCount++
-        }
+        // Parse font to extract metadata
+        const fontParser = require('@/lib/font-parser')
+        const metadata = await fontParser.parseFontBuffer(fontBuffer.buffer, filename)
+        
+        // Store in blob storage
+        const migratedFont = await blobOnlyStorage.storeFont(metadata, fontBuffer.buffer)
+        
+        migrationResults.push({
+          filename: filename,
+          family: migratedFont.family,
+          status: 'success',
+          newUrl: migratedFont.url
+        })
+        
+        successCount++
+        console.log(`✅ Migrated: ${migratedFont.family} -> ${migratedFont.url}`)
         
       } catch (migrationError) {
-        console.error(`❌ Migration failed for ${font.filename}:`, migrationError)
+        console.error(`❌ Migration failed for ${filename}:`, migrationError)
         migrationResults.push({
-          filename: font.filename,
-          family: font.family,
+          filename: filename,
           status: 'error',
           error: migrationError instanceof Error ? migrationError.message : 'Unknown error'
         })
@@ -77,7 +76,8 @@ export async function POST(request: NextRequest) {
       message: `Migration completed: ${successCount} successful, ${errorCount} failed`,
       migrated: successCount,
       failed: errorCount,
-      total: localFonts.length,
+      existing: existingFonts.length,
+      total: localFontFiles.length,
       results: migrationResults
     })
 

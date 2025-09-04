@@ -195,16 +195,25 @@ export class BlobOnlyStorageManager {
   private async loadFontsFromBlob(): Promise<void> {
     if (hasVercelBlob && list) {
       try {
-        // Try to load metadata JSON from blob
-        const response = await fetch(`https://your-blob-store.com/${this.METADATA_FILE}`)
-        if (response.ok) {
-          const data = await response.json()
-          this.memoryCache = data.fonts || []
-          console.log(`✅ Loaded ${this.memoryCache.length} fonts from blob metadata`)
-          return
+        // List all blobs to find metadata file
+        const { blobs } = await list({ prefix: 'metadata/' })
+        const metadataBlob = blobs.find(blob => blob.pathname === this.METADATA_FILE)
+        
+        if (metadataBlob) {
+          const response = await fetch(metadataBlob.url)
+          if (response.ok) {
+            const data = await response.json()
+            this.memoryCache = data.fonts || []
+            console.log(`✅ Loaded ${this.memoryCache.length} fonts from blob metadata`)
+            return
+          }
+        } else {
+          console.log('📝 No metadata file found in blob storage')
+          // Check if there are orphaned font files that need metadata rebuild
+          await this.rebuildMetadataFromOrphanedFiles()
         }
       } catch (error) {
-        console.warn('⚠️ Could not load metadata from blob, starting fresh:', error)
+        console.warn('⚠️ Could not load metadata from blob:', error)
       }
     }
 
@@ -308,6 +317,68 @@ export class BlobOnlyStorageManager {
       case 'woff': return 'font/woff'
       case 'woff2': return 'font/woff2'
       default: return 'application/octet-stream'
+    }
+  }
+
+  private async rebuildMetadataFromOrphanedFiles(): Promise<void> {
+    if (!hasVercelBlob || !list) return
+
+    try {
+      console.log('🔍 Scanning for orphaned font files in blob storage...')
+      
+      // List all font files in blob storage
+      const { blobs } = await list({ prefix: 'fonts/' })
+      const fontBlobs = blobs.filter(blob => 
+        blob.pathname.match(/\.(ttf|otf|woff|woff2)$/i)
+      )
+      
+      if (fontBlobs.length === 0) {
+        console.log('📝 No font files found in blob storage')
+        return
+      }
+      
+      console.log(`🔧 Found ${fontBlobs.length} orphaned font files, attempting to rebuild metadata...`)
+      
+      // For each font file, create basic metadata (we can't re-parse without the original buffer)
+      const recoveredFonts: any[] = []
+      
+      for (const fontBlob of fontBlobs) {
+        const filename = fontBlob.pathname.replace('fonts/', '')
+        const family = filename.replace(/\.(ttf|otf|woff|woff2)$/i, '').replace(/[-_]/g, ' ')
+        
+        // Create basic metadata structure
+        const basicMetadata = {
+          name: family,
+          family: family,
+          style: 'Regular',
+          weight: 400,
+          isVariable: false,
+          format: filename.split('.').pop()?.toLowerCase() || 'ttf',
+          fileSize: fontBlob.size || 0,
+          filename: filename,
+          url: fontBlob.url,
+          path: `/fonts/${filename}`,
+          uploadedAt: fontBlob.uploadedAt || new Date().toISOString(),
+          published: true,
+          storage: 'vercel-blob',
+          category: 'Sans Serif',
+          foundry: 'Unknown',
+          languages: ['Latin'],
+          openTypeFeatures: [],
+          recovered: true // Flag to indicate this was recovered
+        }
+        
+        recoveredFonts.push(basicMetadata)
+      }
+      
+      if (recoveredFonts.length > 0) {
+        this.memoryCache = recoveredFonts
+        await this.saveMetadataToBlob()
+        console.log(`✅ Recovered ${recoveredFonts.length} fonts and rebuilt metadata`)
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to rebuild metadata from orphaned files:', error)
     }
   }
 
