@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFontFile } from '@/lib/font-parser'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
-import { fontStorage } from '@/lib/font-database'
+import { persistentStorage } from '@/lib/persistent-storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
     // If uploading to existing family, inherit family metadata
     if (targetFamily) {
       try {
-        const existingFonts = await fontStorage.getAllFonts()
+        const existingFonts = await persistentStorage.getAllFonts()
         const familyFonts = existingFonts.filter(f => f.family === targetFamily)
         
         if (familyFonts.length > 0) {
@@ -77,11 +76,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Store font file and metadata using Vercel Blob storage
-    const storedFont = await vercelFontStorage.addFont(fontMetadata, bytes)
+    // Store font using persistent storage manager
+    const storedFont = await persistentStorage.storeFont(fontMetadata, bytes)
     
-    // Also store in local database for backward compatibility
-    await fontStorage.addFont(storedFont)
+    // Log storage type for debugging
+    const storageInfo = persistentStorage.getStorageInfo()
+    console.log(`📊 Storage used: ${storageInfo.type} (${storageInfo.fontsCount} total fonts)`)
     
     return NextResponse.json({ 
       success: true, 

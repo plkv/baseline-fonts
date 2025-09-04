@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fontStorage } from '@/lib/font-database'
+import { persistentStorage } from '@/lib/persistent-storage'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -11,25 +11,22 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Get all fonts and update the specific one
-    const fonts = await fontStorage.getAllFonts()
-    const fontIndex = fonts.findIndex(f => f.filename === filename)
+    // Update publish status using persistent storage
+    const success = await persistentStorage.updateFont(filename, { published })
     
-    if (fontIndex === -1) {
+    if (!success) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
     
-    // Update the font's published status
-    fonts[fontIndex] = { ...fonts[fontIndex], published }
-    
-    // Save updated font back
-    await fontStorage.addFont(fonts[fontIndex])
+    // Get updated font for response
+    const fonts = await persistentStorage.getAllFonts()
+    const updatedFont = fonts.find(f => f.filename === filename)
     
     const action = published ? 'published' : 'unpublished'
     return NextResponse.json({ 
       success: true, 
       message: `Font ${action} successfully`,
-      font: fonts[fontIndex]
+      font: updatedFont
     })
   } catch (error) {
     console.error('Publish error:', error)

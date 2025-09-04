@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { fontStorage } from '@/lib/font-database'
+import { persistentStorage } from '@/lib/persistent-storage'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -10,19 +10,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // Get all fonts and update the specific one
-    const fonts = await fontStorage.getAllFonts()
-    const fontIndex = fonts.findIndex(f => f.filename === filename)
+    // Update font using persistent storage
+    const success = await persistentStorage.updateFont(filename, updates)
     
-    if (fontIndex === -1) {
+    if (!success) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
-    
-    // Update the font metadata
-    fonts[fontIndex] = { ...fonts[fontIndex], ...updates }
-    
-    // Save updated font back
-    await fontStorage.addFont(fonts[fontIndex])
     
     return NextResponse.json({ 
       success: true, 

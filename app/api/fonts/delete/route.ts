@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
-import { fontStorage } from '@/lib/font-database'
+import { persistentStorage } from '@/lib/persistent-storage'
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -11,11 +10,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // Remove from both Vercel storage and local storage
-    const vercelSuccess = await vercelFontStorage.removeFont(filename)
-    const localSuccess = await fontStorage.removeFont(filename)
-    
-    const success = vercelSuccess || localSuccess
+    // Remove from persistent storage
+    const success = await persistentStorage.removeFont(filename)
     
     if (success) {
       return NextResponse.json({ 
