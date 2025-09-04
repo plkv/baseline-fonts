@@ -1,41 +1,110 @@
 {
   "fonts": [
     {
-      "name": "Geist Mono UltraLight",
-      "family": "Geist Mono UltraLight",
+      "name": "Bolgarus Beta",
+      "family": "Bolgarus Beta",
       "style": "Regular",
-      "weight": 100,
+      "weight": 400,
       "isVariable": false,
-      "format": "ttf",
-      "fileSize": 70528,
-      "uploadedAt": "2025-09-04T07:45:24.762Z",
-      "filename": "GeistMono-UltraLight.ttf",
-      "path": "/fonts/uploads/GeistMono-UltraLight.ttf",
+      "format": "otf",
+      "fileSize": 12048,
+      "uploadedAt": "2025-09-04T08:06:59.896Z",
+      "filename": "Bolgarus.otf",
+      "path": "/fonts/uploads/Bolgarus.otf",
       "styles": 1,
       "features": [
-        "liga"
+        "kern"
       ],
-      "category": "Monospace",
+      "category": "Sans Serif",
       "price": "Free",
       "availableStyles": [
         "Regular"
       ],
       "availableWeights": [
-        100
+        400
       ],
       "openTypeFeatures": [
-        "Standard Ligatures"
+        "Kerning"
       ],
       "languages": [
         "Latin",
-        "Cyrillic",
+        "Hebrew"
+      ],
+      "foundry": "Unknown",
+      "url": "/fonts/Bolgarus.otf",
+      "storage": "local"
+    },
+    {
+      "name": "Bona Nova",
+      "family": "Bona Nova",
+      "style": "Bold",
+      "weight": 700,
+      "isVariable": false,
+      "format": "otf",
+      "fileSize": 244504,
+      "uploadedAt": "2025-09-04T08:07:37.268Z",
+      "filename": "BonaNova-Bold.otf",
+      "path": "/fonts/uploads/BonaNova-Bold.otf",
+      "styles": 1,
+      "features": [
+        "c2sc",
+        "case",
+        "dlig",
+        "frac",
+        "liga",
+        "lnum",
+        "onum",
+        "ordn",
+        "pnum",
+        "salt",
+        "smcp",
+        "ss01",
+        "ss02",
+        "ss03",
+        "ss04",
+        "subs",
+        "sups",
+        "tnum",
+        "kern"
+      ],
+      "category": "Sans Serif",
+      "price": "Free",
+      "availableStyles": [
+        "Bold"
+      ],
+      "availableWeights": [
+        700
+      ],
+      "openTypeFeatures": [
+        "Small Capitals From Capitals",
+        "Case-Sensitive Forms",
+        "Discretionary Ligatures",
+        "Fractions",
+        "Standard Ligatures",
+        "Lining Figures",
+        "Oldstyle Figures",
+        "Ordinals",
+        "Proportional Figures",
+        "Stylistic Alternates",
+        "Small Capitals",
+        "Stylistic Set 1",
+        "Stylistic Set 2",
+        "Stylistic Set 3",
+        "Stylistic Set 4",
+        "Subscript",
+        "Superscript",
+        "Tabular Figures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin",
         "Greek",
         "Hebrew"
       ],
-      "foundry": "Basement.studio, Vercel, Andrés Briganti, Guido Ferreyra, Mateo Zaragoza",
-      "url": "/fonts/GeistMono-UltraLight.ttf",
+      "foundry": "MACHALSKI.WTF",
+      "url": "/fonts/BonaNova-Bold.otf",
       "storage": "local"
     }
   ],
-  "lastUpdated": "2025-09-04T07:45:24.762Z"
+  "lastUpdated": "2025-09-04T08:07:37.268Z"
 }
