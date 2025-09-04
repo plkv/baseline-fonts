@@ -171,7 +171,7 @@ export default function FontCatalog() {
     try {
       setIsLoadingFonts(true)
       console.log('🔄 Loading fonts from API...')
-      const response = await fetch('/api/fonts/list')
+      const response = await fetch('/api/fonts/list-v2')
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)

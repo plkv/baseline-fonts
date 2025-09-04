@@ -107,7 +107,7 @@ export default function AdminPage() {
   const loadFonts = async () => {
     try {
       setIsLoadingFonts(true)
-      const response = await fetch('/api/fonts/list')
+      const response = await fetch('/api/fonts/list-v2')
       const data = await response.json()
       
       if (data.success && data.fonts) {
@@ -134,7 +134,7 @@ export default function AdminPage() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('/api/fonts/upload', {
+      const response = await fetch('/api/fonts/upload-v2', {
         method: 'POST',
         body: formData
       })
@@ -257,7 +257,7 @@ export default function AdminPage() {
     formData.append('familyName', familyName)
     
     try {
-      const response = await fetch('/api/fonts/upload', {
+      const response = await fetch('/api/fonts/upload-v2', {
         method: 'POST',
         body: formData
       })
