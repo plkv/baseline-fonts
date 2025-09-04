@@ -429,6 +429,7 @@ export default function FontFamilyAccordion({
                 </div>
                 
                 {family.fonts.map((font) => {
+                  console.log(`🔍 Rendering font:`, font.filename, 'style:', font.style, 'weight:', font.weight)
                   const isEditingThisFont = editingFont === font.filename
 
                   return (
