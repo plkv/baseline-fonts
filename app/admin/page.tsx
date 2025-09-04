@@ -346,13 +346,36 @@ export default function AdminPage() {
                           Monospace fallback: The quick brown fox jumps over the lazy dog
                         </div>
                         
-                        {/* Debug info */}
-                        <div className={`text-xs mt-2 ${darkMode ? 'text-stone-500' : 'text-gray-500'} font-mono`}>
-                          <strong>Debug Info:</strong><br />
-                          Original: "{font.family}" → Normalized: "TestFont-{font.family.replace(/[^a-zA-Z0-9]/g, '')}"<br />
-                          URL: {font.url} | Format: {font.format}<br />
-                          Weight: {font.weight} | Size: {(font.fileSize / 1024).toFixed(1)}KB<br />
-                          Status: {loadedFonts.has(font.family) ? '✅ Font API Loaded' : '⏳ Loading via Font API...'}
+                        {/* Font URL Test */}
+                        <div className={`text-xs mt-2 p-2 border rounded ${darkMode ? 'bg-stone-800 border-stone-600' : 'bg-gray-100 border-gray-300'}`}>
+                          <div className="mb-2">
+                            <strong>Font URL Test:</strong> 
+                            <a 
+                              href={font.url} 
+                              target="_blank" 
+                              className="ml-1 text-blue-500 hover:underline"
+                            >
+                              {font.url}
+                            </a>
+                            {font.blobUrl && (
+                              <>
+                                <br /><strong>Blob URL:</strong> 
+                                <a 
+                                  href={font.blobUrl} 
+                                  target="_blank" 
+                                  className="ml-1 text-blue-500 hover:underline"
+                                >
+                                  {font.blobUrl}
+                                </a>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-xs">
+                            Original: "{font.family}" → CSS: "TestFont-{font.family.replace(/[^a-zA-Z0-9]/g, '')}"<br />
+                            Format: {font.format} | Weight: {font.weight} | Size: {(font.fileSize / 1024).toFixed(1)}KB<br />
+                            Storage: {font.storage || 'unknown'} | Uploaded: {font.uploadedAt ? new Date(font.uploadedAt).toLocaleString() : 'unknown'}<br />
+                            Font API Status: {loadedFonts.has(font.family) ? '✅ Loaded' : '❌ Failed'}
+                          </div>
                         </div>
                       </div>
 
