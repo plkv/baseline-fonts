@@ -95,6 +95,93 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     
     console.log(`⚖️ Font: "${family}" -> Weight: ${weight}, Category: ${category}`)
 
+    // Extract comprehensive OpenType features
+    const openTypeFeatures: string[] = []
+    const featureList = font.tables?.gsub?.features || []
+    const supportedFeatures = new Set<string>()
+    
+    // Map OpenType feature tags to readable names
+    const featureNames: { [key: string]: string } = {
+      'kern': 'Kerning',
+      'liga': 'Standard Ligatures', 
+      'dlig': 'Discretionary Ligatures',
+      'clig': 'Contextual Ligatures',
+      'hlig': 'Historical Ligatures',
+      'smcp': 'Small Capitals',
+      'c2sc': 'Small Capitals From Capitals',
+      'case': 'Case-Sensitive Forms',
+      'cpsp': 'Capital Spacing',
+      'swsh': 'Swash',
+      'cswh': 'Contextual Swash',
+      'salt': 'Stylistic Alternates',
+      'ss01': 'Stylistic Set 1',
+      'ss02': 'Stylistic Set 2',
+      'ss03': 'Stylistic Set 3',
+      'ss04': 'Stylistic Set 4',
+      'ss05': 'Stylistic Set 5',
+      'onum': 'Oldstyle Figures',
+      'pnum': 'Proportional Figures',
+      'tnum': 'Tabular Figures',
+      'lnum': 'Lining Figures',
+      'zero': 'Slashed Zero',
+      'frac': 'Fractions',
+      'sups': 'Superscript',
+      'subs': 'Subscript',
+      'ordn': 'Ordinals'
+    }
+
+    // Extract features from GSUB and GPOS tables
+    const extractFeatures = (table: any, tableName: string) => {
+      if (!table?.featureList) return
+      
+      console.log(`🔍 Scanning ${tableName} table for features...`)
+      
+      // Try different possible structures
+      if (table.featureList.featureRecords) {
+        table.featureList.featureRecords.forEach((record: any) => {
+          const tag = record.featureTag || record.tag
+          if (tag && featureNames[tag]) {
+            supportedFeatures.add(tag)
+            openTypeFeatures.push(featureNames[tag])
+            console.log(`  Found feature: ${tag} -> ${featureNames[tag]}`)
+          }
+        })
+      }
+      
+      // Also check direct feature list
+      if (Array.isArray(table.featureList)) {
+        table.featureList.forEach((feature: any, index: number) => {
+          if (feature.tag && featureNames[feature.tag]) {
+            supportedFeatures.add(feature.tag)
+            openTypeFeatures.push(featureNames[feature.tag])
+            console.log(`  Found feature: ${feature.tag} -> ${featureNames[feature.tag]}`)
+          }
+        })
+      }
+    }
+
+    // Check GSUB table (substitution features like ligatures)
+    if (font.tables?.gsub) {
+      extractFeatures(font.tables.gsub, 'GSUB')
+    }
+    
+    // Check GPOS table (positioning features like kerning)
+    if (font.tables?.gpos) {
+      extractFeatures(font.tables.gpos, 'GPOS')
+    }
+
+    // Add basic features that most fonts have
+    if (font.tables?.kern && !supportedFeatures.has('kern')) {
+      openTypeFeatures.push('Kerning')
+      supportedFeatures.add('kern')
+    }
+    
+    // Add common ligature support if GSUB table exists
+    if (font.tables?.gsub && !supportedFeatures.has('liga')) {
+      openTypeFeatures.push('Standard Ligatures')
+      supportedFeatures.add('liga')
+    }
+
     // Basic style variations (simplified)
     const availableStyles = [style]
     const availableWeights = [weight]
@@ -113,6 +200,21 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       }
     }
 
+    // Enhanced language support detection
+    const languages: string[] = ['Latin'] // Default
+    if (font.tables?.os2) {
+      const os2 = font.tables.os2
+      // This is simplified - real language detection would need more complex analysis
+      if (os2.ulUnicodeRange2 & 0x00000001) languages.push('Cyrillic')
+      if (os2.ulUnicodeRange1 & 0x00000080) languages.push('Greek')  
+      if (os2.ulUnicodeRange1 & 0x00000100) languages.push('Armenian')
+      if (os2.ulUnicodeRange1 & 0x00000200) languages.push('Hebrew')
+      if (os2.ulUnicodeRange1 & 0x00000400) languages.push('Arabic')
+    }
+
+    console.log(`🎯 Extracted ${openTypeFeatures.length} OpenType features:`, openTypeFeatures)
+    console.log(`🌍 Language support:`, languages)
+
     return {
       name: family,
       family,
@@ -126,14 +228,14 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       path: `/fonts/uploads/${originalName}`,
       // UI compatibility fields
       styles: 1, // Single uploaded style for now
-      features: ['liga', 'kern'], // Basic features
+      features: supportedFeatures.size > 0 ? Array.from(supportedFeatures) : ['liga', 'kern'],
       category,
       price: 'Free',
       availableStyles,
       availableWeights,
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
-      openTypeFeatures: ['Standard Ligatures', 'Kerning'], // Basic features
-      languages: ['Latin'], // Basic language support
+      openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
+      languages,
       foundry
     }
   } catch (error) {

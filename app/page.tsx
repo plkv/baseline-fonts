@@ -668,6 +668,53 @@ export default function FontCatalog() {
       baseStyle.fontVariationSettings = settings
     }
 
+    // Add OpenType feature settings
+    const fontFeatures = activeOpenTypeFeatures
+      .filter(f => f.startsWith(`${font.name}-`))
+      .map(f => f.replace(`${font.name}-`, ''))
+    
+    if (fontFeatures.length > 0) {
+      // Map feature names back to CSS tags
+      const featureTagMap: { [key: string]: string } = {
+        'Standard Ligatures': 'liga',
+        'Discretionary Ligatures': 'dlig',
+        'Contextual Ligatures': 'clig',
+        'Historical Ligatures': 'hlig',
+        'Kerning': 'kern',
+        'Small Capitals': 'smcp',
+        'Small Capitals From Capitals': 'c2sc',
+        'Case-Sensitive Forms': 'case',
+        'Capital Spacing': 'cpsp',
+        'Swash': 'swsh',
+        'Contextual Swash': 'cswh',
+        'Stylistic Alternates': 'salt',
+        'Stylistic Set 1': 'ss01',
+        'Stylistic Set 2': 'ss02',
+        'Stylistic Set 3': 'ss03',
+        'Stylistic Set 4': 'ss04',
+        'Stylistic Set 5': 'ss05',
+        'Oldstyle Figures': 'onum',
+        'Proportional Figures': 'pnum',
+        'Tabular Figures': 'tnum',
+        'Lining Figures': 'lnum',
+        'Slashed Zero': 'zero',
+        'Fractions': 'frac',
+        'Superscript': 'sups',
+        'Subscript': 'subs',
+        'Ordinals': 'ordn'
+      }
+      
+      const featureSettings = fontFeatures
+        .map(feature => featureTagMap[feature])
+        .filter(tag => tag)
+        .map(tag => `"${tag}" 1`)
+        .join(', ')
+      
+      if (featureSettings) {
+        baseStyle.fontFeatureSettings = featureSettings
+      }
+    }
+
     return baseStyle
   }
 
@@ -713,7 +760,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.019
+                  v.0.020
                 </span>
               </nav>
 
