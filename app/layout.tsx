@@ -10,9 +10,19 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "Typedump - Font Collection & Preview",
+  description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
+  keywords: "fonts, typography, typefaces, font preview, design tools, web fonts",
+  openGraph: {
+    title: "Typedump - Font Collection & Preview",
+    description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Typedump - Font Collection & Preview",
+    description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
+  }
 }
 
 export default function RootLayout({

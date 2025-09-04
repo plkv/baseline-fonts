@@ -693,7 +693,7 @@ export default function FontCatalog() {
                   className={`text-2xl font-bold tracking-tighter transition-colors duration-300 ${getThemeText()}`}
                   style={{ fontFamily: getFontFamily(logoFont) }}
                 >
-                  Baseline
+                  Typedump
                 </h1>
               </div>
 
@@ -1279,7 +1279,7 @@ export default function FontCatalog() {
             <div
               className={`text-center text-sm transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-600"}`}
             >
-              © Baseline, 2025 / Made by Magic x Logic
+              © Typedump, 2025 / Made by Magic x Logic
             </div>
           </div>
         </footer>
