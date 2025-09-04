@@ -224,10 +224,13 @@ export default function AdminPage() {
         toast.success('Font deleted successfully')
         loadFonts()
       } else {
-        toast.error('Failed to delete font')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Delete failed:', response.status, errorData)
+        toast.error(`Failed to delete font: ${errorData.message || 'Unknown error'}`)
       }
     } catch (error) {
-      toast.error('Delete failed')
+      console.error('Delete error:', error)
+      toast.error(`Delete failed: ${error instanceof Error ? error.message : 'Network error'}`)
     }
   }
   
