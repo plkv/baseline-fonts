@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   console.log('📤 Font upload request received')
   
-  // Import modules inside the function to catch any import errors
   try {
+    // Import modules inside the function to catch any import errors
     console.log('📦 Loading font parser and storage modules...')
     const { parseFontFile } = await import('@/lib/font-parser')
     const { blobOnlyStorage } = await import('@/lib/blob-only-storage')
     console.log('✅ Modules loaded successfully')
+
     const formData = await request.formData()
     console.log('📋 Form data parsed successfully')
     
@@ -123,16 +124,9 @@ export async function POST(request: NextRequest) {
           'File might be corrupted',
           'Font format not supported by OpenType.js',
           'File is not a valid font file',
-          'Blob storage module loading failed'
+          'Module loading failed'
         ]
       }
-    }, { status: 500 })
-  } catch (moduleError) {
-    console.error('❌ Module loading error:', moduleError)
-    return NextResponse.json({ 
-      error: 'Module loading failed', 
-      details: moduleError instanceof Error ? moduleError.message : 'Unknown module error',
-      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 }
