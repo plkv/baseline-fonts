@@ -48,6 +48,36 @@ export default function AdminPage() {
     loadFonts()
   }, [])
 
+  // Inject font CSS when fonts are loaded
+  useEffect(() => {
+    // Clear any existing font styles
+    const existingStyles = document.querySelectorAll('style[data-font-loader="admin"]')
+    existingStyles.forEach(style => style.remove())
+
+    // Create and inject CSS for each font
+    uploadedFonts.forEach(font => {
+      if (!font.url) return
+
+      const style = document.createElement('style')
+      style.setAttribute('data-font-loader', 'admin')
+      
+      // Create normalized font family name for CSS
+      const normalizedName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+      
+      // Create CSS with proper font-face and selectors
+      style.textContent = `
+        @font-face {
+          font-family: "${normalizedName}";
+          src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
+          font-weight: ${font.weight || 400};
+          font-style: normal;
+          font-display: swap;
+        }
+      `
+      document.head.appendChild(style)
+    })
+  }, [uploadedFonts])
+
   const handleUpload = async (file: File) => {
     if (!file) return
     
@@ -214,52 +244,176 @@ export default function AdminPage() {
                   return (
                     <div
                       key={font.name}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                      className={`p-6 rounded-lg border transition-colors ${
                         darkMode 
                           ? 'bg-stone-800 border-stone-700' 
                           : 'bg-white border-gray-200'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
+                      {/* Header with name and actions */}
+                      <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className={`font-medium ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
+                          <h3 className={`text-lg font-semibold ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
                             {font.family}
                           </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                              {font.styles} style{font.styles !== 1 ? 's' : ''}
-                            </span>
-                            <Badge variant={font.isVariable ? "default" : "secondary"} className="text-xs">
-                              {font.isVariable ? 'Variable' : 'Static'}
-                            </Badge>
-                            <Badge variant={isPublished ? "default" : "outline"} className="text-xs">
-                              {isPublished ? 'Published' : 'Draft'}
-                            </Badge>
-                          </div>
+                          <p className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>
+                            {font.filename} • {(font.fileSize / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleTogglePublish(font.name, isPublished)}
+                            className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                          >
+                            {isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {isPublished ? 'Unpublish' : 'Publish'}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFont(font.name)}
+                            className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${
+                              darkMode ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
+                            }`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Remove
+                          </Button>
                         </div>
                       </div>
-                      
+
+                      {/* Font Preview */}
+                      <div className={`mb-4 p-4 rounded border ${darkMode ? 'bg-stone-900 border-stone-600' : 'bg-gray-50 border-gray-200'}`}>
+                        <div
+                          style={{
+                            fontFamily: `"${font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')}", monospace, system-ui, sans-serif`,
+                            fontSize: '24px',
+                            fontWeight: font.weight || 400
+                          }}
+                          className={darkMode ? 'text-stone-200' : 'text-gray-900'}
+                        >
+                          The quick brown fox jumps over the lazy dog
+                        </div>
+                      </div>
+
+                      {/* Metadata Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Style & Weight
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.style} • {font.weight}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Format & Type
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.format?.toUpperCase()} • {font.isVariable ? 'Variable' : 'Static'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Category
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.category}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Foundry/Designer
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.foundry || 'Unknown'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Languages
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.languages ? font.languages.join(', ') : 'Latin'}
+                          </p>
+                        </div>
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                            Uploaded
+                          </label>
+                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                            {font.uploadedAt ? new Date(font.uploadedAt).toLocaleDateString() : 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* OpenType Features */}
+                      {font.openTypeFeatures && font.openTypeFeatures.length > 0 && (
+                        <div className="mb-4">
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} mb-2 block`}>
+                            OpenType Features ({font.openTypeFeatures.length})
+                          </label>
+                          <div className="flex flex-wrap gap-1">
+                            {font.openTypeFeatures.slice(0, 8).map((feature: string, index: number) => (
+                              <Badge 
+                                key={index} 
+                                variant="outline" 
+                                className={`text-xs ${darkMode ? 'border-stone-600 text-stone-300' : 'border-gray-300 text-gray-600'}`}
+                              >
+                                {feature}
+                              </Badge>
+                            ))}
+                            {font.openTypeFeatures.length > 8 && (
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs ${darkMode ? 'bg-stone-700 text-stone-300' : 'bg-gray-200 text-gray-600'}`}
+                              >
+                                +{font.openTypeFeatures.length - 8} more
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Variable Axes */}
+                      {font.variableAxes && font.variableAxes.length > 0 && (
+                        <div className="mb-4">
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} mb-2 block`}>
+                            Variable Axes ({font.variableAxes.length})
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {font.variableAxes.map((axis: any, index: number) => (
+                              <Badge 
+                                key={index} 
+                                variant="default" 
+                                className="text-xs"
+                              >
+                                {axis.name}: {axis.min}-{axis.max}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status Badges */}
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTogglePublish(font.name, isPublished)}
-                          className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
-                        >
-                          {isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          {isPublished ? 'Unpublish' : 'Publish'}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFont(font.name)}
-                          className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${
-                            darkMode ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
-                          }`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Remove
-                        </Button>
+                        <Badge variant={font.isVariable ? "default" : "secondary"} className="text-xs">
+                          {font.isVariable ? 'Variable' : 'Static'}
+                        </Badge>
+                        <Badge variant={isPublished ? "default" : "outline"} className="text-xs">
+                          {isPublished ? 'Published' : 'Draft'}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {font.styles} style{font.styles !== 1 ? 's' : ''}
+                        </Badge>
+                        {font.features && (
+                          <Badge variant="outline" className="text-xs">
+                            {font.features.length} features
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   )

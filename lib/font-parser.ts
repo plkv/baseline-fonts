@@ -54,18 +54,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     
     console.log(`✅ OpenType.js successfully parsed font: ${font.names?.fontFamily?.en || 'Unknown'}`)
     
-    // Debug font names table
+    // Extract font names and metadata
     console.log('📋 Font names available:', Object.keys(font.names || {}))
-    if (font.names) {
-      console.log('  fontFamily:', font.names.fontFamily)
-      console.log('  fullName:', font.names.fullName)  
-      console.log('  fontSubfamily:', font.names.fontSubfamily)
-      console.log('  manufacturer:', font.names.manufacturer)
-      console.log('  designer:', font.names.designer)
-      console.log('  description:', font.names.description)
-      console.log('  vendorURL:', font.names.vendorURL)
-      console.log('  designerURL:', font.names.designerURL)
-    }
     
     const name = font.names.fontFamily?.en || font.names.fullName?.en || originalName
     const family = font.names.fontFamily?.en || name
@@ -160,59 +150,41 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       }
       
       console.log(`🔍 Scanning ${tableName} table for features...`)
-      console.log(`  Table structure:`, Object.keys(table))
       
       // Modern OpenType.js structure uses 'features' array directly
       if (table.features && Array.isArray(table.features)) {
-        console.log(`  Found ${table.features.length} features in array`)
-        table.features.forEach((feature: any, index: number) => {
+        console.log(`  Found ${table.features.length} features in ${tableName}`)
+        table.features.forEach((feature: any) => {
           const tag = feature.tag || feature.featureTag
-          console.log(`    Feature ${index}: tag="${tag}"`, typeof feature === 'object' ? Object.keys(feature) : feature)
           if (tag && featureNames[tag] && !supportedFeatures.has(tag)) {
             supportedFeatures.add(tag)
             openTypeFeatures.push(featureNames[tag])
-            console.log(`    ✅ Found feature: ${tag} -> ${featureNames[tag]}`)
-          } else if (tag && supportedFeatures.has(tag)) {
-            console.log(`    🔄 Skipping duplicate feature: ${tag}`)
-          } else if (tag) {
-            console.log(`    ⚠️ Unknown feature tag: ${tag}`)
+            console.log(`    ✅ ${tag} -> ${featureNames[tag]}`)
           }
         })
       }
       
       // Legacy OpenType.js structure
       if (table.featureList) {
-        console.log(`  FeatureList structure:`, Object.keys(table.featureList))
-        
         // Try different possible structures
         if (table.featureList.featureRecords) {
-          console.log(`  Found ${table.featureList.featureRecords.length} feature records`)
-          table.featureList.featureRecords.forEach((record: any, i: number) => {
+          table.featureList.featureRecords.forEach((record: any) => {
             const tag = record.featureTag || record.tag
-            if (tag) {
-              if (featureNames[tag] && !supportedFeatures.has(tag)) {
-                supportedFeatures.add(tag)
-                openTypeFeatures.push(featureNames[tag])
-                console.log(`    ✅ Found feature: ${tag} -> ${featureNames[tag]}`)
-              } else if (tag && supportedFeatures.has(tag)) {
-                console.log(`    🔄 Skipping duplicate feature: ${tag}`)
-              } else {
-                console.log(`    ⚠️ Unknown feature tag: ${tag}`)
-              }
+            if (tag && featureNames[tag] && !supportedFeatures.has(tag)) {
+              supportedFeatures.add(tag)
+              openTypeFeatures.push(featureNames[tag])
+              console.log(`    ✅ ${tag} -> ${featureNames[tag]}`)
             }
           })
         }
         
         // Also check direct feature list
         if (Array.isArray(table.featureList)) {
-          console.log(`  Found ${table.featureList.length} direct features`)
-          table.featureList.forEach((feature: any, index: number) => {
+          table.featureList.forEach((feature: any) => {
             if (feature.tag && featureNames[feature.tag] && !supportedFeatures.has(feature.tag)) {
               supportedFeatures.add(feature.tag)
               openTypeFeatures.push(featureNames[feature.tag])
-              console.log(`    ✅ Found feature: ${feature.tag} -> ${featureNames[feature.tag]}`)
-            } else if (feature.tag && supportedFeatures.has(feature.tag)) {
-              console.log(`    🔄 Skipping duplicate feature: ${feature.tag}`)
+              console.log(`    ✅ ${feature.tag} -> ${featureNames[feature.tag]}`)
             }
           })
         }
