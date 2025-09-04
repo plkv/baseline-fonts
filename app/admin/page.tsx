@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Shield, Moon, Sun, Upload } from "lucide-react"
 import { toast, Toaster } from "sonner"
 import FontFamilyAccordion from "@/components/admin/font-family-accordion"
+import { ConfirmationModal } from "@/components/ui/confirmation-modal"
 
 interface FontFile {
   name: string
@@ -48,6 +49,19 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingFonts, setIsLoadingFonts] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   // Dark mode detection
   useEffect(() => {
@@ -215,14 +229,16 @@ export default function AdminPage() {
       return
     }
     
-    const confirmed = confirm(`Are you sure you want to permanently delete "${font.name}"? This action cannot be undone.`)
-    console.log('🔍 Font delete confirmation:', confirmed)
-    
-    if (!confirmed) {
-      console.log('🔍 User cancelled font deletion')
-      return
-    }
-
+    // Show confirmation modal instead of native confirm
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Font',
+      message: `Are you sure you want to permanently delete "${font.name}"? This action cannot be undone.`,
+      onConfirm: () => performFontDelete(fontFilename)
+    })
+  }
+  
+  const performFontDelete = async (fontFilename: string) => {
     console.log('🔍 Starting font deletion API call...')
     try {
       const response = await fetch(`/api/fonts/delete-v2?filename=${encodeURIComponent(fontFilename)}`, {
@@ -274,14 +290,16 @@ export default function AdminPage() {
       return
     }
     
-    const confirmed = confirm(`Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`)
-    console.log('🔍 User confirmation:', confirmed)
-    
-    if (!confirmed) {
-      console.log('🔍 User cancelled deletion')
-      return
-    }
-
+    // Show confirmation modal instead of native confirm
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Font Family',
+      message: `Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`,
+      onConfirm: () => performFamilyDelete(familyName)
+    })
+  }
+  
+  const performFamilyDelete = async (familyName: string) => {
     console.log('🔍 Starting family deletion API call...')
     try {
       const response = await fetch(`/api/fonts/delete-family?family=${encodeURIComponent(familyName)}`, {
@@ -439,6 +457,18 @@ export default function AdminPage() {
         position="top-center"
         richColors 
         theme={darkMode ? "dark" : "light"}
+      />
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
       />
     </div>
   )
