@@ -59,15 +59,16 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     
     const name = font.names.fontFamily?.en || font.names.fullName?.en || originalName
     const family = font.names.fontFamily?.en || name
-    const style = font.names.fontSubfamily?.en || 'Regular'
+    const rawStyle = font.names.fontSubfamily?.en || 'Regular'
+    const style = rawStyle.trim() || 'Regular' // Fix empty/whitespace styles
     
-    // Enhanced foundry detection
+    // Enhanced foundry detection with whitespace cleanup
     let foundry = 'Unknown'
-    if (font.names.manufacturer?.en) foundry = font.names.manufacturer.en
-    else if (font.names.designer?.en) foundry = font.names.designer.en
-    else if (font.names.vendorURL?.en) foundry = font.names.vendorURL.en
-    else if (font.names.designerURL?.en) foundry = font.names.designerURL.en
-    else if (font.names.description?.en && font.names.description.en.length < 100) foundry = font.names.description.en
+    if (font.names.manufacturer?.en && font.names.manufacturer.en.trim()) foundry = font.names.manufacturer.en.trim()
+    else if (font.names.designer?.en && font.names.designer.en.trim()) foundry = font.names.designer.en.trim()
+    else if (font.names.vendorURL?.en && font.names.vendorURL.en.trim()) foundry = font.names.vendorURL.en.trim()
+    else if (font.names.designerURL?.en && font.names.designerURL.en.trim()) foundry = font.names.designerURL.en.trim()
+    else if (font.names.description?.en && font.names.description.en.trim() && font.names.description.en.trim().length < 100) foundry = font.names.description.en.trim()
     
     console.log(`👤 Foundry detection: "${foundry}"`)
     
@@ -217,9 +218,9 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       supportedFeatures.add('liga')
     }
 
-    // Basic style variations (simplified)
-    const availableStyles = [style]
-    const availableWeights = [weight]
+    // Basic style variations (simplified) with cleanup
+    const availableStyles = [style].filter(s => s && s.trim())
+    const availableWeights = [weight].filter(w => w && !isNaN(w))
 
     // Variable font axes (if available)
     const variableAxes = []

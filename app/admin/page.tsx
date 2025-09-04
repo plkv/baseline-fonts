@@ -99,15 +99,23 @@ export default function AdminPage() {
       document.head.appendChild(style)
       console.log(`📝 Injected CSS for ${font.family} (${normalizedName}) from ${font.url}`)
       
-      // Check if font loads successfully
+      // Check if font loads successfully with better error handling
       if ('fonts' in document) {
-        const fontFace = new FontFace(normalizedName, `url("${font.url}")`)
-        fontFace.load().then(() => {
-          setLoadedFonts(prev => new Set([...prev, font.family]))
-          console.log(`✅ Font loaded successfully: ${font.family}`)
-        }).catch((error) => {
-          console.error(`❌ Failed to load font ${font.family}:`, error)
-        })
+        try {
+          const fontFace = new FontFace(normalizedName, `url("${font.url}")`, {
+            weight: 'normal',
+            style: 'normal'
+          })
+          fontFace.load().then(() => {
+            setLoadedFonts(prev => new Set([...prev, font.family]))
+            console.log(`✅ Font loaded successfully: ${font.family}`)
+          }).catch((error) => {
+            console.error(`❌ Failed to load font ${font.family}:`, error)
+            console.error(`  Font details: style="${font.style}", weight="${font.weight}", foundry="${font.foundry}"`)
+          })
+        } catch (error) {
+          console.error(`❌ FontFace creation failed for ${font.family}:`, error)
+        }
       }
     })
   }, [uploadedFonts])
