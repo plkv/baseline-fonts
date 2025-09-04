@@ -227,14 +227,25 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     // Variable font axes (if available)
     const variableAxes = []
     if (isVariable && font.tables?.fvar) {
-      for (const axis of font.tables.fvar.axes || []) {
-        variableAxes.push({
-          name: axis.name || axis.tag,
-          axis: axis.tag,
-          min: axis.minValue,
-          max: axis.maxValue,
-          default: axis.defaultValue
-        })
+      try {
+        for (const axis of font.tables.fvar.axes || []) {
+          // Ensure all values are serializable and safe
+          const safeAxis = {
+            name: String(axis.name || axis.tag || 'Unknown'),
+            axis: String(axis.tag || 'unkn'),
+            min: Number(axis.minValue) || 0,
+            max: Number(axis.maxValue) || 1000,
+            default: Number(axis.defaultValue) || 400
+          }
+          
+          // Validate the axis object has no circular references
+          JSON.stringify(safeAxis) // This will throw if there are circular refs
+          variableAxes.push(safeAxis)
+        }
+        console.log(`🎛️ Extracted ${variableAxes.length} variable axes:`, variableAxes)
+      } catch (axisError) {
+        console.error('⚠️ Error processing variable axes:', axisError)
+        // Continue without variable axes if there's an error
       }
     }
 
@@ -253,29 +264,62 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     console.log(`🎯 Extracted ${openTypeFeatures.length} OpenType features:`, openTypeFeatures)
     console.log(`🌍 Language support:`, languages)
 
-    return {
-      name: family,
-      family,
-      style,
-      weight,
-      isVariable,
-      format,
-      fileSize,
+    // Create metadata with safe, serializable values only
+    const metadata: FontMetadata = {
+      name: String(family || 'Unknown Font'),
+      family: String(family || 'Unknown Family'),
+      style: String(style || 'Regular'),
+      weight: Number(weight) || 400,
+      isVariable: Boolean(isVariable),
+      format: String(format || 'ttf'),
+      fileSize: Number(fileSize) || 0,
       uploadedAt: new Date().toISOString(),
-      filename: originalName,
+      filename: String(originalName),
       path: `/fonts/uploads/${originalName}`,
       // UI compatibility fields
       styles: 1, // Single uploaded style for now
       features: supportedFeatures.size > 0 ? Array.from(supportedFeatures) : ['liga', 'kern'],
-      category,
+      category: String(category || 'Sans Serif'),
       price: 'Free',
-      availableStyles,
-      availableWeights,
+      availableStyles: availableStyles.filter(s => typeof s === 'string'),
+      availableWeights: availableWeights.filter(w => typeof w === 'number' && !isNaN(w)),
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
       openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
-      languages,
-      foundry,
+      languages: languages.filter(l => typeof l === 'string'),
+      foundry: String(foundry || 'Unknown'),
       published: true // New fonts are published by default
+    }
+    
+    // Final safety check - ensure the entire object is serializable
+    try {
+      JSON.stringify(metadata)
+      console.log('✅ Font metadata is safe and serializable')
+      return metadata
+    } catch (serializationError) {
+      console.error('❌ Font metadata contains circular references:', serializationError)
+      // Return a minimal safe fallback
+      return {
+        name: String(family || 'Unknown Font'),
+        family: String(family || 'Unknown Family'), 
+        style: 'Regular',
+        weight: 400,
+        isVariable: false,
+        format: String(format || 'ttf'),
+        fileSize: Number(fileSize) || 0,
+        uploadedAt: new Date().toISOString(),
+        filename: String(originalName),
+        path: `/fonts/uploads/${originalName}`,
+        styles: 1,
+        features: ['liga', 'kern'],
+        category: 'Sans Serif',
+        price: 'Free',
+        availableStyles: ['Regular'],
+        availableWeights: [400],
+        openTypeFeatures: ['Standard Ligatures', 'Kerning'],
+        languages: ['Latin'],
+        foundry: 'Unknown',
+        published: true
+      }
     }
   } catch (error) {
     console.error('❌ Font parsing error:', error)
