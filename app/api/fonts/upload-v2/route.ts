@@ -116,7 +116,12 @@ export async function POST(request: NextRequest) {
             new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
           )[0]
           
-          // Override the parsed metadata with family-level settings
+          // Only copy family-level settings, preserve individual font properties
+          const originalStyle = fontMetadata.style
+          const originalWeight = fontMetadata.weight
+          const originalName = fontMetadata.name
+          
+          // Copy family-level metadata
           fontMetadata.category = representativeFont.category
           fontMetadata.foundry = representativeFont.foundry
           fontMetadata.languages = representativeFont.languages
@@ -127,11 +132,14 @@ export async function POST(request: NextRequest) {
           fontMetadata.price = representativeFont.price || 'Free'
           fontMetadata.downloadLink = representativeFont.downloadLink
           
-          // Force the family name to match the target
+          // Force the family name to match the target but preserve individual font properties
           fontMetadata.family = targetFamily
-          fontMetadata.name = targetFamily
+          fontMetadata.style = originalStyle  // Keep original style
+          fontMetadata.weight = originalWeight  // Keep original weight
+          fontMetadata.name = originalName  // Keep original font name
           
           console.log(`✅ Inherited family metadata from: ${representativeFont.filename}`)
+          console.log(`🔍 Preserved individual properties: style=${originalStyle}, weight=${originalWeight}, name=${originalName}`)
         }
       } catch (error) {
         console.warn(`⚠️ Failed to load existing family metadata: ${error}`)
