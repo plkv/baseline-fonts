@@ -1,40 +1,6 @@
 {
   "fonts": [
     {
-      "name": "Bolgarus Beta",
-      "family": "Bolgarus Beta",
-      "style": "Regular",
-      "weight": 400,
-      "isVariable": false,
-      "format": "otf",
-      "fileSize": 12048,
-      "uploadedAt": "2025-09-04T08:06:59.896Z",
-      "filename": "Bolgarus.otf",
-      "path": "/fonts/uploads/Bolgarus.otf",
-      "styles": 1,
-      "features": [
-        "kern"
-      ],
-      "category": "Sans Serif",
-      "price": "Free",
-      "availableStyles": [
-        "Regular"
-      ],
-      "availableWeights": [
-        400
-      ],
-      "openTypeFeatures": [
-        "Kerning"
-      ],
-      "languages": [
-        "Latin",
-        "Hebrew"
-      ],
-      "foundry": "Unknown",
-      "url": "/fonts/Bolgarus.otf",
-      "storage": "local"
-    },
-    {
       "name": "Bona Nova",
       "family": "Bona Nova",
       "style": "Bold",
@@ -141,6 +107,39 @@
       "url": "/fonts/Block-font.otf"
     },
     {
+      "name": "Bolgarus Beta",
+      "family": "Bolgarus Beta",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "otf",
+      "fileSize": 12048,
+      "uploadedAt": "2025-09-04T11:24:55.586Z",
+      "filename": "Bolgarus.otf",
+      "path": "/fonts/uploads/Bolgarus.otf",
+      "styles": 1,
+      "features": [
+        "kern"
+      ],
+      "category": "Sans Serif",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        400
+      ],
+      "openTypeFeatures": [
+        "Kerning"
+      ],
+      "languages": [
+        "Latin",
+        "Hebrew"
+      ],
+      "foundry": "Unknown",
+      "url": "/fonts/Bolgarus.otf"
+    },
+    {
       "name": "CHAOS16",
       "family": "CHAOS16",
       "style": "Regular",
@@ -156,7 +155,7 @@
         "liga",
         "kern"
       ],
-      "category": "Sans Serif",
+      "category": "Display",
       "price": "Free",
       "availableStyles": [
         "Regular"
@@ -176,5 +175,5 @@
       "url": "/fonts/CHAOS16.otf"
     }
   ],
-  "lastUpdated": "2025-09-04T11:09:06.987Z"
+  "lastUpdated": "2025-09-04T11:25:09.193Z"
 }

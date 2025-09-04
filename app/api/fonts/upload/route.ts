@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const targetFamily = formData.get('targetFamily') as string | null
     
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
@@ -32,12 +33,48 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`📂 Uploading font: ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`)
+    if (targetFamily) {
+      console.log(`🎯 Target family: ${targetFamily}`)
+    }
 
     // Get file data
     const bytes = await file.arrayBuffer()
     
     // Parse font metadata
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
+    
+    // If uploading to existing family, inherit family metadata
+    if (targetFamily) {
+      try {
+        const existingFonts = await fontStorage.getAllFonts()
+        const familyFonts = existingFonts.filter(f => f.family === targetFamily)
+        
+        if (familyFonts.length > 0) {
+          // Use the most recent font's family-level metadata
+          const representativeFont = familyFonts.sort((a, b) => 
+            new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+          )[0]
+          
+          console.log(`🔄 Inheriting family metadata from: ${representativeFont.filename}`)
+          
+          // Override the parsed metadata with family-level settings
+          fontMetadata.category = representativeFont.category
+          fontMetadata.foundry = representativeFont.foundry
+          fontMetadata.languages = representativeFont.languages
+          fontMetadata.openTypeFeatures = [...new Set([
+            ...fontMetadata.openTypeFeatures, 
+            ...representativeFont.openTypeFeatures
+          ])]
+          fontMetadata.price = representativeFont.price
+          
+          // Force the family name to match the target
+          fontMetadata.family = targetFamily
+          fontMetadata.name = targetFamily
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to load existing family metadata: ${error}`)
+      }
+    }
     
     // Store font file and metadata
     const savedFontUrl = await fontStorage.saveFontFile(bytes, file.name)
@@ -48,8 +85,9 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ 
       success: true, 
-      message: 'Font uploaded to Vercel storage successfully',
-      font: storedFont
+      message: `Font uploaded successfully${targetFamily ? ` to ${targetFamily} family` : ''}`,
+      font: storedFont,
+      inheritedMetadata: targetFamily ? true : false
     })
 
   } catch (error) {
