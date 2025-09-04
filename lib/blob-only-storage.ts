@@ -11,19 +11,19 @@ import { FontMetadata } from './font-parser'
 const isVercelProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
 const hasVercelBlob = !!process.env.BLOB_READ_WRITE_TOKEN
 
-// Dynamic imports for Vercel modules
-let put: any, del: any, list: any
+// Vercel Blob imports
+let blobModule: any = null
 
-if (hasVercelBlob) {
-  try {
-    import('@vercel/blob').then(blob => {
-      put = blob.put
-      del = blob.del
-      list = blob.list
-    })
-  } catch (error) {
-    console.warn('⚠️ Vercel blob modules not available:', error)
+async function getBlobModule() {
+  if (!blobModule && hasVercelBlob) {
+    try {
+      blobModule = await import('@vercel/blob')
+      console.log('✅ Vercel blob module loaded successfully')
+    } catch (error) {
+      console.warn('⚠️ Vercel blob modules not available:', error)
+    }
   }
+  return blobModule
 }
 
 export class BlobOnlyStorageManager {
@@ -79,9 +79,14 @@ export class BlobOnlyStorageManager {
     try {
       console.log(`☁️ Storing font in Vercel Blob: ${fontMetadata.family}`)
       
+      const blobModule = await getBlobModule()
+      if (!blobModule) {
+        throw new Error('Vercel blob module not available')
+      }
+      
       // Upload font file to Blob
       const fontPath = `fonts/${fontMetadata.filename}`
-      const blob = await put(fontPath, fontBuffer, {
+      const blob = await blobModule.put(fontPath, fontBuffer, {
         access: 'public',
         contentType: this.getContentType(fontMetadata.format)
       })
@@ -173,15 +178,21 @@ export class BlobOnlyStorageManager {
   }
 
   private async saveMetadataToBlob(): Promise<void> {
-    if (!hasVercelBlob || !put) return
+    if (!hasVercelBlob) return
 
     try {
+      const blobModule = await getBlobModule()
+      if (!blobModule) {
+        console.warn('⚠️ Blob module not available for metadata save')
+        return
+      }
+      
       const metadataJson = JSON.stringify({
         fonts: this.memoryCache,
         lastUpdated: new Date().toISOString()
       })
 
-      await put(this.METADATA_FILE, metadataJson, {
+      await blobModule.put(this.METADATA_FILE, metadataJson, {
         access: 'public',
         contentType: 'application/json'
       })
@@ -193,10 +204,17 @@ export class BlobOnlyStorageManager {
   }
 
   private async loadFontsFromBlob(): Promise<void> {
-    if (hasVercelBlob && list) {
+    if (hasVercelBlob) {
       try {
+        const blobModule = await getBlobModule()
+        if (!blobModule) {
+          console.warn('⚠️ Blob module not available for loading fonts')
+          await this.rebuildMetadataFromOrphanedFiles()
+          return
+        }
+        
         // List all blobs to find metadata file
-        const { blobs } = await list({ prefix: 'metadata/' })
+        const { blobs } = await blobModule.list({ prefix: 'metadata/' })
         const metadataBlob = blobs.find(blob => blob.pathname === this.METADATA_FILE)
         
         if (metadataBlob) {
@@ -249,11 +267,14 @@ export class BlobOnlyStorageManager {
     let success = false
 
     // Remove from blob storage
-    if (hasVercelBlob && del) {
+    if (hasVercelBlob) {
       try {
-        await del(`fonts/${filename}`)
-        success = true
-        console.log(`✅ Font file removed from blob: ${filename}`)
+        const blobModule = await getBlobModule()
+        if (blobModule) {
+          await blobModule.del(`fonts/${filename}`)
+          success = true
+          console.log(`✅ Font file removed from blob: ${filename}`)
+        }
       } catch (error) {
         console.error('❌ Blob font removal failed:', error)
       }
@@ -321,13 +342,19 @@ export class BlobOnlyStorageManager {
   }
 
   private async rebuildMetadataFromOrphanedFiles(): Promise<void> {
-    if (!hasVercelBlob || !list) return
+    if (!hasVercelBlob) return
 
     try {
+      const blobModule = await getBlobModule()
+      if (!blobModule) {
+        console.warn('⚠️ Blob module not available for recovery')
+        return
+      }
+      
       console.log('🔍 Scanning for orphaned font files in blob storage...')
       
       // List all font files in blob storage
-      const { blobs } = await list({ prefix: 'fonts/' })
+      const { blobs } = await blobModule.list({ prefix: 'fonts/' })
       const fontBlobs = blobs.filter(blob => 
         blob.pathname.match(/\.(ttf|otf|woff|woff2)$/i)
       )
