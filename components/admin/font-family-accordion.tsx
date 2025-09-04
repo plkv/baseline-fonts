@@ -634,8 +634,9 @@ export default function FontFamilyAccordion({
                         <div 
                           className="text-lg leading-relaxed"
                           style={{
-                            fontFamily: font.url ? `"${font.family}", sans-serif` : 'sans-serif',
-                            fontWeight: font.weight
+                            fontFamily: font.url ? `"${font.family}-${font.filename}", sans-serif` : 'sans-serif',
+                            fontWeight: font.weight,
+                            fontStyle: font.style.toLowerCase().includes('italic') || font.style.toLowerCase().includes('oblique') ? 'italic' : 'normal'
                           }}
                         >
                           The quick brown fox jumps over the lazy dog
@@ -643,10 +644,10 @@ export default function FontFamilyAccordion({
                         {font.url && (
                           <style>
                             {`@font-face {
-                              font-family: "${font.family}";
+                              font-family: "${font.family}-${font.filename}";
                               src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : font.format}");
                               font-weight: ${font.weight};
-                              font-style: normal;
+                              font-style: ${font.style.toLowerCase().includes('italic') || font.style.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
                             }`}
                           </style>
                         )}
