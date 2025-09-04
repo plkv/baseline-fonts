@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFontFile } from '@/lib/font-parser'
-import { persistentStorage } from '@/lib/persistent-storage'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // If uploading to existing family, inherit family metadata
     if (targetFamily) {
       try {
-        const existingFonts = await persistentStorage.getAllFonts()
+        const existingFonts = await blobOnlyStorage.getAllFonts()
         const familyFonts = existingFonts.filter(f => f.family === targetFamily)
         
         if (familyFonts.length > 0) {
@@ -76,11 +76,11 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Store font using persistent storage manager
-    const storedFont = await persistentStorage.storeFont(fontMetadata, bytes)
+    // Store font using blob-only storage manager
+    const storedFont = await blobOnlyStorage.storeFont(fontMetadata, bytes)
     
     // Log storage type for debugging
-    const storageInfo = persistentStorage.getStorageInfo()
+    const storageInfo = blobOnlyStorage.getStorageInfo()
     console.log(`📊 Storage used: ${storageInfo.type} (${storageInfo.fontsCount} total fonts)`)
     
     return NextResponse.json({ 

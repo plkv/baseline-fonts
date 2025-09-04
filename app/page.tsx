@@ -683,7 +683,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.026
+                  v.0.027
                 </span>
               </nav>
 

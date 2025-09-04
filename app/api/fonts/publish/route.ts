@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { persistentStorage } from '@/lib/persistent-storage'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -11,15 +11,15 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Update publish status using persistent storage
-    const success = await persistentStorage.updateFont(filename, { published })
+    // Update publish status using blob-only storage
+    const success = await blobOnlyStorage.updateFont(filename, { published })
     
     if (!success) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
     
     // Get updated font for response
-    const fonts = await persistentStorage.getAllFonts()
+    const fonts = await blobOnlyStorage.getAllFonts()
     const updatedFont = fonts.find(f => f.filename === filename)
     
     const action = published ? 'published' : 'unpublished'

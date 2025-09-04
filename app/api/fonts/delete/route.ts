@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { persistentStorage } from '@/lib/persistent-storage'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -10,8 +10,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // Remove from persistent storage
-    const success = await persistentStorage.removeFont(filename)
+    // Remove from blob-only storage
+    const success = await blobOnlyStorage.removeFont(filename)
     
     if (success) {
       return NextResponse.json({ 

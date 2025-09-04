@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { persistentStorage } from '@/lib/persistent-storage'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -10,8 +10,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // Update font using persistent storage
-    const success = await persistentStorage.updateFont(filename, updates)
+    // Update font using blob-only storage
+    const success = await blobOnlyStorage.updateFont(filename, updates)
     
     if (!success) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })

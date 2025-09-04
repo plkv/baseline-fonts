@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { persistentStorage } from '@/lib/persistent-storage'
+import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function GET() {
   try {
-    const storageInfo = persistentStorage.getStorageInfo()
+    const storageInfo = blobOnlyStorage.getStorageInfo()
     
     const status = {
       ...storageInfo,
@@ -14,9 +14,9 @@ export async function GET() {
     }
 
     // Add recommendations based on current setup
-    if (status.isProduction && (!status.hasVercelBlob || !status.hasVercelKV)) {
-      status.recommendations.push('⚠️ URGENT: Configure Vercel Blob and KV storage to prevent data loss on deployments')
-      status.recommendations.push('📋 Required environment variables: BLOB_READ_WRITE_TOKEN, KV_REST_API_URL, KV_REST_API_TOKEN')
+    if (status.isProduction && !status.hasVercelBlob) {
+      status.recommendations.push('⚠️ URGENT: Configure Vercel Blob storage to prevent data loss on deployments')
+      status.recommendations.push('📋 Required environment variable: BLOB_READ_WRITE_TOKEN')
       status.recommendations.push('🔧 Configure at: https://vercel.com/dashboard > Project > Storage')
     }
 
