@@ -12,99 +12,7 @@ import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Moon, Sun, RotateCcw, Palette, Monitor, Menu } from "lucide-react"
 
-// Fonts are now loaded dynamically from uploaded fonts
-const hardcodedFonts = [
-  {
-    name: "Inter",
-    styles: 18,
-    features: ["liga", "kern", "tnum", "zero"],
-    category: "Sans Serif",
-    price: "Free",
-    isVariable: true,
-    availableStyles: ["Thin", "ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"],
-    availableWeights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
-    variableAxes: [
-      { name: "Weight", axis: "wght", min: 100, max: 900, default: 400 },
-      { name: "Slant", axis: "slnt", min: -10, max: 0, default: 0 },
-    ],
-    openTypeFeatures: [
-      "Standard Ligatures",
-      "Contextual Alternates",
-      "Tabular Numbers",
-      "Slashed Zero",
-      "Case Sensitive Forms",
-      "Stylistic Set 01",
-      "Stylistic Set 02",
-    ],
-    languages: ["Latin", "Cyrillic", "Greek", "Vietnamese", "Arabic", "Hebrew"],
-  },
-  {
-    name: "Funnel Sans",
-    styles: 8,
-    features: ["liga", "kern", "tnum"],
-    category: "Sans Serif",
-    price: "Free",
-    isVariable: false,
-    availableStyles: ["Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold"],
-    availableWeights: [300, 400, 500, 600, 700, 800],
-    openTypeFeatures: ["Standard Ligatures", "Kerning", "Tabular Numbers", "Proportional Figures"],
-    languages: ["Latin", "Cyrillic", "Greek", "Vietnamese"],
-  },
-  {
-    name: "Spline Sans",
-    styles: 14,
-    features: ["liga", "kern", "frac", "case"],
-    category: "Sans Serif",
-    price: "Free",
-    isVariable: true,
-    availableStyles: ["Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold"],
-    availableWeights: [300, 400, 500, 600, 700, 800],
-    variableAxes: [{ name: "Weight", axis: "wght", min: 300, max: 800, default: 400 }],
-    openTypeFeatures: ["Standard Ligatures", "Kerning", "Fractions", "Case Sensitive Forms", "Stylistic Alternates"],
-    languages: ["Latin", "Cyrillic", "Greek", "Vietnamese", "Thai"],
-  },
-  {
-    name: "Playfair Display",
-    styles: 12,
-    features: ["liga", "kern", "swsh"],
-    category: "Serif",
-    price: "Free",
-    isVariable: true,
-    availableStyles: ["Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"],
-    availableWeights: [400, 500, 600, 700, 800, 900],
-    variableAxes: [
-      { name: "Weight", axis: "wght", min: 400, max: 900, default: 400 },
-      { name: "Optical Size", axis: "opsz", min: 6, max: 120, default: 14 },
-    ],
-    openTypeFeatures: ["Standard Ligatures", "Stylistic Alternates", "Swashes", "Old Style Figures", "Small Caps"],
-    languages: ["Latin", "Cyrillic", "Vietnamese"],
-  },
-  {
-    name: "JetBrains Mono",
-    styles: 16,
-    features: ["liga", "kern", "zero"],
-    category: "Monospace",
-    price: "Free",
-    isVariable: true,
-    availableStyles: ["Thin", "ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold"],
-    availableWeights: [100, 200, 300, 400, 500, 600, 700, 800],
-    variableAxes: [{ name: "Weight", axis: "wght", min: 100, max: 800, default: 400 }],
-    openTypeFeatures: ["Contextual Ligatures", "Slashed Zero", "Stylistic Set 01", "Stylistic Set 02", "Kerning"],
-    languages: ["Latin", "Cyrillic", "Greek", "Arabic", "Hebrew", "Georgian", "Armenian"],
-  },
-  {
-    name: "Crimson Text",
-    styles: 6,
-    features: ["liga", "kern", "onum"],
-    category: "Serif",
-    price: "Free",
-    isVariable: false,
-    availableStyles: ["Regular", "Italic", "SemiBold", "Bold"],
-    availableWeights: [400, 600, 700],
-    openTypeFeatures: ["Standard Ligatures", "Old Style Figures", "Small Caps", "Kerning", "Discretionary Ligatures"],
-    languages: ["Latin", "Greek", "Vietnamese"],
-  },
-]
+// Fonts are now loaded dynamically from uploaded fonts API only
 
 const presetTexts = {
   keysymbols: 'RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->',
@@ -272,15 +180,30 @@ export default function FontCatalog() {
           console.log(`📝 Found ${data.fonts.length} fonts`)
           // Load CSS for all fonts
           loadFontCSS(data.fonts)
-          // Use all fonts
+          // Use all fonts - only uploaded fonts
           setAllFonts(data.fonts)
           console.log('✅ Fonts loaded and CSS applied')
+          
+          if (data.fonts.length === 0) {
+            console.log('ℹ️ No fonts available - user needs to upload fonts via admin panel')
+          }
+        } else {
+          console.warn('⚠️ API returned unexpected format:', data)
+          // Initialize with empty array if API doesn't return expected format
+          setUploadedFonts([])
+          setAllFonts([])
         }
       } else {
         console.error('❌ API request failed:', response.status, response.statusText)
+        // Initialize with empty array on API failure
+        setUploadedFonts([])
+        setAllFonts([])
       }
     } catch (error) {
       console.error('❌ Failed to load uploaded fonts:', error)
+      // Initialize with empty array on error
+      setUploadedFonts([])
+      setAllFonts([])
     } finally {
       setIsLoadingFonts(false)
     }
@@ -760,7 +683,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.023
+                  v.0.024
                 </span>
               </nav>
 
@@ -1175,6 +1098,23 @@ export default function FontCatalog() {
               {isLoadingFonts ? (
                 <div className={`text-center py-12 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
                   <p className="text-lg tracking-tighter">Loading fonts...</p>
+                </div>
+              ) : allFonts.length === 0 ? (
+                <div
+                  className={`text-center py-16 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}
+                >
+                  <p className="text-xl tracking-tighter mb-2">No fonts uploaded yet</p>
+                  <p className="text-sm mt-2 tracking-tighter mb-4">Upload your first font to get started</p>
+                  <a 
+                    href="/admin" 
+                    className={`inline-block px-4 py-2 rounded-md text-sm font-medium tracking-tighter transition-colors ${
+                      darkMode 
+                        ? "bg-stone-700 text-stone-200 hover:bg-stone-600" 
+                        : "bg-stone-200 text-stone-700 hover:bg-stone-300"
+                    }`}
+                  >
+                    Go to Admin Panel
+                  </a>
                 </div>
               ) : sortedFonts.length === 0 ? (
                 <div
