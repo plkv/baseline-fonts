@@ -66,7 +66,7 @@ export class BlobOnlyStorageManager {
   async storeFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
     await this.initialize()
 
-    if (hasVercelBlob && put) {
+    if (hasVercelBlob) {
       return this.storeInVercelBlob(fontMetadata, fontBuffer)
     } else if (!isVercelProduction) {
       return this.storeLocally(fontMetadata, fontBuffer)

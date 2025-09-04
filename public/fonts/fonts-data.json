@@ -1,4 +1,60 @@
 {
-  "fonts": [],
-  "lastUpdated": "2025-09-04T21:03:03.321Z"
+  "fonts": [
+    {
+      "name": "Geist Mono SemiBold",
+      "family": "Geist Mono SemiBold",
+      "style": "Regular",
+      "weight": 600,
+      "isVariable": false,
+      "format": "ttf",
+      "fileSize": 69900,
+      "uploadedAt": "2025-09-04T21:47:06.848Z",
+      "filename": "GeistMono-SemiBold.ttf",
+      "path": "/fonts/GeistMono-SemiBold.ttf",
+      "styles": 1,
+      "features": [
+        "case",
+        "frac",
+        "liga",
+        "ordn",
+        "ss01",
+        "ss02",
+        "ss03",
+        "ss04",
+        "subs",
+        "sups"
+      ],
+      "category": "Monospace",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        600
+      ],
+      "openTypeFeatures": [
+        "Case-Sensitive Forms",
+        "Fractions",
+        "Standard Ligatures",
+        "Ordinals",
+        "Stylistic Set 1",
+        "Stylistic Set 2",
+        "Stylistic Set 3",
+        "Stylistic Set 4",
+        "Subscript",
+        "Superscript"
+      ],
+      "languages": [
+        "Latin",
+        "Cyrillic",
+        "Greek",
+        "Hebrew"
+      ],
+      "foundry": "Basement.studio, Vercel, Andrés Briganti, Guido Ferreyra, Mateo Zaragoza",
+      "published": true,
+      "url": "/fonts/GeistMono-SemiBold.ttf",
+      "storage": "local-dev"
+    }
+  ],
+  "lastUpdated": "2025-09-04T21:47:06.848Z"
 }
