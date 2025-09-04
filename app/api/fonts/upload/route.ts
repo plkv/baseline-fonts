@@ -87,6 +87,25 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Handle default style assignment within families
+    if (fontMetadata.defaultStyle) {
+      console.log('🎯 Managing default style assignment...')
+      try {
+        const allFonts = await blobOnlyStorage.getAllFonts()
+        const familyFonts = allFonts.filter(f => f.family === fontMetadata.family && f.filename !== fontMetadata.filename)
+        
+        // Remove default from other fonts in the same family
+        for (const font of familyFonts) {
+          if (font.defaultStyle) {
+            await blobOnlyStorage.updateFont(font.filename, { defaultStyle: false })
+            console.log(`  ✅ Removed default from ${font.filename}`)
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to manage default styles:', error)
+      }
+    }
+
     // Store font using blob-only storage manager
     console.log('💾 Storing font in blob-only storage...')
     const storedFont = await blobOnlyStorage.storeFont(fontMetadata, bytes)

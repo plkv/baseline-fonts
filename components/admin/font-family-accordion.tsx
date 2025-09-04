@@ -434,6 +434,12 @@ export default function FontFamilyAccordion({
                           ) : (
                             <span className="font-medium">{font.name}</span>
                           )}
+                          
+                          {font.defaultStyle && (
+                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
+                              DEFAULT
+                            </Badge>
+                          )}
 
                           {isEditingThisFont ? (
                             <Select 
@@ -579,7 +585,19 @@ export default function FontFamilyAccordion({
                                 <input
                                   type="checkbox"
                                   checked={fontEdits.defaultStyle ?? font.defaultStyle ?? false}
-                                  onChange={(e) => setFontEdits(prev => ({ ...prev, defaultStyle: e.target.checked }))}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // If setting as default, warn about other defaults in family
+                                      const otherDefaults = family.fonts.filter(f => 
+                                        f.filename !== font.filename && f.defaultStyle
+                                      )
+                                      if (otherDefaults.length > 0) {
+                                        const proceed = confirm(`This will remove default status from ${otherDefaults.length} other font(s) in this family. Continue?`)
+                                        if (!proceed) return
+                                      }
+                                    }
+                                    setFontEdits(prev => ({ ...prev, defaultStyle: e.target.checked }))
+                                  }}
                                   className="rounded"
                                 />
                                 <span className="text-stone-600 dark:text-stone-400">

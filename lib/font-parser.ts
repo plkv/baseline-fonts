@@ -335,7 +335,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
       languages: languages.filter(l => typeof l === 'string'),
       foundry: String(foundry || 'Unknown'),
-      published: true // New fonts are published by default
+      published: true, // New fonts are published by default
+      defaultStyle: weight === 400 && (style === 'Regular' || style === 'Normal') // 400 weight Regular/Normal is default
     }
     
     // Final safety check - ensure the entire object is serializable

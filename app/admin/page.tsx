@@ -163,6 +163,32 @@ export default function AdminPage() {
 
   const handleFontUpdate = async (filename: string, updates: Partial<FontFile>) => {
     try {
+      // Handle default style changes specially
+      if (updates.defaultStyle !== undefined) {
+        const font = fonts.find(f => f.filename === filename)
+        if (font && updates.defaultStyle) {
+          // Use the dedicated default style endpoint
+          const response = await fetch('/api/fonts/default-style', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+              familyName: font.family, 
+              defaultFilename: filename 
+            })
+          })
+          
+          if (response.ok) {
+            loadFonts()
+            return
+          } else {
+            throw new Error('Default style update failed')
+          }
+        }
+      }
+      
+      // Regular font updates
       const response = await fetch('/api/fonts/update', {
         method: 'PATCH',
         headers: {
