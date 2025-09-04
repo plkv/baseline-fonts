@@ -173,6 +173,25 @@ export class FontStorage {
     await this.saveDatabase(db)
   }
 
+  async removeFont(filename: string): Promise<boolean> {
+    await this.initialize()
+    
+    const initialLength = this.memoryFonts.length
+    this.memoryFonts = this.memoryFonts.filter(f => f.filename !== filename)
+    const removed = this.memoryFonts.length < initialLength
+    
+    if (removed) {
+      // Save updated database
+      const db: FontDatabase = {
+        fonts: this.memoryFonts,
+        lastUpdated: new Date().toISOString()
+      }
+      await this.saveDatabase(db)
+    }
+    
+    return removed
+  }
+
   async saveFontFile(fontBuffer: ArrayBuffer, filename: string): Promise<string | null> {
     try {
       await this.ensureFontsDir()

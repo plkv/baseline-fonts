@@ -26,10 +26,44 @@ let memoryFonts: FontMetadata[] = []
 export class VercelFontStorage {
   
   async addFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
-    // Force use of local storage for now to ensure fonts work properly
-    // Vercel Blob storage requires environment variables setup
-    console.log(`📁 Using local file storage for: ${fontMetadata.family}`)
-    return this.fallbackAddFont(fontMetadata, fontBuffer)
+    if (hasVercelStorage && put && kv) {
+      try {
+        console.log(`☁️ Using Vercel Blob storage for: ${fontMetadata.family}`)
+        
+        // Upload font file to Vercel Blob
+        const blobFilename = `fonts/${fontMetadata.filename}`
+        const blob = await put(blobFilename, fontBuffer, {
+          access: 'public',
+          contentType: this.getContentType(fontMetadata.format)
+        })
+        
+        // Enhanced metadata with blob URL
+        const enhancedMetadata = {
+          ...fontMetadata,
+          url: blob.url,
+          uploadedAt: new Date().toISOString(),
+          storage: 'vercel-blob'
+        }
+        
+        // Store metadata in Vercel KV
+        const existingFonts = await this.getAllFonts()
+        const updatedFonts = existingFonts.filter(f => f.filename !== fontMetadata.filename)
+        updatedFonts.push(enhancedMetadata)
+        
+        await kv.set(KV_FONTS_KEY, updatedFonts)
+        
+        console.log(`✅ Production: Font stored in Vercel Blob: ${fontMetadata.family} -> ${blob.url}`)
+        return enhancedMetadata
+        
+      } catch (error) {
+        console.error('Vercel Blob storage error:', error)
+        console.log('Falling back to local storage')
+        return this.fallbackAddFont(fontMetadata, fontBuffer)
+      }
+    } else {
+      console.log(`📁 Using local file storage for: ${fontMetadata.family}`)
+      return this.fallbackAddFont(fontMetadata, fontBuffer)
+    }
   }
 
   private async fallbackAddFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
