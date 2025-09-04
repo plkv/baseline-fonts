@@ -1,14 +1,49 @@
 {
   "fonts": [
     {
+      "name": "Geist Mono SemiBold",
+      "family": "Geist Mono SemiBold",
+      "style": "Regular",
+      "weight": 600,
+      "isVariable": false,
+      "format": "ttf",
+      "fileSize": 69900,
+      "uploadedAt": "2025-09-04T07:00:55.640Z",
+      "filename": "GeistMono-SemiBold.ttf",
+      "path": "/fonts/uploads/GeistMono-SemiBold.ttf",
+      "styles": 1,
+      "features": [
+        "liga",
+        "kern"
+      ],
+      "category": "Monospace",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        600
+      ],
+      "openTypeFeatures": [
+        "Standard Ligatures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin"
+      ],
+      "foundry": "Basement.studio, Vercel, Andrés Briganti, Guido Ferreyra, Mateo Zaragoza",
+      "url": "/fonts/GeistMono-SemiBold.ttf",
+      "storage": "local"
+    },
+    {
       "name": "Geist Mono UltraLight",
       "family": "Geist Mono UltraLight",
       "style": "Regular",
-      "weight": 400,
+      "weight": 100,
       "isVariable": false,
       "format": "ttf",
       "fileSize": 70528,
-      "uploadedAt": "2025-09-03T21:04:07.975Z",
+      "uploadedAt": "2025-09-04T07:02:21.678Z",
       "filename": "GeistMono-UltraLight.ttf",
       "path": "/fonts/uploads/GeistMono-UltraLight.ttf",
       "styles": 1,
@@ -22,7 +57,7 @@
         "Regular"
       ],
       "availableWeights": [
-        400
+        100
       ],
       "openTypeFeatures": [
         "Standard Ligatures",
@@ -36,5 +71,5 @@
       "storage": "local"
     }
   ],
-  "lastUpdated": "2025-09-03T21:04:07.975Z"
+  "lastUpdated": "2025-09-04T07:02:21.678Z"
 }

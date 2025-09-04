@@ -59,25 +59,41 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const style = font.names.fontSubfamily?.en || 'Regular'
     const foundry = font.names.manufacturer?.en || font.names.designer?.en || 'Unknown'
     
-    // Basic weight detection
+    // Enhanced weight detection - check both style and family name
     let weight = 400
     const styleStr = style.toLowerCase()
-    if (styleStr.includes('thin')) weight = 100
-    else if (styleStr.includes('light')) weight = 300
-    else if (styleStr.includes('medium')) weight = 500
-    else if (styleStr.includes('semi') || styleStr.includes('demi')) weight = 600
-    else if (styleStr.includes('bold')) weight = 700
-    else if (styleStr.includes('black')) weight = 900
-
+    const familyStr = family.toLowerCase()
+    const combinedStr = `${styleStr} ${familyStr}`
+    
+    if (combinedStr.includes('thin') || combinedStr.includes('ultralight')) weight = 100
+    else if (combinedStr.includes('extralight') || combinedStr.includes('light')) weight = 300  
+    else if (combinedStr.includes('medium')) weight = 500
+    else if (combinedStr.includes('semibold') || combinedStr.includes('semi') || combinedStr.includes('demi')) weight = 600
+    else if (combinedStr.includes('extrabold') || combinedStr.includes('bold')) weight = 700
+    else if (combinedStr.includes('black') || combinedStr.includes('heavy')) weight = 900
+    
     // Check if variable font (basic detection)
     const isVariable = font.tables?.fvar !== undefined
 
     const format = originalName.toLowerCase().endsWith('.otf') ? 'otf' : 'ttf'
 
-    // Determine category based on font characteristics
-    const category = format === 'otf' ? 'Sans Serif' : 
-                    family.toLowerCase().includes('mono') ? 'Monospace' :
-                    family.toLowerCase().includes('serif') ? 'Serif' : 'Sans Serif'
+    // Enhanced category detection
+    const familyLower = family.toLowerCase()
+    let category = 'Sans Serif' // Default
+    
+    if (familyLower.includes('mono') || familyLower.includes('code') || familyLower.includes('console')) {
+      category = 'Monospace'
+    } else if (familyLower.includes('serif') && !familyLower.includes('sans')) {
+      category = 'Serif'
+    } else if (familyLower.includes('display') || familyLower.includes('decorative')) {
+      category = 'Display'
+    } else if (familyLower.includes('script') || familyLower.includes('handwriting')) {
+      category = 'Script'
+    } else if (familyLower.includes('pixel') || familyLower.includes('bitmap')) {
+      category = 'Pixel'
+    }
+    
+    console.log(`⚖️ Font: "${family}" -> Weight: ${weight}, Category: ${category}`)
 
     // Basic style variations (simplified)
     const availableStyles = [style]
