@@ -1,6 +1,6 @@
 {
   "name": "baseline-font-collection",
-  "version": "0.027",
+  "version": "0.028",
   "private": true,
   "scripts": {
     "build": "next build",
