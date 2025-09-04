@@ -248,9 +248,10 @@ export default function FontCatalog() {
         document.head.appendChild(style)
         
         console.log(`✓ Font CSS loaded: ${font.family}`)
-        console.log(`  Family: ${normalizedName}`)
+        console.log(`  Normalized: ${normalizedName}`)
         console.log(`  URL: ${font.url}`)
         console.log(`  Selector: .uploaded-font[data-font-family="${font.family}"]`)
+        console.log(`  CSS Content:`, style.textContent)
       } else {
         console.warn(`⚠️ Font ${font.family} has no URL, skipping CSS generation`)
       }
@@ -359,14 +360,13 @@ export default function FontCatalog() {
     loadUploadedFonts()
   }, [loadUploadedFonts])
 
-  // Add polling to check for new fonts every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadUploadedFonts()
-    }, 5000) // Check every 5 seconds
-
-    return () => clearInterval(interval)
-  }, [loadUploadedFonts])
+  // Remove auto-polling - only load fonts on mount and manual refresh
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     loadUploadedFonts()
+  //   }, 5000) // Check every 5 seconds
+  //   return () => clearInterval(interval)
+  // }, [loadUploadedFonts])
 
   const filteredFonts = allFonts.filter((font) => {
     const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -653,13 +653,24 @@ export default function FontCatalog() {
   }
 
   const getVariableFontStyle = (font: any) => {
-    if (!font.isVariable || !font.variableAxes) return {}
+    const baseStyle: any = {}
+    
+    // Add uploaded font family
+    const uploadedFont = uploadedFonts.find(f => f.family === font.family || f.name === font.name)
+    if (uploadedFont) {
+      const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+      baseStyle.fontFamily = `"${normalizedName}", monospace, system-ui, sans-serif`
+    }
+    
+    // Add variable font settings if applicable
+    if (font.isVariable && font.variableAxes) {
+      const settings = font.variableAxes
+        .map((axis) => `"${axis.axis}" ${variableAxisValues[font.name]?.[axis.axis] || axis.default}`)
+        .join(", ")
+      baseStyle.fontVariationSettings = settings
+    }
 
-    const settings = font.variableAxes
-      .map((axis) => `"${axis.axis}" ${variableAxisValues[font.name]?.[axis.axis] || axis.default}`)
-      .join(", ")
-
-    return { fontVariationSettings: settings }
+    return baseStyle
   }
 
   const sortedFonts = useMemo(() => {
@@ -704,7 +715,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.016
+                  v.0.017
                 </span>
               </nav>
 
