@@ -215,25 +215,33 @@ export default function AdminPage() {
       return
     }
     
-    if (!confirm(`Are you sure you want to permanently delete "${font.name}"? This action cannot be undone.`)) {
+    const confirmed = confirm(`Are you sure you want to permanently delete "${font.name}"? This action cannot be undone.`)
+    console.log('🔍 Font delete confirmation:', confirmed)
+    
+    if (!confirmed) {
+      console.log('🔍 User cancelled font deletion')
       return
     }
 
+    console.log('🔍 Starting font deletion API call...')
     try {
       const response = await fetch(`/api/fonts/delete-v2?filename=${encodeURIComponent(fontFilename)}`, {
         method: 'DELETE'
       })
+      
+      console.log('🔍 Font delete API response status:', response.status)
 
       if (response.ok) {
+        console.log('🔍 Font deleted successfully')
         toast.success('Font deleted successfully')
         loadFonts()
       } else {
         const errorData = await response.json().catch(() => ({}))
-        console.error('Delete failed:', response.status, errorData)
+        console.error('🔍 Font delete failed:', response.status, errorData)
         toast.error(`Failed to delete font: ${errorData.message || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Delete error:', error)
+      console.error('🔍 Font delete error:', error)
       toast.error(`Delete failed: ${error instanceof Error ? error.message : 'Network error'}`)
     }
   }
@@ -266,24 +274,33 @@ export default function AdminPage() {
       return
     }
     
-    if (!confirm(`Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`)) {
+    const confirmed = confirm(`Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`)
+    console.log('🔍 User confirmation:', confirmed)
+    
+    if (!confirmed) {
+      console.log('🔍 User cancelled deletion')
       return
     }
 
+    console.log('🔍 Starting family deletion API call...')
     try {
       const response = await fetch(`/api/fonts/delete-family?family=${encodeURIComponent(familyName)}`, {
         method: 'DELETE'
       })
-
+      
+      console.log('🔍 API response status:', response.status)
       const result = await response.json()
+      console.log('🔍 API response data:', result)
 
       if (response.ok && result.success) {
         toast.success(`Family "${familyName}" deleted successfully`)
         loadFonts()
       } else {
+        console.log('🔍 API reported failure:', result)
         toast.error(result.message || 'Failed to delete family')
       }
     } catch (error) {
+      console.error('🔍 Family deletion error:', error)
       toast.error('Family deletion failed')
     }
   }
