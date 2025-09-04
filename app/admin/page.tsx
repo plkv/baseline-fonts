@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Shield, Moon, Sun, Upload, Trash2, Edit2, Save, X, Plus, ChevronDown } from "lucide-react"
+import { Shield, Moon, Sun, Upload, Trash2, Edit2, Save, X, Plus, ChevronDown, Wrench } from "lucide-react"
 import { toast, Toaster } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -152,11 +152,23 @@ export default function AdminPage() {
     const allFonts = fontFamilies.flatMap(family => family.fonts)
     
     allFonts.forEach(font => {
+      // Validate font has required properties
+      if (!font.url || !font.family) {
+        console.warn(`⚠️ Font ${font.family || font.name || 'Unknown'} has no URL, skipping CSS generation`)
+        return
+      }
+      
       // Create normalized family name for CSS
       const normalizedName = `TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}`
       
       // Skip if already loaded
       if (loadedFonts.has(font.family)) return
+      
+      // Additional URL validation
+      if (!font.url.startsWith('/') && !font.url.startsWith('http')) {
+        console.warn(`⚠️ Font ${font.family} has invalid URL format: "${font.url}", skipping CSS generation`)
+        return
+      }
       
       // Inject CSS for font
       const style = document.createElement('style')
@@ -189,9 +201,13 @@ export default function AdminPage() {
             console.log(`✅ Font loaded successfully: ${font.family}`)
           }).catch((error) => {
             console.error(`❌ Failed to load font ${font.family}:`, error)
+            console.error(`   URL: ${font.url}`)
+            console.error(`   Format: ${font.format}`)
+            console.error(`   Weight: ${font.weight}`)
           })
         } catch (error) {
           console.error(`❌ FontFace creation failed for ${font.family}:`, error)
+          console.error(`   This might be due to invalid URL or unsupported format`)
         }
       }
     })
@@ -363,6 +379,41 @@ export default function AdminPage() {
     }
   }
 
+  const handleDatabaseCleanup = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/fonts/cleanup', {
+        method: 'POST'
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        if (result.issuesFixed > 0) {
+          toast.success('Database cleanup completed', {
+            description: `Fixed ${result.issuesFixed} issues in ${result.fontsChecked} fonts`
+          })
+          // Reload fonts to reflect any changes
+          loadFonts()
+        } else {
+          toast.success('Database is already clean', {
+            description: `Checked ${result.fontsChecked} fonts - no issues found`
+          })
+        }
+      } else {
+        toast.error('Cleanup failed', {
+          description: result.error
+        })
+      }
+    } catch (error) {
+      toast.error('Cleanup error', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const renderFontPreview = (font: FontFile) => {
     const normalizedName = font.family.replace(/[^a-zA-Z0-9]/g, '')
     const isLoaded = loadedFonts.has(font.family)
@@ -411,6 +462,19 @@ export default function AdminPage() {
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               
+              {/* Database Cleanup Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDatabaseCleanup}
+                disabled={isLoading}
+                className={`gap-2 ${darkMode ? 'border-stone-700' : ''}`}
+                title="Clean up database issues like missing URLs"
+              >
+                <Wrench className="w-4 h-4" />
+                Cleanup
+              </Button>
+              
               {/* Global Upload Button */}
               <div>
                 <input
@@ -429,7 +493,7 @@ export default function AdminPage() {
                   className="gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  {isLoading ? 'Uploading...' : 'New Font'}
+                  {isLoading ? 'Processing...' : 'New Font'}
                 </Button>
               </div>
             </div>

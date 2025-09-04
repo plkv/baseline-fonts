@@ -42,11 +42,63 @@ export class FontStorage {
     try {
       await this.ensureFontsDir()
       db.lastUpdated = new Date().toISOString()
+      
+      // Validate and clean up font data before saving
+      db.fonts = this.validateFontData(db.fonts)
+      
       await fs.writeFile(FONTS_DATA_FILE, JSON.stringify(db, null, 2))
     } catch (error) {
       console.log('Save database error (non-critical for Vercel):', error instanceof Error ? error.message : 'Unknown error')
       // On Vercel, this will fail, but we still have in-memory storage
     }
+  }
+
+  private validateFontData(fonts: FontMetadata[]): FontMetadata[] {
+    return fonts.map(font => {
+      // Ensure URL is properly set
+      if (!font.url && font.filename) {
+        // Generate URL from filename if missing
+        font.url = `/fonts/${font.filename}`
+        console.log(`🔧 Fixed missing URL for ${font.family}: ${font.url}`)
+      }
+      
+      // Ensure required fields exist
+      if (!font.family) {
+        font.family = font.name || 'Unknown Family'
+        console.log(`🔧 Fixed missing family for ${font.filename}: ${font.family}`)
+      }
+      
+      if (!font.name) {
+        font.name = font.family || 'Unknown Font'
+        console.log(`🔧 Fixed missing name for ${font.filename}: ${font.name}`)
+      }
+      
+      // Ensure arrays are not undefined
+      if (!Array.isArray(font.openTypeFeatures)) {
+        font.openTypeFeatures = ['Standard Ligatures', 'Kerning']
+      }
+      
+      if (!Array.isArray(font.languages)) {
+        font.languages = ['Latin']
+      }
+      
+      if (!Array.isArray(font.availableStyles)) {
+        font.availableStyles = [font.style || 'Regular']
+      }
+      
+      if (!Array.isArray(font.availableWeights)) {
+        font.availableWeights = [font.weight || 400]
+      }
+      
+      return font
+    }).filter(font => {
+      // Remove fonts that are completely broken
+      if (!font.filename || !font.family || !font.url) {
+        console.warn(`⚠️ Removing broken font entry: ${JSON.stringify(font)}`)
+        return false
+      }
+      return true
+    })
   }
 
   private async initialize() {
