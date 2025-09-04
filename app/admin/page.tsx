@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Shield, Moon, Sun, Eye, EyeOff, Trash2 } from "lucide-react"
+import { Shield, Moon, Sun, Eye, EyeOff, Trash2, Edit2, Save, X } from "lucide-react"
 import { toast, Toaster } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -12,6 +15,8 @@ export default function AdminPage() {
   const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(false)
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set())
+  const [editingFont, setEditingFont] = useState<string | null>(null)
+  const [editFormData, setEditFormData] = useState<any>({})
 
   useEffect(() => {
     // Auto-detect system theme preference
@@ -205,6 +210,76 @@ export default function AdminPage() {
     }
   }
 
+  const handleEditFont = (font: any) => {
+    setEditingFont(font.filename)
+    setEditFormData({
+      family: font.family || '',
+      foundry: font.foundry || '',
+      category: font.category || 'Sans Serif',
+      languages: font.languages ? font.languages.join(', ') : 'Latin',
+      openTypeFeatures: font.openTypeFeatures ? font.openTypeFeatures.join(', ') : '',
+      style: font.style || 'Regular',
+      weight: font.weight || 400
+    })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingFont(null)
+    setEditFormData({})
+  }
+
+  const handleSaveEdit = async (font: any) => {
+    try {
+      const response = await fetch('/api/fonts/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          filename: font.filename,
+          updates: {
+            family: editFormData.family,
+            foundry: editFormData.foundry,
+            category: editFormData.category,
+            languages: editFormData.languages.split(',').map((l: string) => l.trim()),
+            openTypeFeatures: editFormData.openTypeFeatures.split(',').map((f: string) => f.trim()),
+            style: editFormData.style,
+            weight: parseInt(editFormData.weight)
+          }
+        })
+      })
+
+      if (response.ok) {
+        setUploadedFonts(prev =>
+          prev.map(f =>
+            f.filename === font.filename
+              ? {
+                  ...f,
+                  family: editFormData.family,
+                  foundry: editFormData.foundry,
+                  category: editFormData.category,
+                  languages: editFormData.languages.split(',').map((l: string) => l.trim()),
+                  openTypeFeatures: editFormData.openTypeFeatures.split(',').map((f: string) => f.trim()),
+                  style: editFormData.style,
+                  weight: parseInt(editFormData.weight)
+                }
+              : f
+          )
+        )
+        setEditingFont(null)
+        setEditFormData({})
+        toast.success('Font metadata updated successfully')
+      } else {
+        const error = await response.json()
+        toast.error('Failed to update font', {
+          description: error.error
+        })
+      }
+    } catch (error) {
+      toast.error('Failed to update font')
+    }
+  }
+
   return (
     <div className={`min-h-screen p-8 ${darkMode ? 'bg-stone-950' : 'bg-gray-50'}`}>
       <div className="max-w-4xl mx-auto">
@@ -281,35 +356,85 @@ export default function AdminPage() {
                     >
                       {/* Header with name and actions */}
                       <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className={`text-lg font-semibold ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
-                            {font.family}
-                          </h3>
-                          <p className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>
-                            {font.filename} • {(font.fileSize / 1024).toFixed(1)} KB
-                          </p>
+                        <div className="flex-1 mr-4">
+                          {editingFont === font.filename ? (
+                            <div className="space-y-2">
+                              <Input
+                                placeholder="Font Family"
+                                value={editFormData.family}
+                                onChange={(e) => setEditFormData({...editFormData, family: e.target.value})}
+                                className="font-semibold"
+                              />
+                              <p className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>
+                                {font.filename} • {(font.fileSize / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <h3 className={`text-lg font-semibold ${darkMode ? 'text-stone-100' : 'text-gray-900'}`}>
+                                {font.family}
+                              </h3>
+                              <p className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-600'}`}>
+                                {font.filename} • {(font.fileSize / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleTogglePublish(font.name, isPublished)}
-                            className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
-                          >
-                            {isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            {isPublished ? 'Unpublish' : 'Publish'}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFont(font.name)}
-                            className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${
-                              darkMode ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
-                            }`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Remove
-                          </Button>
+                          {editingFont === font.filename ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSaveEdit(font)}
+                                className={`text-green-600 hover:text-green-700 ${darkMode ? 'hover:bg-green-950/20' : 'hover:bg-green-50'}`}
+                              >
+                                <Save className="w-4 h-4" />
+                                Save
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCancelEdit}
+                                className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                              >
+                                <X className="w-4 h-4" />
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditFont(font)}
+                                className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleTogglePublish(font.name, isPublished)}
+                                className={`${darkMode ? 'text-stone-400 hover:text-stone-200 hover:bg-stone-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                              >
+                                {isPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                {isPublished ? 'Unpublish' : 'Publish'}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFont(font.name)}
+                                className={`text-red-500 hover:text-red-700 hover:bg-red-50 ${
+                                  darkMode ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
+                                }`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Remove
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -382,47 +507,104 @@ export default function AdminPage() {
                       {/* Metadata Grid */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                         <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
                             Style & Weight
                           </label>
-                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
-                            {font.style} • {font.weight}
-                          </p>
+                          {editingFont === font.filename ? (
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Style"
+                                value={editFormData.style}
+                                onChange={(e) => setEditFormData({...editFormData, style: e.target.value})}
+                                className="text-sm"
+                              />
+                              <Input
+                                placeholder="Weight"
+                                type="number"
+                                value={editFormData.weight}
+                                onChange={(e) => setEditFormData({...editFormData, weight: e.target.value})}
+                                className="text-sm w-20"
+                              />
+                            </div>
+                          ) : (
+                            <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                              {font.style} • {font.weight}
+                            </p>
+                          )}
                         </div>
+                        
                         <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
+                            Category
+                          </label>
+                          {editingFont === font.filename ? (
+                            <Select value={editFormData.category} onValueChange={(value) => setEditFormData({...editFormData, category: value})}>
+                              <SelectTrigger className="text-sm">
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Sans Serif">Sans Serif</SelectItem>
+                                <SelectItem value="Serif">Serif</SelectItem>
+                                <SelectItem value="Monospace">Monospace</SelectItem>
+                                <SelectItem value="Display">Display</SelectItem>
+                                <SelectItem value="Script">Script</SelectItem>
+                                <SelectItem value="Pixel">Pixel</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                              {font.category}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
+                            Foundry/Designer
+                          </label>
+                          {editingFont === font.filename ? (
+                            <Input
+                              placeholder="Foundry or Designer"
+                              value={editFormData.foundry}
+                              onChange={(e) => setEditFormData({...editFormData, foundry: e.target.value})}
+                              className="text-sm"
+                            />
+                          ) : (
+                            <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                              {font.foundry || 'Unknown'}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
+                            Languages
+                          </label>
+                          {editingFont === font.filename ? (
+                            <Input
+                              placeholder="e.g. Latin, Greek, Hebrew"
+                              value={editFormData.languages}
+                              onChange={(e) => setEditFormData({...editFormData, languages: e.target.value})}
+                              className="text-sm"
+                            />
+                          ) : (
+                            <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
+                              {font.languages ? font.languages.join(', ') : 'Latin'}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
                             Format & Type
                           </label>
                           <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
                             {font.format?.toUpperCase()} • {font.isVariable ? 'Variable' : 'Static'}
                           </p>
                         </div>
+
                         <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                            Category
-                          </label>
-                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
-                            {font.category}
-                          </p>
-                        </div>
-                        <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                            Foundry/Designer
-                          </label>
-                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
-                            {font.foundry || 'Unknown'}
-                          </p>
-                        </div>
-                        <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                            Languages
-                          </label>
-                          <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
-                            {font.languages ? font.languages.join(', ') : 'Latin'}
-                          </p>
-                        </div>
-                        <div>
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} block mb-1`}>
                             Uploaded
                           </label>
                           <p className={`text-sm font-medium ${darkMode ? 'text-stone-200' : 'text-gray-800'}`}>
@@ -432,32 +614,48 @@ export default function AdminPage() {
                       </div>
 
                       {/* OpenType Features */}
-                      {font.openTypeFeatures && font.openTypeFeatures.length > 0 && (
-                        <div className="mb-4">
-                          <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} mb-2 block`}>
-                            OpenType Features ({font.openTypeFeatures.length})
-                          </label>
+                      <div className="mb-4">
+                        <label className={`text-xs font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'} mb-2 block`}>
+                          OpenType Features ({font.openTypeFeatures ? font.openTypeFeatures.length : 0})
+                        </label>
+                        {editingFont === font.filename ? (
+                          <Textarea
+                            placeholder="e.g. Standard Ligatures, Kerning, Small Capitals"
+                            value={editFormData.openTypeFeatures}
+                            onChange={(e) => setEditFormData({...editFormData, openTypeFeatures: e.target.value})}
+                            className="text-sm"
+                            rows={3}
+                          />
+                        ) : (
                           <div className="flex flex-wrap gap-1">
-                            {font.openTypeFeatures.slice(0, 8).map((feature: string, index: number) => (
-                              <Badge 
-                                key={index} 
-                                variant="outline" 
-                                className={`text-xs ${darkMode ? 'border-stone-600 text-stone-300' : 'border-gray-300 text-gray-600'}`}
-                              >
-                                {feature}
-                              </Badge>
-                            ))}
-                            {font.openTypeFeatures.length > 8 && (
-                              <Badge 
-                                variant="secondary" 
-                                className={`text-xs ${darkMode ? 'bg-stone-700 text-stone-300' : 'bg-gray-200 text-gray-600'}`}
-                              >
-                                +{font.openTypeFeatures.length - 8} more
-                              </Badge>
+                            {font.openTypeFeatures && font.openTypeFeatures.length > 0 ? (
+                              <>
+                                {font.openTypeFeatures.slice(0, 8).map((feature: string, index: number) => (
+                                  <Badge 
+                                    key={index} 
+                                    variant="outline" 
+                                    className={`text-xs ${darkMode ? 'border-stone-600 text-stone-300' : 'border-gray-300 text-gray-600'}`}
+                                  >
+                                    {feature}
+                                  </Badge>
+                                ))}
+                                {font.openTypeFeatures.length > 8 && (
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={`text-xs ${darkMode ? 'bg-stone-700 text-stone-300' : 'bg-gray-200 text-gray-600'}`}
+                                  >
+                                    +{font.openTypeFeatures.length - 8} more
+                                  </Badge>
+                                )}
+                              </>
+                            ) : (
+                              <span className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                                No features detected
+                              </span>
                             )}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
                       {/* Variable Axes */}
                       {font.variableAxes && font.variableAxes.length > 0 && (

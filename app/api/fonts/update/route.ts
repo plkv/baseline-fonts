@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
+import { fontStorage } from '@/lib/font-database'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -10,18 +10,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    const success = await vercelFontStorage.updateFontMetadata(filename, updates)
+    // Get all fonts and update the specific one
+    const fonts = await fontStorage.getAllFonts()
+    const fontIndex = fonts.findIndex(f => f.filename === filename)
     
-    if (success) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Font metadata updated successfully' 
-      })
-    } else {
-      return NextResponse.json({ 
-        error: 'Failed to update font metadata' 
-      }, { status: 500 })
+    if (fontIndex === -1) {
+      return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
+    
+    // Update the font metadata
+    fonts[fontIndex] = { ...fonts[fontIndex], ...updates }
+    
+    // Save updated font back
+    await fontStorage.addFont(fonts[fontIndex])
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Font metadata updated successfully' 
+    })
   } catch (error) {
     console.error('Update error:', error)
     return NextResponse.json({ 
