@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseFontFile } from '@/lib/font-parser'
-import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function POST(request: NextRequest) {
   console.log('📤 Font upload request received')
   
+  // Import modules inside the function to catch any import errors
   try {
+    console.log('📦 Loading font parser and storage modules...')
+    const { parseFontFile } = await import('@/lib/font-parser')
+    const { blobOnlyStorage } = await import('@/lib/blob-only-storage')
+    console.log('✅ Modules loaded successfully')
     const formData = await request.formData()
     console.log('📋 Form data parsed successfully')
     
@@ -45,7 +48,9 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     
     // Parse font metadata
+    console.log('🔍 Starting font parsing...')
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
+    console.log('✅ Font parsing completed')
     
     // If uploading to existing family, inherit family metadata
     if (targetFamily) {
@@ -121,6 +126,13 @@ export async function POST(request: NextRequest) {
           'Blob storage module loading failed'
         ]
       }
+    }, { status: 500 })
+  } catch (moduleError) {
+    console.error('❌ Module loading error:', moduleError)
+    return NextResponse.json({ 
+      error: 'Module loading failed', 
+      details: moduleError instanceof Error ? moduleError.message : 'Unknown module error',
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 }
