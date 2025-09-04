@@ -3,8 +3,12 @@ import { parseFontFile } from '@/lib/font-parser'
 import { blobOnlyStorage } from '@/lib/blob-only-storage'
 
 export async function POST(request: NextRequest) {
+  console.log('📤 Font upload request received')
+  
   try {
     const formData = await request.formData()
+    console.log('📋 Form data parsed successfully')
+    
     const file = formData.get('file') as File
     const targetFamily = formData.get('targetFamily') as string | null || formData.get('familyName') as string | null
     
@@ -78,7 +82,9 @@ export async function POST(request: NextRequest) {
     }
     
     // Store font using blob-only storage manager
+    console.log('💾 Storing font in blob-only storage...')
     const storedFont = await blobOnlyStorage.storeFont(fontMetadata, bytes)
+    console.log('✅ Font stored successfully')
     
     // Log storage type for debugging
     const storageInfo = blobOnlyStorage.getStorageInfo()
@@ -93,10 +99,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Upload error:', error)
-    console.error('📁 Request details:', {
-      fileName: file?.name || 'No file',
-      fileSize: file?.size || 0,
-      fileType: file?.type || 'Unknown'
+    console.error('📁 Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
     })
     
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -104,13 +110,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: 'Font upload failed', 
       details: errorMessage,
+      timestamp: new Date().toISOString(),
       troubleshooting: {
         supportedFormats: ['TTF', 'OTF'],
         maxFileSize: '10MB',
         commonIssues: [
           'File might be corrupted',
           'Font format not supported by OpenType.js',
-          'File is not a valid font file'
+          'File is not a valid font file',
+          'Blob storage module loading failed'
         ]
       }
     }, { status: 500 })
