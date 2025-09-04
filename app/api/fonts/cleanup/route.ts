@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { fontStorage } from '@/lib/font-database'
+import { promises as fs } from 'fs'
+import path from 'path'
 
 export async function POST() {
   try {
@@ -12,10 +14,33 @@ export async function POST() {
     // Track issues found
     let issuesFixed = 0
     const issues: string[] = []
+    const missingFiles: string[] = []
+    
+    // Check file existence for each font
+    const fontFileChecks = await Promise.all(
+      fonts.map(async (font) => {
+        if (!font.filename) return { font, exists: false }
+        
+        try {
+          const filePath = path.join(process.cwd(), 'public', 'fonts', font.filename)
+          await fs.access(filePath)
+          return { font, exists: true }
+        } catch {
+          return { font, exists: false }
+        }
+      })
+    )
     
     // Validate each font
-    fonts.forEach((font, index) => {
+    fontFileChecks.forEach(({ font, exists }) => {
       const fontId = `${font.family} (${font.filename})`
+      
+      // Check if file exists
+      if (!exists) {
+        issues.push(`${fontId}: Font file not found`)
+        missingFiles.push(font.filename)
+        issuesFixed++
+      }
       
       // Check for missing URL
       if (!font.url) {
@@ -83,6 +108,7 @@ export async function POST() {
       fontsChecked: fonts.length,
       issuesFixed,
       issues: issues.slice(0, 20), // Limit to first 20 issues
+      missingFiles: missingFiles.slice(0, 10), // Show up to 10 missing files
       fontsAfterCleanup: cleanedFonts.length
     })
     

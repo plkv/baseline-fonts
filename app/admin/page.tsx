@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Shield, Moon, Sun, Upload, Trash2, Edit2, Save, X, Plus, ChevronDown, Wrench } from "lucide-react"
+import { Shield, Moon, Sun, Upload, Trash2, Edit2, Save, X, Plus, ChevronDown, Wrench, RotateCcw } from "lucide-react"
 import { toast, Toaster } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -172,11 +172,17 @@ export default function AdminPage() {
       
       // Inject CSS for font
       const style = document.createElement('style')
+      style.setAttribute('data-font-injection', font.family)
+      
+      // Add cache-busting timestamp if needed
+      const cacheClearTime = localStorage.getItem('font-cache-cleared')
+      const cacheBuster = cacheClearTime ? `?v=${cacheClearTime}` : ''
+      
       style.textContent = `
         @font-face {
           font-family: "${normalizedName}";
-          src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}"),
-               url("${font.url}") format("truetype");
+          src: url("${font.url}${cacheBuster}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}"),
+               url("${font.url}${cacheBuster}") format("truetype");
           font-weight: ${font.weight};
           font-style: normal;
           font-display: swap;
@@ -192,7 +198,7 @@ export default function AdminPage() {
       // Test font loading with FontFace API
       if ('fonts' in document) {
         try {
-          const fontFace = new FontFace(normalizedName, `url("${font.url}")`, {
+          const fontFace = new FontFace(normalizedName, `url("${font.url}${cacheBuster}")`, {
             weight: font.weight.toString(),
             style: 'normal'
           })
@@ -400,6 +406,12 @@ export default function AdminPage() {
             description: `Checked ${result.fontsChecked} fonts - no issues found`
           })
         }
+        
+        // Clear browser font cache to prevent 404 errors from old references
+        if (result.missingFiles && result.missingFiles.length > 0) {
+          console.log('🗑️ Clearing browser cache for missing files:', result.missingFiles)
+          clearBrowserFontCache()
+        }
       } else {
         toast.error('Cleanup failed', {
           description: result.error
@@ -411,6 +423,35 @@ export default function AdminPage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const clearBrowserFontCache = () => {
+    try {
+      // Clear font face cache
+      if ('fonts' in document && document.fonts.clear) {
+        document.fonts.clear()
+        console.log('🧹 Cleared document.fonts cache')
+      }
+      
+      // Remove old font stylesheets
+      const fontStyles = document.querySelectorAll('style[data-font-injection]')
+      fontStyles.forEach(style => style.remove())
+      
+      // Clear loaded fonts set to force re-validation
+      setLoadedFonts(new Set())
+      
+      // Force browser cache reload by adding timestamp to URLs
+      const timestamp = Date.now()
+      localStorage.setItem('font-cache-cleared', timestamp.toString())
+      
+      toast.info('Browser font cache cleared', {
+        description: 'Refreshing page recommended to ensure all caches are cleared'
+      })
+      
+      console.log('🧹 Browser font cache cleared')
+    } catch (error) {
+      console.warn('⚠️ Cache clearing failed:', error)
     }
   }
 
@@ -462,6 +503,19 @@ export default function AdminPage() {
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               
+              {/* Cache Clear Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearBrowserFontCache}
+                disabled={isLoading}
+                className={`gap-2 ${darkMode ? 'border-stone-700' : ''}`}
+                title="Clear browser font cache to fix 404 errors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Clear Cache
+              </Button>
+              
               {/* Database Cleanup Button */}
               <Button
                 variant="outline"
@@ -472,7 +526,7 @@ export default function AdminPage() {
                 title="Clean up database issues like missing URLs"
               >
                 <Wrench className="w-4 h-4" />
-                Cleanup
+                Cleanup DB
               </Button>
               
               {/* Global Upload Button */}

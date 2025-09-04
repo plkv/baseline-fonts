@@ -44,7 +44,7 @@ export class FontStorage {
       db.lastUpdated = new Date().toISOString()
       
       // Validate and clean up font data before saving
-      db.fonts = this.validateFontData(db.fonts)
+      db.fonts = await this.validateFontData(db.fonts)
       
       await fs.writeFile(FONTS_DATA_FILE, JSON.stringify(db, null, 2))
     } catch (error) {
@@ -53,8 +53,9 @@ export class FontStorage {
     }
   }
 
-  private validateFontData(fonts: FontMetadata[]): FontMetadata[] {
-    return fonts.map(font => {
+  private async validateFontData(fonts: FontMetadata[]): Promise<FontMetadata[]> {
+    // First pass: fix basic data issues
+    const fixedFonts = fonts.map(font => {
       // Ensure URL is properly set
       if (!font.url && font.filename) {
         // Generate URL from filename if missing
@@ -91,14 +92,32 @@ export class FontStorage {
       }
       
       return font
-    }).filter(font => {
+    })
+    
+    // Second pass: check file existence and remove missing files
+    const validFonts: FontMetadata[] = []
+    
+    for (const font of fixedFonts) {
       // Remove fonts that are completely broken
       if (!font.filename || !font.family || !font.url) {
-        console.warn(`⚠️ Removing broken font entry: ${JSON.stringify(font)}`)
-        return false
+        console.warn(`⚠️ Removing broken font entry: ${font.family} (${font.filename})`)
+        continue
       }
-      return true
-    })
+      
+      // Check if font file exists
+      try {
+        if (font.filename) {
+          const filePath = path.join(process.cwd(), 'public', 'fonts', font.filename)
+          await fs.access(filePath)
+          validFonts.push(font)
+        }
+      } catch {
+        console.warn(`🗑️ Removing font with missing file: ${font.family} (${font.filename})`)
+        // Don't add to validFonts - this removes the entry
+      }
+    }
+    
+    return validFonts
   }
 
   private async initialize() {
