@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Shield, Moon, Sun, Upload, Trash2 } from "lucide-react"
+import { Shield, Moon, Sun, Upload } from "lucide-react"
 import { toast, Toaster } from "sonner"
-import { Badge } from "@/components/ui/badge"
+import FontFamilyAccordion from "@/components/admin/font-family-accordion"
 
 interface FontFile {
   name: string
@@ -21,10 +21,30 @@ interface FontFile {
   foundry: string
   languages: string[]
   openTypeFeatures: string[]
+  variableAxes?: Array<{
+    name: string
+    axis: string
+    min: number
+    max: number
+    default: number
+  }>
+}
+
+interface FontFamily {
+  name: string
+  fonts: FontFile[]
+  category: string
+  foundry: string
+  languages: string[]
+  isVariable: boolean
+  totalSize: number
+  openTypeFeatures: string[]
+  downloadLink?: string
 }
 
 export default function AdminPage() {
   const [fonts, setFonts] = useState<FontFile[]>([])
+  const [fontFamilies, setFontFamilies] = useState<FontFamily[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingFonts, setIsLoadingFonts] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -42,6 +62,47 @@ export default function AdminPage() {
     return () => mediaQuery.removeEventListener("change", handleChange)
   }, [])
 
+  // Group fonts by family
+  const groupFontsByFamily = (fonts: FontFile[]): FontFamily[] => {
+    const familyMap = new Map<string, FontFamily>()
+    
+    fonts.forEach(font => {
+      const familyName = font.family
+      if (!familyMap.has(familyName)) {
+        familyMap.set(familyName, {
+          name: familyName,
+          fonts: [],
+          category: font.category,
+          foundry: font.foundry,
+          languages: [...font.languages],
+          isVariable: font.isVariable,
+          totalSize: 0,
+          openTypeFeatures: [...font.openTypeFeatures]
+        })
+      }
+      
+      const family = familyMap.get(familyName)!
+      family.fonts.push(font)
+      family.totalSize += font.fileSize
+      family.isVariable = family.isVariable || font.isVariable
+      
+      // Merge unique languages and features
+      font.languages.forEach(lang => {
+        if (!family.languages.includes(lang)) {
+          family.languages.push(lang)
+        }
+      })
+      
+      font.openTypeFeatures.forEach(feature => {
+        if (!family.openTypeFeatures.includes(feature)) {
+          family.openTypeFeatures.push(feature)
+        }
+      })
+    })
+    
+    return Array.from(familyMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }
+
   // Load fonts
   const loadFonts = async () => {
     try {
@@ -51,6 +112,7 @@ export default function AdminPage() {
       
       if (data.success && data.fonts) {
         setFonts(data.fonts)
+        setFontFamilies(groupFontsByFamily(data.fonts))
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
@@ -99,7 +161,27 @@ export default function AdminPage() {
     }
   }
 
-  const handleDelete = async (fontFilename: string) => {
+  const handleFontUpdate = async (filename: string, updates: Partial<FontFile>) => {
+    try {
+      const response = await fetch('/api/fonts/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ filename, updates })
+      })
+      
+      if (response.ok) {
+        loadFonts()
+      } else {
+        throw new Error('Update failed')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+  
+  const handleFontDelete = async (fontFilename: string) => {
     const font = fonts.find(f => f.filename === fontFilename)
     if (!font) return
     
@@ -120,6 +202,49 @@ export default function AdminPage() {
       }
     } catch (error) {
       toast.error('Delete failed')
+    }
+  }
+  
+  const handleFamilyUpdate = async (familyName: string, updates: Partial<FontFamily>) => {
+    try {
+      const response = await fetch('/api/fonts/family/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ familyName, updates })
+      })
+      
+      if (response.ok) {
+        loadFonts()
+      } else {
+        throw new Error('Family update failed')
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+  
+  const handleUploadToFamily = async (familyName: string, file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('familyName', familyName)
+    
+    try {
+      const response = await fetch('/api/fonts/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        loadFonts()
+      } else {
+        throw new Error(result.error || 'Upload failed')
+      }
+    } catch (error) {
+      throw error
     }
   }
 
@@ -204,112 +329,28 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Font List */}
+        {/* Font Families List */}
         {isLoadingFonts ? (
           <div className="text-center py-8">
             <div className={`text-lg ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
               Loading fonts...
             </div>
           </div>
-        ) : fonts.length === 0 ? (
+        ) : fontFamilies.length === 0 ? (
           <div className="text-center py-8">
             <div className={`text-lg ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
               No fonts uploaded yet. Upload your first font to get started.
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {fonts.map((font) => (
-              <div
-                key={font.filename}
-                className={`p-6 rounded-lg border ${darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-gray-200'}`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className={`text-xl font-semibold ${darkMode ? 'text-stone-50' : 'text-gray-900'}`}>
-                        {font.family}
-                      </h3>
-                      <Badge variant="outline">{font.style}</Badge>
-                      <Badge variant="secondary">{font.weight}</Badge>
-                      <Badge>{font.category}</Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Format</div>
-                        <div>{font.format.toUpperCase()}</div>
-                      </div>
-                      <div>
-                        <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Size</div>
-                        <div>{formatFileSize(font.fileSize)}</div>
-                      </div>
-                      <div>
-                        <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Foundry</div>
-                        <div>{font.foundry}</div>
-                      </div>
-                      <div>
-                        <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Languages</div>
-                        <div>{font.languages.slice(0, 2).join(', ')} {font.languages.length > 2 && `+${font.languages.length - 2}`}</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
-                        OpenType Features
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {font.openTypeFeatures.slice(0, 5).map((feature) => (
-                          <Badge key={feature} variant="outline" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                        {font.openTypeFeatures.length > 5 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{font.openTypeFeatures.length - 5} more
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(font.filename)}
-                      className="gap-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Font Preview */}
-                <div className="mt-4 pt-4 border-t border-stone-700">
-                  <div 
-                    className="text-2xl leading-relaxed"
-                    style={{
-                      fontFamily: font.url ? `"${font.family}", sans-serif` : 'sans-serif'
-                    }}
-                  >
-                    The quick brown fox jumps over the lazy dog
-                  </div>
-                  {font.url && (
-                    <style>
-                      {`@font-face {
-                        font-family: "${font.family}";
-                        src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : font.format}");
-                        font-weight: ${font.weight};
-                        font-style: normal;
-                      }`}
-                    </style>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          <FontFamilyAccordion
+            fontFamilies={fontFamilies}
+            darkMode={darkMode}
+            onFontUpdate={handleFontUpdate}
+            onFontDelete={handleFontDelete}
+            onFamilyUpdate={handleFamilyUpdate}
+            onUploadToFamily={handleUploadToFamily}
+          />
         )}
       </div>
       

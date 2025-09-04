@@ -158,6 +158,21 @@ export class FontStorage {
     return [...this.memoryFonts] // Return a copy
   }
 
+  async saveFonts(fonts: FontMetadata[]): Promise<void> {
+    await this.initialize()
+    
+    // Replace all fonts in memory
+    this.memoryFonts = [...fonts]
+    
+    // Save to file
+    const db: FontDatabase = {
+      fonts: this.memoryFonts,
+      lastUpdated: new Date().toISOString()
+    }
+    
+    await this.saveDatabase(db)
+  }
+
   async saveFontFile(fontBuffer: ArrayBuffer, filename: string): Promise<string | null> {
     try {
       await this.ensureFontsDir()
