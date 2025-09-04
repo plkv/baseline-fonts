@@ -71,7 +71,18 @@ export class BlobOnlyStorageManager {
     } else if (!isVercelProduction) {
       return this.storeLocally(fontMetadata, fontBuffer)
     } else {
-      return this.storeInMemory(fontMetadata, fontBuffer)
+      // CRITICAL: Force proper storage even without blob token
+      console.error('🚨 CRITICAL: Production deployment without Blob storage - fonts will be lost!')
+      console.error('📋 Missing BLOB_READ_WRITE_TOKEN environment variable')
+      console.error('🔧 Go to Vercel Dashboard > Project > Storage > Connect Blob Store')
+      
+      // Try to store anyway in case blob is available but token check failed
+      try {
+        return await this.storeInVercelBlob(fontMetadata, fontBuffer)
+      } catch (blobError) {
+        console.error('❌ Blob storage attempt failed:', blobError)
+        return this.storeInMemory(fontMetadata, fontBuffer)
+      }
     }
   }
 
