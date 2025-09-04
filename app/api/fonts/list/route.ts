@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import { vercelFontStorage } from '@/lib/vercel-font-storage'
 import { fontStorage } from '@/lib/font-database'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const includeUnpublished = searchParams.get('includeUnpublished') === 'true'
+    
     // Try Vercel storage first, fallback to local storage
     let fonts = await vercelFontStorage.getAllFonts()
     
@@ -11,9 +14,16 @@ export async function GET() {
     if (fonts.length === 0) {
       fonts = await fontStorage.getAllFonts()
     }
+
+    // Filter published fonts for public API (unless admin view)
+    if (!includeUnpublished) {
+      fonts = fonts.filter(font => font.published !== false) // Default to published if undefined
+    }
+
     return NextResponse.json({ 
       success: true, 
-      fonts 
+      fonts,
+      total: fonts.length
     })
   } catch (error) {
     console.error('Failed to load fonts:', error)

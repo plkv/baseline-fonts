@@ -3,7 +3,7 @@
 ## Project Overview
 - **Project Name**: Baseline Font Catalog
 - **Repository**: https://github.com/plkv/baseline-fonts.git
-- **Current Version**: 0.024
+- **Current Version**: 0.025
 - **Status**: ✅ Working and deployed
 
 ## Project Structure
@@ -81,7 +81,7 @@ npm run start   # Start production server
 - ✅ Project builds successfully without errors
 - ✅ All TypeScript issues resolved
 - ✅ Git repository pointing to correct URL
-- ✅ Version synced across all files (0.024)
+- ✅ Version synced across all files (0.025)
 - ✅ Latest commit pushed to main branch
 - ✅ Vercel deployment triggered
 
@@ -142,9 +142,34 @@ Last updated: 2025-09-04
 6. ✅ Updated version to 0.024 across all files
 7. ✅ Added missing Vercel dependencies (@vercel/blob, @vercel/kv)
 
+## Admin Functionality Testing Results
+
+### ✅ Working Functions:
+1. **Font Upload** - Comprehensive metadata extraction (19 OpenType features)
+2. **Font Parsing** - Extracts weight, style, languages, foundry, features
+3. **Font Editing** - Successfully updates all metadata fields
+4. **Font Removal** - Properly deletes files and metadata
+5. **Publishing/Unpublishing** - NEW: Complete publish status control
+   - Public API filters unpublished fonts
+   - Admin API shows all fonts with `?includeUnpublished=true`
+
+### ❌ Critical Issues Identified:
+
+#### 1. Deployment Font Persistence (CRITICAL)
+- **Problem**: Every deploy removes uploaded fonts
+- **Cause**: Missing Vercel Blob/KV environment variables
+- **Impact**: Production unusable - fonts disappear on deployment
+- **Solution**: Configure BLOB_READ_WRITE_TOKEN, KV_REST_API_URL, KV_REST_API_TOKEN
+
+#### 2. Path Mismatch (FIXED)
+- **Problem**: Inconsistent font paths in storage system
+- **Fix Applied**: Updated to use consistent `/fonts/filename.otf` paths
+
 **Technical Implementation:**
 - Font loading now exclusively uses `loadUploadedFonts()` function
 - Enhanced empty state differentiation: "no fonts uploaded" vs "filtered results"
-- API endpoint `/api/fonts/list` verified working (returns Bona Nova font)
+- API endpoint `/api/fonts/list` verified working
 - Build process clean with no TypeScript errors
 - All error states properly handled with user-friendly feedback
+- Publishing system filters public vs admin views
+- Added `/api/fonts/publish` endpoint for status control

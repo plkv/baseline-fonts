@@ -82,9 +82,10 @@ export class VercelFontStorage {
         const fontPath = path.join(fontsDir, fontMetadata.filename)
         await fs.writeFile(fontPath, new Uint8Array(fontBuffer))
         
-        // Enhanced metadata with local URL
+        // Enhanced metadata with consistent URL paths
         const enhancedMetadata = {
           ...fontMetadata,
+          path: `/fonts/${fontMetadata.filename}`,
           url: `/fonts/${fontMetadata.filename}`,
           uploadedAt: new Date().toISOString(),
           storage: 'local'

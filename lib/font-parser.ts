@@ -29,6 +29,8 @@ export interface FontMetadata {
   openTypeFeatures: string[]
   languages: string[]
   foundry?: string
+  // Publishing status
+  published?: boolean
 }
 
 export async function parseFontFile(buffer: ArrayBuffer, originalName: string, fileSize: number): Promise<FontMetadata> {
@@ -272,7 +274,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
       openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
       languages,
-      foundry
+      foundry,
+      published: true // New fonts are published by default
     }
   } catch (error) {
     console.error('❌ Font parsing error:', error)
