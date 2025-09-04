@@ -104,7 +104,77 @@
       "foundry": "MACHALSKI.WTF",
       "url": "/fonts/BonaNova-Bold.otf",
       "storage": "local"
+    },
+    {
+      "name": "Block-font",
+      "family": "Block-font",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "otf",
+      "fileSize": 32900,
+      "uploadedAt": "2025-09-04T11:08:29.503Z",
+      "filename": "Block-font.otf",
+      "path": "/fonts/uploads/Block-font.otf",
+      "styles": 1,
+      "features": [
+        "kern",
+        "liga"
+      ],
+      "category": "Sans Serif",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        400
+      ],
+      "openTypeFeatures": [
+        "Kerning",
+        "Standard Ligatures"
+      ],
+      "languages": [
+        "Latin",
+        "Hebrew"
+      ],
+      "foundry": "Alexey Atapin",
+      "url": "/fonts/Block-font.otf"
+    },
+    {
+      "name": "CHAOS16",
+      "family": "CHAOS16",
+      "style": "Regular",
+      "weight": 400,
+      "isVariable": false,
+      "format": "otf",
+      "fileSize": 59348,
+      "uploadedAt": "2025-09-04T11:09:06.986Z",
+      "filename": "CHAOS16.otf",
+      "path": "/fonts/uploads/CHAOS16.otf",
+      "styles": 1,
+      "features": [
+        "liga",
+        "kern"
+      ],
+      "category": "Sans Serif",
+      "price": "Free",
+      "availableStyles": [
+        "Regular"
+      ],
+      "availableWeights": [
+        400
+      ],
+      "openTypeFeatures": [
+        "Standard Ligatures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin",
+        "Hebrew"
+      ],
+      "foundry": "LOLLIWAFFLE",
+      "url": "/fonts/CHAOS16.otf"
     }
   ],
-  "lastUpdated": "2025-09-04T08:07:37.268Z"
+  "lastUpdated": "2025-09-04T11:09:06.987Z"
 }
