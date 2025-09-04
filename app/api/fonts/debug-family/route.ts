@@ -31,7 +31,9 @@ export async function GET(request: NextRequest) {
         style: font.style,
         weight: font.weight,
         uploadedAt: font.uploadedAt,
-        isVariable: font.isVariable
+        isVariable: font.isVariable,
+        url: font.url,
+        path: font.path
       }))
     })
     
