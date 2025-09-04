@@ -53,6 +53,7 @@ interface FontFamilyAccordionProps {
   onFontUpdate: (filename: string, updates: Partial<FontFile>) => Promise<void>
   onFontDelete: (filename: string) => Promise<void>
   onFamilyUpdate: (familyName: string, updates: Partial<FontFamily>) => Promise<void>
+  onFamilyDelete: (familyName: string) => Promise<void>
   onUploadToFamily: (familyName: string, file: File) => Promise<void>
 }
 
@@ -83,6 +84,7 @@ export default function FontFamilyAccordion({
   onFontUpdate,
   onFontDelete,
   onFamilyUpdate,
+  onFamilyDelete,
   onUploadToFamily
 }: FontFamilyAccordionProps) {
   const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set())
@@ -248,6 +250,15 @@ export default function FontFamilyAccordion({
                       <Button size="sm" variant="outline" onClick={() => startEditingFamily(family)} className="gap-1">
                         <Edit2 className="w-3 h-3" />
                         Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onFamilyDelete(family.name)}
+                        className="gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete Family
                       </Button>
                       <div>
                         <input

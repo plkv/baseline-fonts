@@ -288,6 +288,73 @@ export class FontStorageV2 {
   }
 
   /**
+   * Update font metadata
+   */
+  async updateFont(filename: string, updates: Partial<FontMetadata>): Promise<boolean> {
+    console.log(`✏️ Updating font: ${filename}`)
+    
+    try {
+      // Get current metadata
+      const allFonts = await this.getAllFonts()
+      const currentFont = allFonts.find(f => f.filename === filename)
+      
+      if (!currentFont) {
+        console.error(`❌ Font not found: ${filename}`)
+        return false
+      }
+      
+      // Merge updates
+      const updatedFont = { ...currentFont, ...updates }
+      
+      if (this.hasBlob && this.isProduction) {
+        return await this.updateFontInBlob(filename, updatedFont)
+      } else {
+        return await this.updateFontLocally(filename, updatedFont)
+      }
+    } catch (error) {
+      console.error('❌ Font update error:', error)
+      return false
+    }
+  }
+
+  private async updateFontInBlob(filename: string, metadata: FontMetadata): Promise<boolean> {
+    try {
+      const metadataPath = `${STORAGE_PREFIX}metadata/${filename}.json`
+      
+      await put(metadataPath, JSON.stringify(metadata, null, 2), {
+        access: 'public',
+        contentType: 'application/json'
+      })
+      
+      console.log(`✅ Font metadata updated in blob: ${filename}`)
+      return true
+      
+    } catch (error) {
+      console.error('❌ Blob update error:', error)
+      return false
+    }
+  }
+
+  private async updateFontLocally(filename: string, metadata: FontMetadata): Promise<boolean> {
+    try {
+      const fs = require('fs').promises
+      const path = require('path')
+      
+      const fontsDir = path.join(process.cwd(), 'public', 'fonts')
+      const metadataPath = path.join(fontsDir, `${filename}.meta.json`)
+      
+      await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8')
+      
+      console.log(`✅ Font metadata updated locally: ${filename}`)
+      return true
+      
+    } catch (error) {
+      console.error('❌ Local update error:', error)
+      return false
+    }
+  }
+
+  /**
    * Get storage info for diagnostics
    */
   getStorageInfo() {

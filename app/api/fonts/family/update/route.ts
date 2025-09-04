@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobOnlyStorage } from '@/lib/blob-only-storage'
+import { fontStorageV2 } from '@/lib/font-storage-v2'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Get all fonts and find fonts in this family
-    const fonts = await blobOnlyStorage.getAllFonts()
+    const fonts = await fontStorageV2.getAllFonts()
     const familyFonts = fonts.filter(f => f.family === familyName)
     
     if (familyFonts.length === 0) {
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
       if (updates.downloadLink !== undefined) updates_to_apply.downloadLink = updates.downloadLink
       
       // Update individual font
-      const success = await blobOnlyStorage.updateFont(font.filename, updates_to_apply)
+      const success = await fontStorageV2.updateFont(font.filename, updates_to_apply)
       if (success) updateCount++
     }
 

@@ -250,6 +250,32 @@ export default function AdminPage() {
       throw error
     }
   }
+
+  const handleFamilyDelete = async (familyName: string) => {
+    const family = fontFamilies.find(f => f.name === familyName)
+    if (!family) return
+    
+    if (!confirm(`Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/fonts/delete-family?family=${encodeURIComponent(familyName)}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        toast.success(`Family "${familyName}" deleted successfully`)
+        loadFonts()
+      } else {
+        toast.error(result.message || 'Failed to delete family')
+      }
+    } catch (error) {
+      toast.error('Family deletion failed')
+    }
+  }
   
   const handleUploadToFamily = async (familyName: string, file: File) => {
     const formData = new FormData()
@@ -375,6 +401,7 @@ export default function AdminPage() {
             onFontUpdate={handleFontUpdate}
             onFontDelete={handleFontDelete}
             onFamilyUpdate={handleFamilyUpdate}
+            onFamilyDelete={handleFamilyDelete}
             onUploadToFamily={handleUploadToFamily}
           />
         )}
