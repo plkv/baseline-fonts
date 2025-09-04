@@ -269,13 +269,11 @@ export default function FontCatalog() {
         console.log('📋 API Response:', data)
         if (data.success && data.fonts) {
           setUploadedFonts(data.fonts)
-          // Filter only published fonts for public display
-          const publishedFonts = data.fonts.filter((font: any) => font.published !== false)
-          console.log(`📝 Found ${data.fonts.length} total fonts, ${publishedFonts.length} published`)
-          // Load CSS for published fonts
-          loadFontCSS(publishedFonts)
-          // Use only published fonts
-          setAllFonts(publishedFonts)
+          console.log(`📝 Found ${data.fonts.length} fonts`)
+          // Load CSS for all fonts
+          loadFontCSS(data.fonts)
+          // Use all fonts
+          setAllFonts(data.fonts)
           console.log('✅ Fonts loaded and CSS applied')
         }
       } else {
@@ -715,7 +713,7 @@ export default function FontCatalog() {
                   About
                 </Button>
                 <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.017
+                  v.0.018
                 </span>
               </nav>
 
