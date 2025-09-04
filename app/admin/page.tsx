@@ -315,23 +315,44 @@ export default function AdminPage() {
 
                       {/* Font Preview */}
                       <div className={`mb-4 p-4 rounded border ${darkMode ? 'bg-stone-900 border-stone-600' : 'bg-gray-50 border-gray-200'}`}>
+                        {/* Test with direct CSS font-face */}
+                        <style>{`
+                          @font-face {
+                            font-family: "TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}";
+                            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
+                            font-weight: ${font.weight || 400};
+                            font-style: normal;
+                          }
+                        `}</style>
                         <div
                           style={{
-                            fontFamily: `"${font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')}", "${font.family}", monospace, system-ui, sans-serif`,
+                            fontFamily: `"TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}", monospace`,
                             fontSize: '24px',
-                            fontWeight: font.weight || 400,
-                            fontDisplay: 'swap'
+                            fontWeight: font.weight || 400
                           }}
-                          className={`${darkMode ? 'text-stone-200' : 'text-gray-900'} transition-all duration-300`}
-                          data-font-family={font.family}
+                          className={`${darkMode ? 'text-stone-200' : 'text-gray-900'} mb-2`}
                         >
-                          The quick brown fox jumps over the lazy dog
+                          {font.family}: The quick brown fox jumps over the lazy dog
                         </div>
+                        
+                        {/* Fallback test */}
+                        <div
+                          style={{
+                            fontFamily: 'monospace',
+                            fontSize: '16px'
+                          }}
+                          className={`${darkMode ? 'text-stone-400' : 'text-gray-600'}`}
+                        >
+                          Monospace fallback: The quick brown fox jumps over the lazy dog
+                        </div>
+                        
                         {/* Debug info */}
-                        <div className={`text-xs mt-2 ${darkMode ? 'text-stone-500' : 'text-gray-500'}`}>
-                          Font: {font.family} → {font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')} | URL: {font.url}
-                          <br />
-                          Status: {loadedFonts.has(font.family) ? '✅ Loaded' : '⏳ Loading...'}
+                        <div className={`text-xs mt-2 ${darkMode ? 'text-stone-500' : 'text-gray-500'} font-mono`}>
+                          <strong>Debug Info:</strong><br />
+                          Original: "{font.family}" → Normalized: "TestFont-{font.family.replace(/[^a-zA-Z0-9]/g, '')}"<br />
+                          URL: {font.url} | Format: {font.format}<br />
+                          Weight: {font.weight} | Size: {(font.fileSize / 1024).toFixed(1)}KB<br />
+                          Status: {loadedFonts.has(font.family) ? '✅ Font API Loaded' : '⏳ Loading via Font API...'}
                         </div>
                       </div>
 
