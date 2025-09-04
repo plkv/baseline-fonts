@@ -44,7 +44,12 @@ export class FontStorage {
       db.lastUpdated = new Date().toISOString()
       
       // Validate and clean up font data before saving
-      db.fonts = await this.validateFontData(db.fonts)
+      try {
+        db.fonts = await this.validateFontData(db.fonts)
+      } catch (validationError) {
+        console.warn('Font validation failed, proceeding without validation:', validationError instanceof Error ? validationError.message : 'Unknown validation error')
+        // Continue with original fonts if validation fails
+      }
       
       await fs.writeFile(FONTS_DATA_FILE, JSON.stringify(db, null, 2))
     } catch (error) {
@@ -111,8 +116,10 @@ export class FontStorage {
           await fs.access(filePath)
           validFonts.push(font)
         }
-      } catch {
+      } catch (error) {
         console.warn(`🗑️ Removing font with missing file: ${font.family} (${font.filename})`)
+        console.warn(`   File path: ${path.join(process.cwd(), 'public', 'fonts', font.filename)}`)
+        console.warn(`   Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
         // Don't add to validFonts - this removes the entry
       }
     }

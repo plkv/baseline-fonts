@@ -434,22 +434,52 @@ export default function AdminPage() {
         console.log('🧹 Cleared document.fonts cache')
       }
       
-      // Remove old font stylesheets
+      // Remove ALL font stylesheets (not just data-font-injection ones)
+      const allStyles = document.querySelectorAll('style')
+      allStyles.forEach(style => {
+        if (style.textContent && style.textContent.includes('@font-face')) {
+          style.remove()
+          console.log('🗑️ Removed font stylesheet')
+        }
+      })
+      
+      // Remove old font stylesheets with data-font-injection
       const fontStyles = document.querySelectorAll('style[data-font-injection]')
       fontStyles.forEach(style => style.remove())
       
       // Clear loaded fonts set to force re-validation
       setLoadedFonts(new Set())
       
+      // Clear any localStorage font data
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.includes('font') || key.includes('Font'))) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key)
+        console.log(`🗑️ Removed localStorage key: ${key}`)
+      })
+      
       // Force browser cache reload by adding timestamp to URLs
       const timestamp = Date.now()
       localStorage.setItem('font-cache-cleared', timestamp.toString())
       
-      toast.info('Browser font cache cleared', {
-        description: 'Refreshing page recommended to ensure all caches are cleared'
+      // Clear font families state to force reload
+      setFontFamilies([])
+      
+      // Force reload fonts from server
+      setTimeout(() => {
+        loadFonts()
+      }, 100)
+      
+      toast.success('Browser font cache cleared', {
+        description: 'Font data reloaded from server. Phantom fonts should disappear.'
       })
       
-      console.log('🧹 Browser font cache cleared')
+      console.log('🧹 Comprehensive browser font cache cleared')
     } catch (error) {
       console.warn('⚠️ Cache clearing failed:', error)
     }

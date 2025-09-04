@@ -1,77 +1,6 @@
 {
   "fonts": [
     {
-      "name": "Bona Nova",
-      "family": "Bona Nova",
-      "style": "Bold",
-      "weight": 700,
-      "isVariable": false,
-      "format": "otf",
-      "fileSize": 244504,
-      "uploadedAt": "2025-09-04T08:07:37.268Z",
-      "filename": "BonaNova-Bold.otf",
-      "path": "/fonts/uploads/BonaNova-Bold.otf",
-      "styles": 1,
-      "features": [
-        "c2sc",
-        "case",
-        "dlig",
-        "frac",
-        "liga",
-        "lnum",
-        "onum",
-        "ordn",
-        "pnum",
-        "salt",
-        "smcp",
-        "ss01",
-        "ss02",
-        "ss03",
-        "ss04",
-        "subs",
-        "sups",
-        "tnum",
-        "kern"
-      ],
-      "category": "Sans Serif",
-      "price": "Free",
-      "availableStyles": [
-        "Bold"
-      ],
-      "availableWeights": [
-        700
-      ],
-      "openTypeFeatures": [
-        "Small Capitals From Capitals",
-        "Case-Sensitive Forms",
-        "Discretionary Ligatures",
-        "Fractions",
-        "Standard Ligatures",
-        "Lining Figures",
-        "Oldstyle Figures",
-        "Ordinals",
-        "Proportional Figures",
-        "Stylistic Alternates",
-        "Small Capitals",
-        "Stylistic Set 1",
-        "Stylistic Set 2",
-        "Stylistic Set 3",
-        "Stylistic Set 4",
-        "Subscript",
-        "Superscript",
-        "Tabular Figures",
-        "Kerning"
-      ],
-      "languages": [
-        "Latin",
-        "Greek",
-        "Hebrew"
-      ],
-      "foundry": "MACHALSKI.WTF",
-      "url": "/fonts/BonaNova-Bold.otf",
-      "storage": "local"
-    },
-    {
       "name": "Block-font",
       "family": "Block-font",
       "style": "Regular",
@@ -140,6 +69,76 @@
       "url": "/fonts/Bolgarus.otf"
     },
     {
+      "name": "Bona Nova",
+      "family": "Bona Nova",
+      "style": "Bold",
+      "weight": 700,
+      "isVariable": false,
+      "format": "otf",
+      "fileSize": 244504,
+      "uploadedAt": "2025-09-04T11:49:04.812Z",
+      "filename": "BonaNova-Bold.otf",
+      "path": "/fonts/uploads/BonaNova-Bold.otf",
+      "styles": 1,
+      "features": [
+        "c2sc",
+        "case",
+        "dlig",
+        "frac",
+        "liga",
+        "lnum",
+        "onum",
+        "ordn",
+        "pnum",
+        "salt",
+        "smcp",
+        "ss01",
+        "ss02",
+        "ss03",
+        "ss04",
+        "subs",
+        "sups",
+        "tnum",
+        "kern"
+      ],
+      "category": "Sans Serif",
+      "price": "Free",
+      "availableStyles": [
+        "Bold"
+      ],
+      "availableWeights": [
+        700
+      ],
+      "openTypeFeatures": [
+        "Small Capitals From Capitals",
+        "Case-Sensitive Forms",
+        "Discretionary Ligatures",
+        "Fractions",
+        "Standard Ligatures",
+        "Lining Figures",
+        "Oldstyle Figures",
+        "Ordinals",
+        "Proportional Figures",
+        "Stylistic Alternates",
+        "Small Capitals",
+        "Stylistic Set 1",
+        "Stylistic Set 2",
+        "Stylistic Set 3",
+        "Stylistic Set 4",
+        "Subscript",
+        "Superscript",
+        "Tabular Figures",
+        "Kerning"
+      ],
+      "languages": [
+        "Latin",
+        "Greek",
+        "Hebrew"
+      ],
+      "foundry": "MACHALSKI.WTF",
+      "url": "/fonts/BonaNova-Bold.otf"
+    },
+    {
       "name": "CHAOS16",
       "family": "CHAOS16",
       "style": "Regular",
@@ -147,7 +146,7 @@
       "isVariable": false,
       "format": "otf",
       "fileSize": 59348,
-      "uploadedAt": "2025-09-04T11:09:06.986Z",
+      "uploadedAt": "2025-09-04T11:50:15.552Z",
       "filename": "CHAOS16.otf",
       "path": "/fonts/uploads/CHAOS16.otf",
       "styles": 1,
@@ -155,7 +154,7 @@
         "liga",
         "kern"
       ],
-      "category": "Display",
+      "category": "Sans Serif",
       "price": "Free",
       "availableStyles": [
         "Regular"
@@ -175,5 +174,5 @@
       "url": "/fonts/CHAOS16.otf"
     }
   ],
-  "lastUpdated": "2025-09-04T11:25:09.193Z"
+  "lastUpdated": "2025-09-04T11:50:15.553Z"
 }
