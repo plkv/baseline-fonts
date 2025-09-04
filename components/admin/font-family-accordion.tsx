@@ -29,6 +29,9 @@ interface FontFile {
     max: number
     default: number
   }>
+  downloadLink?: string
+  defaultStyle?: boolean
+  styleName?: string
 }
 
 interface FontFamily {
@@ -487,6 +490,106 @@ export default function FontFamilyAccordion({
                           )}
                         </div>
                       </div>
+
+                      {/* Variable Font Axes Editing */}
+                      {isEditingThisFont && font.isVariable && font.variableAxes && font.variableAxes.length > 0 && (
+                        <div className="mt-3 p-3 border rounded bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700">
+                          <div className="text-sm font-medium mb-3 text-stone-700 dark:text-stone-300">
+                            Variable Font Axes
+                          </div>
+                          <div className="space-y-3">
+                            {font.variableAxes.map((axis, index) => (
+                              <div key={axis.axis} className="grid grid-cols-4 gap-3 items-center">
+                                <div>
+                                  <label className="text-xs text-stone-600 dark:text-stone-400 mb-1 block">
+                                    Axis Name
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={(fontEdits.variableAxes?.[index]?.name) ?? axis.name}
+                                    onChange={(e) => {
+                                      const newAxes = [...(fontEdits.variableAxes || font.variableAxes)]
+                                      newAxes[index] = { ...newAxes[index], name: e.target.value }
+                                      setFontEdits(prev => ({ ...prev, variableAxes: newAxes }))
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border rounded border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-700"
+                                    placeholder="Axis Name"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-stone-600 dark:text-stone-400 mb-1 block">
+                                    Tag
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={axis.axis}
+                                    disabled
+                                    className="w-full px-2 py-1 text-xs border rounded border-stone-300 dark:border-stone-600 bg-stone-100 dark:bg-stone-800 text-stone-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-stone-600 dark:text-stone-400 mb-1 block">
+                                    Range
+                                  </label>
+                                  <div className="text-xs text-stone-600 dark:text-stone-400 px-2 py-1">
+                                    {axis.min}–{axis.max}
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-stone-600 dark:text-stone-400 mb-1 block">
+                                    Default Value
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={(fontEdits.variableAxes?.[index]?.default) ?? axis.default}
+                                    onChange={(e) => {
+                                      const newAxes = [...(fontEdits.variableAxes || font.variableAxes)]
+                                      newAxes[index] = { ...newAxes[index], default: Number(e.target.value) }
+                                      setFontEdits(prev => ({ ...prev, variableAxes: newAxes }))
+                                    }}
+                                    min={axis.min}
+                                    max={axis.max}
+                                    className="w-full px-2 py-1 text-xs border rounded border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-700"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Style Name Editing */}
+                      {isEditingThisFont && (
+                        <div className="mt-3 p-3 border rounded bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-stone-600 dark:text-stone-400 mb-1 block">
+                                Style Name Override
+                              </label>
+                              <input
+                                type="text"
+                                value={fontEdits.styleName ?? font.styleName ?? ''}
+                                onChange={(e) => setFontEdits(prev => ({ ...prev, styleName: e.target.value }))}
+                                className="w-full px-2 py-1 text-xs border rounded border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-700"
+                                placeholder={`Default: ${font.style}`}
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <label className="flex items-center gap-2 text-xs">
+                                <input
+                                  type="checkbox"
+                                  checked={fontEdits.defaultStyle ?? font.defaultStyle ?? false}
+                                  onChange={(e) => setFontEdits(prev => ({ ...prev, defaultStyle: e.target.checked }))}
+                                  className="rounded"
+                                />
+                                <span className="text-stone-600 dark:text-stone-400">
+                                  Set as default style for family
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Font Preview */}
                       <div className="mt-3">

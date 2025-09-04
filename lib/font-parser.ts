@@ -31,6 +31,11 @@ export interface FontMetadata {
   foundry?: string
   // Publishing status
   published?: boolean
+  // Download link
+  downloadLink?: string
+  // Family management
+  defaultStyle?: boolean // Is this the default style for the family?
+  styleName?: string // Custom style name override
 }
 
 export async function parseFontFile(buffer: ArrayBuffer, originalName: string, fileSize: number): Promise<FontMetadata> {
@@ -228,14 +233,57 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const variableAxes = []
     if (isVariable && font.tables?.fvar) {
       try {
+        // Common axis tag to name mapping
+        const axisNames: { [key: string]: string } = {
+          'wght': 'Weight',
+          'wdth': 'Width', 
+          'slnt': 'Slant',
+          'opsz': 'Optical Size',
+          'ital': 'Italic',
+          'grad': 'Grade',
+          'XHGT': 'X Height',
+          'XOPQ': 'X Opaque',
+          'YOPQ': 'Y Opaque',
+          'YTLC': 'Y Transparent LC',
+          'YTUC': 'Y Transparent UC',
+          'YTAS': 'Y Transparent Ascender',
+          'YTDE': 'Y Transparent Descender',
+          'YTFI': 'Y Transparent Figure'
+        }
+        
         for (const axis of font.tables.fvar.axes || []) {
-          // Ensure all values are serializable and safe
+          const tag = String(axis.tag || 'unkn')
+          
+          // Get axis name - handle various formats
+          let axisName = ''
+          if (axis.name && typeof axis.name === 'string') {
+            axisName = axis.name
+          } else if (axis.name && axis.name.en) {
+            axisName = axis.name.en
+          } else if (axisNames[tag]) {
+            axisName = axisNames[tag]
+          } else {
+            axisName = tag.toUpperCase()
+          }
+          
+          // Set proper defaults based on axis type
+          let defaultValue = Number(axis.defaultValue) || 400
+          if (tag === 'wght') {
+            defaultValue = Number(axis.defaultValue) || 400 // Weight defaults to 400
+          } else if (tag === 'wdth') {
+            defaultValue = Number(axis.defaultValue) || 100 // Width defaults to 100%
+          } else if (tag === 'slnt') {
+            defaultValue = Number(axis.defaultValue) || 0 // Slant defaults to 0
+          } else if (tag === 'opsz') {
+            defaultValue = Number(axis.defaultValue) || 12 // Optical size defaults to 12pt
+          }
+          
           const safeAxis = {
-            name: String(axis.name || axis.tag || 'Unknown'),
-            axis: String(axis.tag || 'unkn'),
+            name: String(axisName || tag.toUpperCase()),
+            axis: tag,
             min: Number(axis.minValue) || 0,
-            max: Number(axis.maxValue) || 1000,
-            default: Number(axis.defaultValue) || 400
+            max: Number(axis.maxValue) || (tag === 'wght' ? 900 : 1000),
+            default: defaultValue
           }
           
           // Validate the axis object has no circular references
