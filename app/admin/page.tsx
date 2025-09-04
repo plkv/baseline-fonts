@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(false)
+  const [loadedFonts, setLoadedFonts] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     // Auto-detect system theme preference
@@ -55,11 +56,12 @@ export default function AdminPage() {
     existingStyles.forEach(style => style.remove())
 
     // Create and inject CSS for each font
-    uploadedFonts.forEach(font => {
+    uploadedFonts.forEach((font, index) => {
       if (!font.url) return
 
       const style = document.createElement('style')
       style.setAttribute('data-font-loader', 'admin')
+      style.setAttribute('data-font-index', index.toString())
       
       // Create normalized font family name for CSS
       const normalizedName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
@@ -73,8 +75,35 @@ export default function AdminPage() {
           font-style: normal;
           font-display: swap;
         }
+        
+        /* Also use original family name as fallback */
+        @font-face {
+          font-family: "${font.family}";
+          src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
+          font-weight: ${font.weight || 400};
+          font-style: normal;
+          font-display: swap;
+        }
+        
+        /* Ensure the preview uses the correct font */
+        [data-font-family="${font.family}"] {
+          font-family: "${normalizedName}", "${font.family}", monospace !important;
+        }
       `
+      
       document.head.appendChild(style)
+      console.log(`📝 Injected CSS for ${font.family} (${normalizedName}) from ${font.url}`)
+      
+      // Check if font loads successfully
+      if ('fonts' in document) {
+        const fontFace = new FontFace(normalizedName, `url("${font.url}")`)
+        fontFace.load().then(() => {
+          setLoadedFonts(prev => new Set([...prev, font.family]))
+          console.log(`✅ Font loaded successfully: ${font.family}`)
+        }).catch((error) => {
+          console.error(`❌ Failed to load font ${font.family}:`, error)
+        })
+      }
     })
   }, [uploadedFonts])
 
@@ -288,13 +317,21 @@ export default function AdminPage() {
                       <div className={`mb-4 p-4 rounded border ${darkMode ? 'bg-stone-900 border-stone-600' : 'bg-gray-50 border-gray-200'}`}>
                         <div
                           style={{
-                            fontFamily: `"${font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')}", monospace, system-ui, sans-serif`,
+                            fontFamily: `"${font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')}", "${font.family}", monospace, system-ui, sans-serif`,
                             fontSize: '24px',
-                            fontWeight: font.weight || 400
+                            fontWeight: font.weight || 400,
+                            fontDisplay: 'swap'
                           }}
-                          className={darkMode ? 'text-stone-200' : 'text-gray-900'}
+                          className={`${darkMode ? 'text-stone-200' : 'text-gray-900'} transition-all duration-300`}
+                          data-font-family={font.family}
                         >
                           The quick brown fox jumps over the lazy dog
+                        </div>
+                        {/* Debug info */}
+                        <div className={`text-xs mt-2 ${darkMode ? 'text-stone-500' : 'text-gray-500'}`}>
+                          Font: {font.family} → {font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')} | URL: {font.url}
+                          <br />
+                          Status: {loadedFonts.has(font.family) ? '✅ Loaded' : '⏳ Loading...'}
                         </div>
                       </div>
 
