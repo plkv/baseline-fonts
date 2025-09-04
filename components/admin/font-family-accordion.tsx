@@ -254,7 +254,10 @@ export default function FontFamilyAccordion({
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => onFamilyDelete(family.name)}
+                        onClick={() => {
+                          console.log('🔍 Family delete button clicked for:', family.name)
+                          onFamilyDelete(family.name)
+                        }}
                         className="gap-1"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -497,7 +500,10 @@ export default function FontFamilyAccordion({
                               <Button
                                 size="sm"
                                 variant="destructive"
-                                onClick={() => onFontDelete(font.filename)}
+                                onClick={() => {
+                                  console.log('🔍 Delete button clicked for:', font.filename)
+                                  onFontDelete(font.filename)
+                                }}
                                 className="gap-1"
                               >
                                 <Trash2 className="w-3 h-3" />

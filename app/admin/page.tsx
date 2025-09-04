@@ -208,8 +208,12 @@ export default function AdminPage() {
   }
   
   const handleFontDelete = async (fontFilename: string) => {
+    console.log('🔍 handleFontDelete called with:', fontFilename)
     const font = fonts.find(f => f.filename === fontFilename)
-    if (!font) return
+    if (!font) {
+      console.log('❌ Font not found in fonts array:', fontFilename)
+      return
+    }
     
     if (!confirm(`Are you sure you want to permanently delete "${font.name}"? This action cannot be undone.`)) {
       return
@@ -255,8 +259,12 @@ export default function AdminPage() {
   }
 
   const handleFamilyDelete = async (familyName: string) => {
+    console.log('🔍 handleFamilyDelete called with:', familyName)
     const family = fontFamilies.find(f => f.name === familyName)
-    if (!family) return
+    if (!family) {
+      console.log('❌ Family not found in fontFamilies array:', familyName)
+      return
+    }
     
     if (!confirm(`Are you sure you want to permanently delete the entire "${familyName}" family with ${family.fonts.length} fonts? This action cannot be undone.`)) {
       return
