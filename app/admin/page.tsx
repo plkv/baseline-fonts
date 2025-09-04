@@ -440,24 +440,47 @@ export default function AdminPage() {
 
                       {/* Font Preview */}
                       <div className={`mb-4 p-4 rounded border ${darkMode ? 'bg-stone-900 border-stone-600' : 'bg-gray-50 border-gray-200'}`}>
-                        {/* Test with direct CSS font-face */}
+                        {/* Enhanced font-face with better compatibility */}
                         <style>{`
                           @font-face {
                             font-family: "TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}";
-                            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
-                            font-weight: ${font.weight || 400};
+                            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}"),
+                                 url("${font.url}") format("truetype");
+                            font-weight: normal;
                             font-style: normal;
+                            font-display: swap;
+                          }
+                          @font-face {
+                            font-family: "TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}-Fallback";
+                            src: url("${font.url}");
+                            font-weight: normal;
+                            font-style: normal;
+                            font-display: swap;
                           }
                         `}</style>
                         <div
                           style={{
-                            fontFamily: `"TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}", monospace`,
+                            fontFamily: `"TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}", "TestFont-${font.family.replace(/[^a-zA-Z0-9]/g, '')}-Fallback", "${font.family}", monospace`,
                             fontSize: '24px',
-                            fontWeight: font.weight || 400
+                            fontWeight: 'normal',
+                            lineHeight: '1.2'
                           }}
                           className={`${darkMode ? 'text-stone-200' : 'text-gray-900'} mb-2`}
                         >
                           {font.family}: The quick brown fox jumps over the lazy dog
+                        </div>
+                        
+                        {/* Alternative preview with different font loading approach */}
+                        <div
+                          style={{
+                            fontFamily: `"${font.family}", monospace`,
+                            fontSize: '18px',
+                            fontWeight: 'normal',
+                            lineHeight: '1.2'
+                          }}
+                          className={`${darkMode ? 'text-stone-400' : 'text-gray-600'} mb-2`}
+                        >
+                          Alternative: ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789
                         </div>
                         
                         {/* Fallback test */}
@@ -471,7 +494,7 @@ export default function AdminPage() {
                           Monospace fallback: The quick brown fox jumps over the lazy dog
                         </div>
                         
-                        {/* Font URL Test */}
+                        {/* Font URL Test & Debugging */}
                         <div className={`text-xs mt-2 p-2 border rounded ${darkMode ? 'bg-stone-800 border-stone-600' : 'bg-gray-100 border-gray-300'}`}>
                           <div className="mb-2">
                             <strong>Font URL Test:</strong> 
@@ -495,11 +518,14 @@ export default function AdminPage() {
                               </>
                             )}
                           </div>
-                          <div className="text-xs">
-                            Original: "{font.family}" → CSS: "TestFont-{font.family.replace(/[^a-zA-Z0-9]/g, '')}"<br />
-                            Format: {font.format} | Weight: {font.weight} | Size: {(font.fileSize / 1024).toFixed(1)}KB<br />
-                            Storage: {font.storage || 'unknown'} | Uploaded: {font.uploadedAt ? new Date(font.uploadedAt).toLocaleString() : 'unknown'}<br />
-                            Font API Status: {loadedFonts.has(font.family) ? '✅ Loaded' : '❌ Failed'}
+                          <div className="text-xs space-y-1">
+                            <div><strong>Original Name:</strong> "{font.family}"</div>
+                            <div><strong>CSS Name:</strong> "TestFont-{font.family.replace(/[^a-zA-Z0-9]/g, '')}"</div>
+                            <div><strong>Font Details:</strong> {font.format} | Weight: {font.weight} | Style: {font.style}</div>
+                            <div><strong>Category:</strong> {font.category} | <strong>Size:</strong> {(font.fileSize / 1024).toFixed(1)}KB</div>
+                            <div><strong>Storage:</strong> {font.storage || 'unknown'} | <strong>Uploaded:</strong> {font.uploadedAt ? new Date(font.uploadedAt).toLocaleString() : 'unknown'}</div>
+                            <div><strong>Font API Status:</strong> {loadedFonts.has(font.family) ? '✅ Loaded' : '❌ Failed'}</div>
+                            <div><strong>Preview Status:</strong> If previews look the same, the font isn't loading correctly</div>
                           </div>
                         </div>
                       </div>
