@@ -198,8 +198,39 @@ export class BlobOnlyStorageManager {
         return
       }
       
+      // CRITICAL: Read existing metadata first to prevent overwriting
+      let existingFonts: any[] = []
+      try {
+        const { blobs } = await blobModule.list({ prefix: 'metadata/' })
+        const metadataBlob = blobs.find(blob => blob.pathname === this.METADATA_FILE)
+        
+        if (metadataBlob) {
+          const response = await fetch(metadataBlob.url)
+          if (response.ok) {
+            const data = await response.json()
+            existingFonts = data.fonts || []
+          }
+        }
+      } catch (readError) {
+        console.warn('⚠️ Could not read existing metadata:', readError)
+      }
+      
+      // Merge existing fonts with memory cache (avoid duplicates)
+      const allFonts = [...existingFonts]
+      
+      for (const font of this.memoryCache) {
+        const existingIndex = allFonts.findIndex(f => f.filename === font.filename)
+        if (existingIndex >= 0) {
+          // Update existing font
+          allFonts[existingIndex] = font
+        } else {
+          // Add new font
+          allFonts.push(font)
+        }
+      }
+      
       const metadataJson = JSON.stringify({
-        fonts: this.memoryCache,
+        fonts: allFonts,
         lastUpdated: new Date().toISOString()
       })
 
@@ -208,7 +239,7 @@ export class BlobOnlyStorageManager {
         contentType: 'application/json'
       })
 
-      console.log('✅ Metadata saved to blob')
+      console.log(`✅ Metadata saved to blob (${allFonts.length} fonts)`)
     } catch (error) {
       console.error('❌ Failed to save metadata to blob:', error)
     }
