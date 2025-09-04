@@ -31,6 +31,7 @@ export async function PATCH(request: NextRequest) {
       if (updates.category) updates_to_apply.category = updates.category
       if (updates.foundry) updates_to_apply.foundry = updates.foundry
       if (updates.languages) updates_to_apply.languages = updates.languages
+      if (updates.downloadLink !== undefined) updates_to_apply.downloadLink = updates.downloadLink
       
       // Update individual font
       const success = await blobOnlyStorage.updateFont(font.filename, updates_to_apply)

@@ -290,7 +290,8 @@ export default function FontCatalog() {
   // }, [loadUploadedFonts])
 
   const filteredFonts = allFonts.filter((font) => {
-    const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         font.family.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory =
       selectedCategories.length === 0 ||
       selectedCategories.some((cat) => font.category.toLowerCase() === cat.toLowerCase())
@@ -1131,7 +1132,7 @@ export default function FontCatalog() {
                       <div className="transition-all duration-300 p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <h3 className={`font-semibold text-lg tracking-tighter ${getThemeText()}`}>{font.name}</h3>
+                            <h3 className={`font-semibold text-lg tracking-tighter ${getThemeText()}`}>{font.family}</h3>
                             <span className={`text-sm tracking-tighter ${getThemeAccent()}`}>
                               by {font.foundry || "Unknown"}
                             </span>
@@ -1148,17 +1149,20 @@ export default function FontCatalog() {
                                 Variable
                               </Badge>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`h-7 px-2 text-xs tracking-tighter transition-all duration-300 ${
-                                darkMode
-                                  ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
-                                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
-                              }`}
-                            >
-                              Download
-                            </Button>
+                            {font.downloadLink && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(font.downloadLink, '_blank')}
+                                className={`h-7 px-2 text-xs tracking-tighter transition-all duration-300 ${
+                                  darkMode
+                                    ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
+                                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+                                }`}
+                              >
+                                Download
+                              </Button>
+                            )}
                           </div>
                         </div>
 

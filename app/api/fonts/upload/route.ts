@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
             ...representativeFont.openTypeFeatures
           ])]
           fontMetadata.price = representativeFont.price
+          fontMetadata.downloadLink = representativeFont.downloadLink
           
           // Force the family name to match the target
           fontMetadata.family = targetFamily
