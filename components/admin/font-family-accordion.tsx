@@ -434,7 +434,7 @@ export default function FontFamilyAccordion({
 
                   return (
                     <div
-                      key={font.filename}
+                      key={`${font.filename}-${font.style}-${Date.now()}`}
                       className={`p-3 rounded border ${darkMode ? 'bg-stone-750 border-stone-600' : 'bg-gray-50 border-gray-200'}`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -473,7 +473,9 @@ export default function FontFamilyAccordion({
                               </SelectContent>
                             </Select>
                           ) : (
-                            <Badge variant="secondary">{font.style} ({font.weight})</Badge>
+                            <Badge variant="secondary" key={`${font.filename}-${font.style}-${font.weight}`}>
+                              {font.style} ({font.weight})
+                            </Badge>
                           )}
 
                           <Badge variant="outline">{font.format.toUpperCase()}</Badge>
