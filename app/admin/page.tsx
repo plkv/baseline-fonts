@@ -78,11 +78,15 @@ export default function AdminPage() {
 
   // Group fonts by family
   const groupFontsByFamily = (fonts: FontFile[]): FontFamily[] => {
+    console.log('🔍 groupFontsByFamily called with:', fonts.length, 'fonts')
     const familyMap = new Map<string, FontFamily>()
     
-    fonts.forEach(font => {
+    fonts.forEach((font, index) => {
       const familyName = font.family
+      console.log(`🔍 Processing font ${index + 1}:`, font.filename, 'family:', familyName, 'style:', font.style)
+      
       if (!familyMap.has(familyName)) {
+        console.log(`🔍 Creating new family group:`, familyName)
         familyMap.set(familyName, {
           name: familyName,
           fonts: [],
@@ -97,6 +101,7 @@ export default function AdminPage() {
       
       const family = familyMap.get(familyName)!
       family.fonts.push(font)
+      console.log(`🔍 Added font to family. Family now has:`, family.fonts.length, 'fonts')
       family.totalSize += font.fileSize
       family.isVariable = family.isVariable || font.isVariable
       
@@ -125,8 +130,11 @@ export default function AdminPage() {
       const data = await response.json()
       
       if (data.success && data.fonts) {
+        console.log('🔍 Raw fonts from API:', data.fonts.length, data.fonts)
         setFonts(data.fonts)
-        setFontFamilies(groupFontsByFamily(data.fonts))
+        const grouped = groupFontsByFamily(data.fonts)
+        console.log('🔍 Grouped families:', grouped)
+        setFontFamilies(grouped)
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
