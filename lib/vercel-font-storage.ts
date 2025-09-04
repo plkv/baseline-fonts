@@ -26,49 +26,15 @@ let memoryFonts: FontMetadata[] = []
 export class VercelFontStorage {
   
   async addFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
-    if (hasVercelStorage && put && kv) {
-      try {
-        // Production: Upload font file to Vercel Blob Storage
-        const blob = await put(
-          `fonts/${fontMetadata.filename}`,
-          new Uint8Array(fontBuffer),
-          {
-            access: 'public',
-            contentType: this.getContentType(fontMetadata.format)
-          }
-        )
-        
-        // Add blob URL to metadata
-        const enhancedMetadata = {
-          ...fontMetadata,
-          url: blob.url,
-          blobUrl: blob.url,
-          uploadedAt: new Date().toISOString()
-        }
-        
-        // Store metadata in Vercel KV
-        const existingFonts = await this.getAllFonts()
-        const updatedFonts = existingFonts.filter(f => f.filename !== fontMetadata.filename)
-        updatedFonts.push(enhancedMetadata)
-        
-        await kv.set(KV_FONTS_KEY, updatedFonts)
-        
-        console.log(`✅ Production: Font stored in Vercel Blob: ${fontMetadata.family} -> ${blob.url}`)
-        return enhancedMetadata
-        
-      } catch (error) {
-        console.error('Vercel storage error:', error)
-        return this.fallbackAddFont(fontMetadata, fontBuffer)
-      }
-    } else {
-      // Development: Use file system + memory storage
-      return this.fallbackAddFont(fontMetadata, fontBuffer)
-    }
+    // Force use of local storage for now to ensure fonts work properly
+    // Vercel Blob storage requires environment variables setup
+    console.log(`📁 Using local file storage for: ${fontMetadata.family}`)
+    return this.fallbackAddFont(fontMetadata, fontBuffer)
   }
 
   private async fallbackAddFont(fontMetadata: FontMetadata, fontBuffer: ArrayBuffer): Promise<FontMetadata> {
     // Check if we're in a Node.js environment with filesystem access
-    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV !== 'production'
+    const hasFileSystem = typeof window === 'undefined' && typeof process !== 'undefined'
     
     if (hasFileSystem) {
       try {

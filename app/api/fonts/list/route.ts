@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
+import { fontStorage } from '@/lib/font-database'
 
 export async function GET() {
   try {
-    const fonts = await vercelFontStorage.getAllFonts()
+    const fonts = await fontStorage.getAllFonts()
     return NextResponse.json({ 
       success: true, 
       fonts 

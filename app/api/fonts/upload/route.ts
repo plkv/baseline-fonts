@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFontFile } from '@/lib/font-parser'
-import { vercelFontStorage } from '@/lib/vercel-font-storage'
+import { fontStorage } from '@/lib/font-database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,8 +39,12 @@ export async function POST(request: NextRequest) {
     // Parse font metadata
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     
-    // Store font file and metadata using Vercel storage
-    const storedFont = await vercelFontStorage.addFont(fontMetadata, bytes)
+    // Store font file and metadata
+    const savedFontUrl = await fontStorage.saveFontFile(bytes, file.name)
+    if (savedFontUrl) {
+      fontMetadata.url = savedFontUrl
+    }
+    const storedFont = await fontStorage.addFont(fontMetadata)
     
     return NextResponse.json({ 
       success: true, 
