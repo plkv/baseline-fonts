@@ -101,6 +101,64 @@ export async function POST(request: NextRequest) {
       } as UploadError
     }
 
+    // STEP 4.5: Handle family inheritance and prevent duplicates
+    const targetFamily = formData.get('familyName') as string | null
+    if (targetFamily) {
+      try {
+        const existingFonts = await fontStorageV2.getAllFonts()
+        const familyFonts = existingFonts.filter(f => f.family === targetFamily)
+        
+        if (familyFonts.length > 0) {
+          console.log(`🔄 Adding to existing family: ${targetFamily}`)
+          
+          // Use the most recent font's family-level metadata
+          const representativeFont = familyFonts.sort((a, b) => 
+            new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+          )[0]
+          
+          // Override the parsed metadata with family-level settings
+          fontMetadata.category = representativeFont.category
+          fontMetadata.foundry = representativeFont.foundry
+          fontMetadata.languages = representativeFont.languages
+          fontMetadata.openTypeFeatures = [...new Set([
+            ...fontMetadata.openTypeFeatures, 
+            ...representativeFont.openTypeFeatures
+          ])]
+          fontMetadata.price = representativeFont.price || 'Free'
+          fontMetadata.downloadLink = representativeFont.downloadLink
+          
+          // Force the family name to match the target
+          fontMetadata.family = targetFamily
+          fontMetadata.name = targetFamily
+          
+          console.log(`✅ Inherited family metadata from: ${representativeFont.filename}`)
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to load existing family metadata: ${error}`)
+      }
+    }
+
+    // Check for duplicate uploads (same filename in same family)
+    try {
+      const existingFonts = await fontStorageV2.getAllFonts()
+      const duplicate = existingFonts.find(f => 
+        f.filename === file.name && f.family === fontMetadata.family
+      )
+      
+      if (duplicate) {
+        throw {
+          code: 'DUPLICATE_FONT',
+          message: `Font "${file.name}" already exists in family "${fontMetadata.family}"`,
+          details: { filename: file.name, family: fontMetadata.family }
+        } as UploadError
+      }
+    } catch (error) {
+      if ((error as any).code === 'DUPLICATE_FONT') {
+        throw error
+      }
+      console.warn('⚠️ Could not check for duplicates:', error)
+    }
+
     // STEP 5: Store font
     let storedFont
     try {

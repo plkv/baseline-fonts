@@ -78,6 +78,56 @@ export default function FontCatalog() {
   const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
   const [allFonts, setAllFonts] = useState<any[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+
+  // Group fonts by family to create family-level entries
+  const groupFontsByFamily = useCallback((fonts: any[]) => {
+    const familyMap = new Map()
+    
+    fonts.forEach(font => {
+      const familyKey = font.family
+      
+      if (!familyMap.has(familyKey)) {
+        // Create family-level entry using the first font as base
+        familyMap.set(familyKey, {
+          ...font,
+          name: font.family, // Use family name as display name
+          styles: 1,
+          availableStyles: [font.style],
+          availableWeights: [font.weight],
+          allFonts: [font] // Keep track of all fonts in family
+        })
+      } else {
+        // Add to existing family
+        const family = familyMap.get(familyKey)
+        family.styles += 1
+        
+        // Add unique styles and weights
+        if (!family.availableStyles.includes(font.style)) {
+          family.availableStyles.push(font.style)
+        }
+        if (!family.availableWeights.includes(font.weight)) {
+          family.availableWeights.push(font.weight)
+        }
+        
+        // Combine features and languages
+        font.openTypeFeatures.forEach(feature => {
+          if (!family.openTypeFeatures.includes(feature)) {
+            family.openTypeFeatures.push(feature)
+          }
+        })
+        
+        family.allFonts.push(font)
+        
+        // Use variable font if any family member is variable
+        if (font.isVariable) {
+          family.isVariable = true
+          family.variableAxes = font.variableAxes
+        }
+      }
+    })
+    
+    return Array.from(familyMap.values())
+  }, [])
   const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
 
   const letterSpacingPresets = [-0.05, -0.025, 0, 0.025, 0.05, 0.1, 0.15, 0.2]
@@ -180,8 +230,9 @@ export default function FontCatalog() {
           console.log(`📝 Found ${data.fonts.length} fonts`)
           // Load CSS for all fonts
           loadFontCSS(data.fonts)
-          // Use all fonts - only uploaded fonts
-          setAllFonts(data.fonts)
+          // Group fonts by family to prevent duplicates
+          const groupedFonts = groupFontsByFamily(data.fonts)
+          setAllFonts(groupedFonts)
           console.log('✅ Fonts loaded and CSS applied')
           
           if (data.fonts.length === 0) {

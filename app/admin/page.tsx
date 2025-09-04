@@ -216,7 +216,7 @@ export default function AdminPage() {
     }
 
     try {
-      const response = await fetch(`/api/fonts/delete?filename=${encodeURIComponent(fontFilename)}`, {
+      const response = await fetch(`/api/fonts/delete-v2?filename=${encodeURIComponent(fontFilename)}`, {
         method: 'DELETE'
       })
 
