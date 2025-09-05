@@ -290,7 +290,7 @@ export default function AdminPage() {
       console.log('🔍 Family update API response:', response.status, result)
       
       if (response.ok) {
-        console.log('✅ Family updated successfully, updating local state immediately - PRODUCTION FIX v2')
+        console.log('✅ Family updated successfully, updating local state immediately - PRODUCTION FIX v3')
         
         // Update local state immediately for instant UI feedback
         console.log('🔧 Applying local state update with:', updates)
