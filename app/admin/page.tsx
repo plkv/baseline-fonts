@@ -126,14 +126,19 @@ export default function AdminPage() {
   const loadFonts = async () => {
     try {
       setIsLoadingFonts(true)
+      console.log('🔄 Loading fonts from API...')
       const response = await fetch('/api/fonts/list-v2')
       const data = await response.json()
       
       if (data.success && data.fonts) {
-        console.log('🔍 Raw fonts from API:', data.fonts.length, data.fonts)
+        console.log('🔍 Raw fonts from API:', data.fonts.length)
+        // Log specific details for debugging family updates
+        data.fonts.forEach(font => {
+          console.log(`📝 Font: ${font.family} - ${font.foundry} - ${font.category}`)
+        })
         setFonts(data.fonts)
         const grouped = groupFontsByFamily(data.fonts)
-        console.log('🔍 Grouped families:', grouped)
+        console.log('🔍 Grouped families:', grouped.length)
         setFontFamilies(grouped)
       }
     } catch (error) {
@@ -285,8 +290,9 @@ export default function AdminPage() {
       console.log('🔍 Family update API response:', response.status, result)
       
       if (response.ok) {
-        console.log('✅ Family updated successfully, reloading fonts')
-        loadFonts()
+        console.log('✅ Family updated successfully, reloading fonts after delay')
+        // Small delay to ensure the update is propagated
+        setTimeout(() => loadFonts(), 500)
       } else {
         console.error('❌ Family update failed:', result)
         throw new Error(result.error || 'Family update failed')
