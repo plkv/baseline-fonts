@@ -1,0 +1,37 @@
+{
+  "name": "Hardy",
+  "family": "Hardy",
+  "style": "Regular",
+  "weight": 400,
+  "isVariable": false,
+  "format": "otf",
+  "fileSize": 107932,
+  "uploadedAt": "2025-09-05T10:05:41.691Z",
+  "filename": "test-font.otf",
+  "path": "/fonts/uploads/test-font.otf",
+  "styles": 1,
+  "features": [
+    "kern",
+    "liga"
+  ],
+  "category": "Sans Serif",
+  "price": "Free",
+  "availableStyles": [
+    "Regular"
+  ],
+  "availableWeights": [
+    400
+  ],
+  "openTypeFeatures": [
+    "Kerning",
+    "Standard Ligatures"
+  ],
+  "languages": [
+    "Latin"
+  ],
+  "foundry": "Updated Foundry Test",
+  "published": true,
+  "defaultStyle": true,
+  "url": "/fonts/test-font.otf",
+  "storage": "local-dev-v2"
+}

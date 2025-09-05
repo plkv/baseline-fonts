@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     
     // Import and use modules
     const { parseFontFile } = await import('@/lib/font-parser')
-    const { blobOnlyStorage } = await import('@/lib/blob-only-storage')
+    const { fontStorageV2 } = await import('@/lib/font-storage-v2')
     
     // Get file data
     const bytes = await file.arrayBuffer()
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     const fontMetadata = await parseFontFile(bytes, file.name, file.size)
     console.log(`🔍 Font parsed: ${fontMetadata.family}`)
     
-    // Store font
-    const storedFont = await blobOnlyStorage.storeFont(fontMetadata, bytes)
+    // Store font using V2 storage
+    const storedFont = await fontStorageV2.storeFont(fontMetadata, bytes)
     console.log('💾 Font stored successfully')
     
     return NextResponse.json({ 

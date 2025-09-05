@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageV2 } from '@/lib/font-storage-v2'
 
 export async function PATCH(request: NextRequest) {
+  let familyName = 'unknown'
+  let updates = {}
+  
   try {
-    const { familyName, updates } = await request.json()
+    const requestData = await request.json()
+    familyName = requestData.familyName
+    updates = requestData.updates
+    
+    console.log('🔍 Family update request:', { familyName, updates })
     
     if (!familyName || !updates) {
       return NextResponse.json({ 
@@ -13,7 +20,10 @@ export async function PATCH(request: NextRequest) {
 
     // Get all fonts and find fonts in this family
     const fonts = await fontStorageV2.getAllFonts()
+    console.log('🔍 Total fonts in storage:', fonts.length)
+    
     const familyFonts = fonts.filter(f => f.family === familyName)
+    console.log('🔍 Fonts in family', familyName, ':', familyFonts.length)
     
     if (familyFonts.length === 0) {
       return NextResponse.json({ 
@@ -33,10 +43,15 @@ export async function PATCH(request: NextRequest) {
       if (updates.languages) updates_to_apply.languages = updates.languages
       if (updates.downloadLink !== undefined) updates_to_apply.downloadLink = updates.downloadLink
       
+      console.log('🔧 Updating font:', font.filename, 'with:', updates_to_apply)
+      
       // Update individual font
       const success = await fontStorageV2.updateFont(font.filename, updates_to_apply)
+      console.log('🔍 Update result for', font.filename, ':', success)
       if (success) updateCount++
     }
+
+    console.log('✅ Updated', updateCount, 'of', familyFonts.length, 'fonts in family', familyName)
 
     return NextResponse.json({
       success: true,
