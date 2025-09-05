@@ -196,14 +196,21 @@ export default function SimpleAdmin() {
 
   // Save font edits
   const saveEdits = async (filename: string) => {
+    // Find the font to get its current family name
+    const font = fonts.find(f => f.filename === filename)
+    if (!font) {
+      toast.error('Font not found')
+      return
+    }
+
     try {
-      const response = await fetch('/api/fonts/update', {
+      const response = await fetch('/api/fonts/family/update', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename,
+          familyName: font.family,
           updates: {
-            family: editForm.family,
+            name: editForm.family,
             foundry: editForm.foundry,
             downloadLink: editForm.downloadLink,
             languages: editForm.languages
