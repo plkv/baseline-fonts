@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Upload, Trash2, FileText } from "lucide-react"
+import { Upload, Trash2, FileText, ChevronDown, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 import { Toaster } from "sonner"
 
@@ -18,12 +18,15 @@ interface Font {
   category: string
   foundry: string
   url: string
+  uploadDate?: string
 }
 
 export default function SimpleAdmin() {
   const [fonts, setFonts] = useState<Font[]>([])
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [sortBy, setSortBy] = useState<'new' | 'a-z'>('new')
+  const [expandedFonts, setExpandedFonts] = useState<Set<string>>(new Set())
 
   // Load fonts from API
   const loadFonts = async () => {
@@ -113,6 +116,43 @@ export default function SimpleAdmin() {
     e.preventDefault()
   }
 
+  // Toggle font expansion
+  const toggleFontExpansion = (filename: string) => {
+    setExpandedFonts(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(filename)) {
+        newSet.delete(filename)
+      } else {
+        newSet.add(filename)
+      }
+      return newSet
+    })
+  }
+
+  // Sort fonts based on selected option
+  const sortedFonts = [...fonts].sort((a, b) => {
+    if (sortBy === 'new') {
+      // Sort by upload date (newest first), fallback to filename if no date
+      const dateA = a.uploadDate ? new Date(a.uploadDate).getTime() : 0
+      const dateB = b.uploadDate ? new Date(b.uploadDate).getTime() : 0
+      return dateB - dateA
+    } else {
+      // Sort alphabetically by family name
+      return a.family.localeCompare(b.family)
+    }
+  })
+
+  // Format upload date for display
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Unknown date'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
   useEffect(() => {
     loadFonts()
   }, [])
@@ -170,12 +210,36 @@ export default function SimpleAdmin() {
           </CardContent>
         </Card>
 
-        {/* Font Grid */}
+        {/* Font List */}
         <div>
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Font Collection ({fonts.length})
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Font Collection ({fonts.length})
+            </h2>
+            
+            {/* Sort Options */}
+            {fonts.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant={sortBy === 'new' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSortBy('new')}
+                  className="text-xs"
+                >
+                  Newest
+                </Button>
+                <Button
+                  variant={sortBy === 'a-z' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSortBy('a-z')}
+                  className="text-xs"
+                >
+                  A-Z
+                </Button>
+              </div>
+            )}
+          </div>
 
           {loading ? (
             <div className="text-center py-8">
@@ -186,53 +250,83 @@ export default function SimpleAdmin() {
               <div className="text-gray-500">No fonts uploaded yet. Upload your first font above.</div>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {fonts.map((font) => (
-                <Card key={font.filename} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{font.family}</h3>
-                        <p className="text-sm text-gray-500">{font.style} {font.weight}</p>
+            <div className="space-y-2">
+              {sortedFonts.map((font) => {
+                const isExpanded = expandedFonts.has(font.filename)
+                return (
+                  <Card key={font.filename} className="overflow-hidden">
+                    {/* Collapsed Row */}
+                    <div 
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleFontExpansion(font.filename)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Button variant="ghost" size="sm" className="p-0">
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{font.family}</h3>
+                          <p className="text-sm text-gray-500">{formatDate(font.uploadDate)}</p>
+                        </div>
                       </div>
+                      
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(font.filename, font.family)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(font.filename, font.family)
+                        }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {/* Font Preview */}
-                    <div 
-                      className="bg-gray-100 rounded-lg p-4 mb-3"
-                      style={{
-                        fontFamily: `"${font.family}", system-ui, sans-serif`,
-                        fontWeight: font.weight,
-                        fontSize: '24px'
-                      }}
-                    >
-                      The quick brown fox
-                    </div>
-                    
-                    {/* Font Details */}
-                    <div className="space-y-2">
-                      <div className="flex gap-2 flex-wrap">
-                        <Badge variant="outline">{font.format.toUpperCase()}</Badge>
-                        <Badge variant="outline">{font.category}</Badge>
-                        <Badge variant="outline">{Math.round(font.fileSize / 1024)}KB</Badge>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="border-t bg-white p-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {/* Font Preview */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
+                            <div 
+                              className="bg-gray-100 rounded-lg p-4 text-2xl"
+                              style={{
+                                fontFamily: `"${font.family}", system-ui, sans-serif`,
+                                fontWeight: font.weight
+                              }}
+                            >
+                              The quick brown fox
+                            </div>
+                          </div>
+                          
+                          {/* Font Details */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Details</h4>
+                            <div className="space-y-2">
+                              <div className="flex gap-2 flex-wrap">
+                                <Badge variant="outline">{font.format.toUpperCase()}</Badge>
+                                <Badge variant="outline">{font.category}</Badge>
+                                <Badge variant="outline">{Math.round(font.fileSize / 1024)}KB</Badge>
+                              </div>
+                              <div className="text-sm text-gray-600 space-y-1">
+                                <div><span className="font-medium">Style:</span> {font.style} {font.weight}</div>
+                                <div><span className="font-medium">Foundry:</span> {font.foundry}</div>
+                                <div><span className="font-medium">File:</span> {font.filename}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        <div>Foundry: {font.foundry}</div>
-                        <div>File: {font.filename}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    )}
+                  </Card>
+                )
+              })}
             </div>
           )}
         </div>
