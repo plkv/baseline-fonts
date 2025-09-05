@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { kv } from '@vercel/kv'
 
 export async function PATCH(request: NextRequest) {
   console.log('🔧 Font update endpoint called')
@@ -14,14 +15,29 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // For now, just simulate success to test the flow
-    // We'll implement the actual update logic after confirming the endpoint works
-    console.log('✅ Simulating successful update for:', filename)
+    // Get current font metadata from KV
+    console.log('📋 Getting font from KV:', filename)
+    const current = await kv.hget('fonts', filename)
+    
+    if (!current) {
+      console.log('❌ Font not found in KV:', filename)
+      return NextResponse.json({ error: 'Font not found' }, { status: 404 })
+    }
+    
+    console.log('✅ Current font data:', current)
+    
+    // Update and save back to KV
+    const updated = { ...current, ...updates }
+    console.log('🔧 Saving updated font:', updated)
+    
+    await kv.hset('fonts', { [filename]: updated })
+    
+    console.log('✅ Font updated successfully in KV')
     
     return NextResponse.json({ 
       success: true, 
-      message: `Font ${filename} updated successfully (simulated)`,
-      received: { filename, updates }
+      message: `Font ${filename} updated successfully`,
+      updated: updated
     })
   } catch (error) {
     console.error('❌ Update error:', error)
