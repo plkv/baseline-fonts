@@ -80,6 +80,45 @@ export default function FontCatalog() {
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({})
 
+  // Generate available styles for variable fonts
+  const generateVariableFontStyles = useCallback((font: any) => {
+    const styles = [font.style] // Always include the original style
+    
+    // If it's a variable font with weight axis, generate common weight variations
+    if (font.isVariable && font.variableAxes) {
+      const hasWeightAxis = font.variableAxes.some((axis: any) => 
+        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
+      )
+      const hasSlantAxis = font.variableAxes.some((axis: any) => 
+        axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital' || 
+        axis.name.toLowerCase().includes('slant') || axis.name.toLowerCase().includes('italic')
+      )
+      
+      if (hasWeightAxis) {
+        // Generate common weight styles if not already present
+        const commonWeights = ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold']
+        commonWeights.forEach(weight => {
+          if (!styles.some(s => s.toLowerCase().includes(weight.toLowerCase()))) {
+            styles.push(weight)
+          }
+        })
+      }
+      
+      if (hasSlantAxis) {
+        // Generate italic versions if font supports slant/italic axis
+        const baseStyles = [...styles]
+        baseStyles.forEach(style => {
+          const italicStyle = style === 'Regular' ? 'Italic' : `${style} Italic`
+          if (!styles.includes(italicStyle)) {
+            styles.push(italicStyle)
+          }
+        })
+      }
+    }
+    
+    return styles
+  }, [])
+
   // Group fonts by family to create family-level entries
   const groupFontsByFamily = useCallback((fonts: any[]) => {
     const familyMap = new Map()
@@ -89,23 +128,42 @@ export default function FontCatalog() {
       
       if (!familyMap.has(familyKey)) {
         // Create family-level entry using the first font as base
+        const initialAvailableStyles = font.isVariable 
+          ? generateVariableFontStyles(font) 
+          : [font.style]
+        
         familyMap.set(familyKey, {
           ...font,
           name: font.family, // Use family name as display name
-          styles: 1,
-          availableStyles: [font.style],
+          styles: font.isVariable ? initialAvailableStyles.length : 1,
+          availableStyles: initialAvailableStyles,
           availableWeights: [font.weight],
           allFonts: [font] // Keep track of all fonts in family
         })
       } else {
         // Add to existing family
         const family = familyMap.get(familyKey)
-        family.styles += 1
         
-        // Add unique styles and weights
-        if (!family.availableStyles.includes(font.style)) {
-          family.availableStyles.push(font.style)
+        if (font.isVariable) {
+          // For variable fonts, merge generated styles
+          const variableStyles = generateVariableFontStyles(font)
+          variableStyles.forEach(style => {
+            if (!family.availableStyles.includes(style)) {
+              family.availableStyles.push(style)
+            }
+          })
+          family.styles = family.availableStyles.length
+          family.isVariable = true
+          family.variableAxes = font.variableAxes
+        } else {
+          // For static fonts, add unique styles
+          family.styles += 1
+          if (!family.availableStyles.includes(font.style)) {
+            family.availableStyles.push(font.style)
+          }
         }
+        
+        // Add unique weights
         if (!family.availableWeights.includes(font.weight)) {
           family.availableWeights.push(font.weight)
         }
@@ -118,12 +176,6 @@ export default function FontCatalog() {
         })
         
         family.allFonts.push(font)
-        
-        // Use variable font if any family member is variable
-        if (font.isVariable) {
-          family.isVariable = true
-          family.variableAxes = font.variableAxes
-        }
       }
     })
     
@@ -150,7 +202,34 @@ export default function FontCatalog() {
   
   // Helper to get font for selected style
   const getFontForStyle = useCallback((font: any, selectedStyle: string) => {
-    return font.allFonts.find((f: any) => f.style === selectedStyle) || font.allFonts[0]
+    // For static fonts, find exact match
+    const exactMatch = font.allFonts.find((f: any) => f.style === selectedStyle)
+    if (exactMatch) return exactMatch
+    
+    // For variable fonts, return the base font with modified style information
+    const baseFont = font.allFonts[0]
+    if (baseFont && baseFont.isVariable) {
+      // Create a copy of the font with the selected style
+      return {
+        ...baseFont,
+        style: selectedStyle,
+        // Map style to approximate weight for variable fonts
+        weight: getWeightFromStyle(selectedStyle)
+      }
+    }
+    
+    return baseFont || font.allFonts[0]
+  }, [])
+  
+  // Helper to map style names to weights for variable fonts
+  const getWeightFromStyle = useCallback((style: string) => {
+    const styleLower = style.toLowerCase()
+    if (styleLower.includes('light')) return 300
+    if (styleLower.includes('regular') || styleLower === 'normal') return 400
+    if (styleLower.includes('medium')) return 500
+    if (styleLower.includes('semibold')) return 600
+    if (styleLower.includes('bold')) return 700
+    return 400 // Default to regular weight
   }, [])
   
   const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
@@ -659,8 +738,12 @@ export default function FontCatalog() {
     
     // Add uploaded font family using the specific font file for the selected style
     if (selectedFont) {
-      const normalizedName = selectedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-      baseStyle.fontFamily = `"${normalizedName}-${selectedFont.filename}", "${normalizedName}", monospace, system-ui, sans-serif`
+      // Create unique font-family name for each font file to prevent CSS conflicts
+      const normalizedFamilyName = selectedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+      const normalizedFileName = selectedFont.filename.replace(/[^a-zA-Z0-9]/g, '')
+      const uniqueFontFamily = `${normalizedFamilyName}-${normalizedFileName}`
+      
+      baseStyle.fontFamily = `"${uniqueFontFamily}", "${normalizedFamilyName}", monospace, system-ui, sans-serif`
       
       // Set font style based on the selected style
       if (selectedFont.style.toLowerCase().includes('italic') || selectedFont.style.toLowerCase().includes('oblique')) {
@@ -681,9 +764,29 @@ export default function FontCatalog() {
     }
     
     // Add variable font settings if applicable
-    if (font.isVariable && font.variableAxes) {
+    if (font.isVariable && font.variableAxes && selectedFont) {
       const settings = font.variableAxes
-        .map((axis) => `"${axis.axis}" ${variableAxisValues[font.name]?.[axis.axis] || axis.default}`)
+        .map((axis) => {
+          // Use user-set values first, then derive from selected style, then use default
+          const userValue = variableAxisValues[font.name]?.[axis.axis]
+          if (userValue !== undefined) {
+            return `"${axis.axis}" ${userValue}`
+          }
+          
+          // Set axis values based on selected style for common axes
+          if (axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')) {
+            return `"${axis.axis}" ${selectedFont.weight}`
+          }
+          
+          if ((axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital') && 
+              (selectedFont.style.toLowerCase().includes('italic') || selectedFont.style.toLowerCase().includes('oblique'))) {
+            // For slant axis, use a typical italic slant value
+            const slantValue = axis.axis.toLowerCase() === 'slnt' ? -15 : 1
+            return `"${axis.axis}" ${slantValue}`
+          }
+          
+          return `"${axis.axis}" ${axis.default}`
+        })
         .join(", ")
       baseStyle.fontVariationSettings = settings
     }
