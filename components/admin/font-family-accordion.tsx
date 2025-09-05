@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -94,6 +94,15 @@ export default function FontFamilyAccordion({
   const [fontEdits, setFontEdits] = useState<Partial<FontFile>>({})
   const [uploading, setUploading] = useState<string | null>(null)
 
+  // Reset editing state when fontFamilies updates (after successful save)
+  useEffect(() => {
+    if (editingFamily) {
+      // If we're editing a family and the data updates, exit edit mode
+      setEditingFamily(null)
+      setFamilyEdits({})
+    }
+  }, [fontFamilies, editingFamily])
+
   const toggleFamily = (familyName: string) => {
     const newExpanded = new Set(expandedFamilies)
     if (newExpanded.has(familyName)) {
@@ -118,14 +127,43 @@ export default function FontFamilyAccordion({
   const saveFamily = async (familyName: string) => {
     console.log('🔧 Saving family:', familyName, 'with edits:', familyEdits)
     
-    if (Object.keys(familyEdits).length === 0) {
-      console.warn('⚠️ No changes to save')
+    // Find the original family data to compare changes
+    const originalFamily = fontFamilies.find(f => f.name === familyName)
+    if (!originalFamily) {
+      console.error('❌ Original family not found:', familyName)
+      toast.error("Family not found")
+      return
+    }
+    
+    // Only include fields that actually changed
+    const changes: any = {}
+    if (familyEdits.name && familyEdits.name !== originalFamily.name) {
+      changes.name = familyEdits.name
+    }
+    if (familyEdits.foundry && familyEdits.foundry !== originalFamily.foundry) {
+      changes.foundry = familyEdits.foundry
+    }
+    if (familyEdits.category && familyEdits.category !== originalFamily.category) {
+      changes.category = familyEdits.category  
+    }
+    if (familyEdits.languages && JSON.stringify(familyEdits.languages) !== JSON.stringify(originalFamily.languages)) {
+      changes.languages = familyEdits.languages
+    }
+    if (familyEdits.downloadLink !== originalFamily.downloadLink) {
+      changes.downloadLink = familyEdits.downloadLink
+    }
+    
+    console.log('🔍 Detected changes:', changes)
+    console.log('🔍 Original data:', originalFamily)
+    
+    if (Object.keys(changes).length === 0) {
+      console.warn('⚠️ No actual changes detected')
       toast.info("No changes to save")
       return
     }
     
     try {
-      await onFamilyUpdate(familyName, familyEdits)
+      await onFamilyUpdate(familyName, changes)
       setEditingFamily(null)
       setFamilyEdits({})
       toast.success("Family updated successfully")
