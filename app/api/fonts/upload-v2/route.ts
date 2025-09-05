@@ -181,18 +181,30 @@ export async function POST(request: NextRequest) {
       } as UploadError
     }
 
-    // STEP 5.5: Also store metadata in KV for easy updates (if available)
+    // STEP 5.5: Also store metadata in Redis for easy updates (if available)
+    const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
     const hasKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
-    if (hasKV) {
+    
+    if (hasUpstash || hasKV) {
       try {
-        await kv.hset('fonts', { [storedFont.filename]: storedFont })
-        console.log('✅ Font metadata stored in KV:', storedFont.filename)
+        let redis
+        if (hasUpstash) {
+          console.log('📤 Storing in Upstash Redis')
+          const { Redis } = await import('@upstash/redis')
+          redis = Redis.fromEnv()
+        } else {
+          console.log('📤 Storing in legacy Vercel KV')
+          redis = kv // Already imported at top
+        }
+        
+        await redis.hset('fonts', { [storedFont.filename]: storedFont })
+        console.log('✅ Font metadata stored in Redis:', storedFont.filename)
       } catch (error) {
-        console.warn('⚠️ Failed to store in KV (non-critical):', error)
-        // Don't fail the upload if KV storage fails
+        console.warn('⚠️ Failed to store in Redis (non-critical):', error)
+        // Don't fail the upload if Redis storage fails
       }
     } else {
-      console.log('ℹ️ KV not available, skipping KV storage')
+      console.log('ℹ️ Redis not available, skipping Redis storage')
     }
 
     // STEP 6: Success response

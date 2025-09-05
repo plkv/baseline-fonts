@@ -14,38 +14,48 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // **Simple Plan: Require KV setup**
+    // **Updated Plan: Use Upstash Redis from Marketplace**
+    const hasUpstash = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
     const hasKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
     
-    if (!hasKV) {
+    if (!hasUpstash && !hasKV) {
       return NextResponse.json({ 
-        error: 'KV storage not configured',
-        message: 'Please set up Vercel KV database in dashboard',
-        setup: 'Go to Vercel Dashboard → Storage → Create KV Database'
+        error: 'Redis storage not configured',
+        message: 'Please set up Redis storage from Vercel Marketplace',
+        setup: 'Go to Vercel Dashboard → Marketplace → Search "Upstash" → Add Redis'
       }, { status: 503 })
     }
 
-    // Use KV (simple, reliable)
-    const { kv } = await import('@vercel/kv')
+    // Use Upstash Redis or legacy KV
+    let redis
+    if (hasUpstash) {
+      console.log('🔧 Using Upstash Redis')
+      const { Redis } = await import('@upstash/redis')
+      redis = Redis.fromEnv()
+    } else {
+      console.log('🔧 Using legacy Vercel KV')
+      const { kv } = await import('@vercel/kv')
+      redis = kv
+    }
     
     // Get current font
-    const current = await kv.hget('fonts', filename)
+    const current = await redis.hget('fonts', filename)
     
     if (!current) {
       // Try to migrate from V2 on-demand
-      console.log('🔄 Font not in KV, checking V2 for migration...')
+      console.log('🔄 Font not in Redis, checking V2 for migration...')
       try {
         const { fontStorageV2 } = await import('@/lib/font-storage-v2')
         const allFonts = await fontStorageV2.getAllFonts()
         const v2Font = allFonts.find(f => f.filename === filename)
         
         if (v2Font) {
-          console.log('📋 Migrating font from V2 to KV:', filename)
-          await kv.hset('fonts', { [filename]: v2Font })
+          console.log('📋 Migrating font from V2 to Redis:', filename)
+          await redis.hset('fonts', { [filename]: v2Font })
           
           // Now update with new data
           const updated = { ...v2Font, ...updates }
-          await kv.hset('fonts', { [filename]: updated })
+          await redis.hset('fonts', { [filename]: updated })
           
           return NextResponse.json({ 
             success: true, 
@@ -60,11 +70,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
     
-    // Update in KV
+    // Update in Redis
     const updated = { ...current, ...updates }
-    await kv.hset('fonts', { [filename]: updated })
+    await redis.hset('fonts', { [filename]: updated })
     
-    console.log('✅ Font updated successfully in KV')
+    console.log('✅ Font updated successfully in Redis')
     return NextResponse.json({ 
       success: true, 
       message: `Font updated successfully`,
