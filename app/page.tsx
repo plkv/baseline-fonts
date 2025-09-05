@@ -159,6 +159,33 @@ export default function FontCatalog() {
     return [font.style]
   }, [])
 
+  // Map style names to weight values for variable fonts
+  const getWeightForStyleName = useCallback((styleName: string): number | null => {
+    // Remove "Italic" suffix for weight mapping
+    const baseName = styleName.replace(/\s+Italic$/i, '').toLowerCase()
+    
+    const weightMap: { [key: string]: number } = {
+      'thin': 100,
+      'extralight': 200,
+      'ultra light': 200,
+      'light': 300,
+      'regular': 400,
+      'normal': 400,
+      'medium': 500,
+      'semibold': 600,
+      'semi bold': 600,
+      'demi': 600,
+      'bold': 700,
+      'extrabold': 800,
+      'extra bold': 800,
+      'ultra bold': 800,
+      'black': 900,
+      'heavy': 900
+    }
+    
+    return weightMap[baseName] || null
+  }, [])
+
   // Group fonts by family to create family-level entries
   const groupFontsByFamily = useCallback((fonts: any[]) => {
     const familyMap = new Map()
@@ -348,46 +375,58 @@ export default function FontCatalog() {
         const style = document.createElement('style')
         style.setAttribute('data-uploaded-font', font.name)
         
-        // Create normalized font family name for CSS (same for all styles in family)
-        const normalizedName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+        // Create base family name for CSS grouping
+        const baseFamilyName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+        
+        // Create unique font-family name for each individual style to prevent conflicts
+        const styleIdentifier = font.style ? font.style.replace(/[^a-zA-Z0-9]/g, '') : 'Regular'
+        const weightIdentifier = font.weight || 400
+        const uniqueFamilyName = `${baseFamilyName}-${styleIdentifier}-${weightIdentifier}`
         
         // Determine correct font-style from font style name
         const fontStyle = (font.style && (font.style.toLowerCase().includes('italic') || font.style.toLowerCase().includes('oblique'))) 
           ? 'italic' 
           : 'normal'
         
-        // Create CSS with proper font-face and selectors
+        // Create CSS with unique font-face declarations to prevent conflicts
         style.textContent = `
           @font-face {
-            font-family: "${normalizedName}";
+            font-family: "${uniqueFamilyName}";
             src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
             font-weight: ${font.weight || 400};
             font-style: ${fontStyle};
             font-display: swap;
           }
           
-          /* Primary selector using data attribute */
+          /* Primary selector using data attribute and exact font match */
+          .uploaded-font[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"] {
+            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
+          }
+          
+          /* Fallback selector using unique class name */
+          .font-${uniqueFamilyName.toLowerCase()} {
+            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
+          }
+          
+          /* Family-level selector (uses first available style as fallback) */
           .uploaded-font[data-font-family="${font.family}"] {
-            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
+            font-family: "${uniqueFamilyName}", "${baseFamilyName}", monospace, system-ui, sans-serif !important;
           }
           
-          /* Fallback selector using normalized class name */
-          .font-${normalizedName.toLowerCase()} {
-            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
-          }
-          
-          /* Additional debugging selector */
-          textarea[data-font-family="${font.family}"] {
-            font-family: "${normalizedName}", monospace, system-ui, sans-serif !important;
+          /* Text area debugging selector */
+          textarea[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"] {
+            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
           }
         `
         document.head.appendChild(style)
         
         console.log(`✓ Font CSS loaded: ${font.family}`)
-        console.log(`  Normalized: ${normalizedName}`)
+        console.log(`  Base Family: ${baseFamilyName}`)
+        console.log(`  Unique Name: ${uniqueFamilyName}`)
+        console.log(`  Style: ${font.style || 'Regular'} (${fontStyle})`)
+        console.log(`  Weight: ${font.weight || 400}`)
         console.log(`  URL: ${font.url}`)
-        console.log(`  Selector: .uploaded-font[data-font-family="${font.family}"]`)
-        console.log(`  CSS Content:`, style.textContent)
+        console.log(`  Selector: .uploaded-font[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"]`)
       } else {
         console.warn(`⚠️ Font ${font.family} has no URL, skipping CSS generation`)
       }
@@ -1413,7 +1452,34 @@ export default function FontCatalog() {
                             {font.availableStyles.length > 1 && (
                               <Select
                                 value={selectedStyles[font.name] || getDefaultStyle(font)}
-                                onValueChange={(value) => setSelectedStyles(prev => ({ ...prev, [font.name]: value }))}
+                                onValueChange={(value) => {
+                                  setSelectedStyles(prev => ({ ...prev, [font.name]: value }))
+                                  
+                                  // Update variable axis values for weight based on the chosen style
+                                  if (font.isVariable && font.variableAxes) {
+                                    const weightForStyle = getWeightForStyleName(value)
+                                    if (weightForStyle) {
+                                      // Find weight axis
+                                      const weightAxis = font.variableAxes.find((axis: any) => 
+                                        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
+                                      )
+                                      
+                                      if (weightAxis) {
+                                        // Update variable axis values to set the weight axis
+                                        setVariableAxisValues(prev => ({
+                                          ...prev,
+                                          [font.name]: {
+                                            ...prev[font.name],
+                                            [weightAxis.axis]: weightForStyle
+                                          }
+                                        }))
+                                      }
+                                      
+                                      // Also update selectedWeight for global weight controls
+                                      setSelectedWeight(weightForStyle)
+                                    }
+                                  }
+                                }}
                               >
                                 <SelectTrigger className={`w-32 h-7 text-xs ${
                                   darkMode 
@@ -1493,6 +1559,7 @@ export default function FontCatalog() {
                             }}
                             className={`w-full resize-none border-0 bg-transparent p-4 focus:outline-none focus:ring-0 tracking-[0em] transition-all duration-300 ${getThemeText()} overflow-hidden uploaded-font`}
                             data-font-family={font.family}
+                            data-font-style={font.style || 'Regular'}
                             style={{
                               fontSize: `${fontSize[0]}px`,
                               fontWeight: selectedWeight,

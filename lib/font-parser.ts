@@ -251,9 +251,9 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       supportedFeatures.add('liga')
     }
 
-    // Basic style variations (simplified) with cleanup
-    const availableStyles = [style].filter(s => s && s.trim())
-    const availableWeights = [weight].filter(w => w && !isNaN(w))
+    // Enhanced style variations - extract from variable axes and named instances
+    let availableStyles = [style].filter(s => s && s.trim())
+    let availableWeights = [weight].filter(w => w && !isNaN(w))
 
     // Variable font axes (if available)
     const variableAxes = []
@@ -323,6 +323,131 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       }
     }
 
+    // Enhanced style and weight generation for variable fonts
+    if (isVariable && variableAxes.length > 0) {
+      try {
+        // Find weight and slant axes
+        const weightAxis = variableAxes.find(axis => 
+          axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
+        )
+        const slantAxis = variableAxes.find(axis => 
+          axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital' || 
+          axis.name.toLowerCase().includes('slant') || axis.name.toLowerCase().includes('italic')
+        )
+
+        if (weightAxis) {
+          // Generate comprehensive weight and style variations
+          const min = Math.round(weightAxis.min)
+          const max = Math.round(weightAxis.max)
+          
+          console.log(`🔢 Weight axis range: ${min} - ${max}`)
+          
+          // Define standard weight points and their names
+          const standardWeights = [
+            { weight: 100, name: 'Thin' },
+            { weight: 200, name: 'ExtraLight' },
+            { weight: 300, name: 'Light' },
+            { weight: 400, name: 'Regular' },
+            { weight: 500, name: 'Medium' },
+            { weight: 600, name: 'SemiBold' },
+            { weight: 700, name: 'Bold' },
+            { weight: 800, name: 'ExtraBold' },
+            { weight: 900, name: 'Black' }
+          ]
+          
+          // Extract all weights and styles within the axis range
+          const variableWeights: number[] = []
+          const variableStyles: string[] = []
+          
+          standardWeights.forEach(({ weight: w, name }) => {
+            if (w >= min && w <= max) {
+              variableWeights.push(w)
+              variableStyles.push(name)
+              
+              // Add italic version if slant axis exists
+              if (slantAxis) {
+                variableStyles.push(`${name} Italic`)
+              }
+            }
+          })
+          
+          // If no standard weights fit, create custom range
+          if (variableWeights.length === 0) {
+            // Create 5-9 evenly distributed points within the actual range
+            const steps = Math.min(9, Math.max(5, Math.floor((max - min) / 50) + 1))
+            for (let i = 0; i < steps; i++) {
+              const w = Math.round(min + (max - min) * i / (steps - 1))
+              variableWeights.push(w)
+              
+              const name = w <= 250 ? 'ExtraLight' :
+                          w <= 350 ? 'Light' :
+                          w <= 450 ? 'Regular' :
+                          w <= 550 ? 'Medium' :
+                          w <= 650 ? 'SemiBold' :
+                          w <= 750 ? 'Bold' :
+                          w <= 850 ? 'ExtraBold' : 'Black'
+              
+              if (!variableStyles.includes(name)) {
+                variableStyles.push(name)
+                
+                if (slantAxis && !variableStyles.includes(`${name} Italic`)) {
+                  variableStyles.push(`${name} Italic`)
+                }
+              }
+            }
+          }
+          
+          // Update arrays with comprehensive lists
+          availableWeights = [...new Set([...availableWeights, ...variableWeights])].sort((a, b) => a - b)
+          availableStyles = [...new Set([...availableStyles, ...variableStyles])]
+          
+          console.log(`📊 Generated ${variableWeights.length} weights: ${variableWeights}`)
+          console.log(`🎨 Generated ${variableStyles.length} styles: ${variableStyles}`)
+        }
+
+        // Extract named instances if available (these are predefined style variations)
+        if (font.tables?.fvar?.instances) {
+          console.log(`🏷️ Found ${font.tables.fvar.instances.length} named instances`)
+          
+          font.tables.fvar.instances.forEach((instance: any) => {
+            try {
+              let instanceName = ''
+              
+              if (instance.name) {
+                if (typeof instance.name === 'string') {
+                  instanceName = instance.name
+                } else if (instance.name.en) {
+                  instanceName = instance.name.en
+                }
+              }
+              
+              if (instanceName && instanceName.trim() && !availableStyles.includes(instanceName)) {
+                availableStyles.push(instanceName.trim())
+                console.log(`  ✅ Added named instance: ${instanceName}`)
+              }
+              
+              // Extract weight from coordinates if available
+              if (instance.coordinates && instance.coordinates.wght) {
+                const instanceWeight = Math.round(Number(instance.coordinates.wght))
+                if (instanceWeight && !availableWeights.includes(instanceWeight)) {
+                  availableWeights.push(instanceWeight)
+                }
+              }
+            } catch (instanceError) {
+              console.warn('⚠️ Error processing named instance:', instanceError)
+            }
+          })
+          
+          // Sort weights after adding named instances
+          availableWeights.sort((a, b) => a - b)
+        }
+        
+      } catch (variableError) {
+        console.error('⚠️ Error generating variable font styles:', variableError)
+        // Keep original single style if variable processing fails
+      }
+    }
+
     // Enhanced language support detection
     const languages: string[] = ['Latin'] // Default
     if (font.tables?.os2) {
@@ -351,7 +476,7 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       filename: String(originalName),
       path: `/fonts/uploads/${originalName}`,
       // UI compatibility fields
-      styles: 1, // Single uploaded style for now
+      styles: availableStyles.length || 1,
       features: supportedFeatures.size > 0 ? Array.from(supportedFeatures) : ['liga', 'kern'],
       category: String(category || 'Sans Serif'),
       price: 'Free',
