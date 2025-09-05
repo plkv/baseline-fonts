@@ -258,8 +258,13 @@ export default function FontCatalog() {
         const style = document.createElement('style')
         style.setAttribute('data-uploaded-font', font.name)
         
-        // Create normalized font family name for CSS
+        // Create normalized font family name for CSS (same for all styles in family)
         const normalizedName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+        
+        // Determine correct font-style from font style name
+        const fontStyle = (font.style && (font.style.toLowerCase().includes('italic') || font.style.toLowerCase().includes('oblique'))) 
+          ? 'italic' 
+          : 'normal'
         
         // Create CSS with proper font-face and selectors
         style.textContent = `
@@ -267,7 +272,7 @@ export default function FontCatalog() {
             font-family: "${normalizedName}";
             src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
             font-weight: ${font.weight || 400};
-            font-style: normal;
+            font-style: ${fontStyle};
             font-display: swap;
           }
           
