@@ -308,28 +308,42 @@ export class FontStorageV2 {
    * Update font metadata
    */
   async updateFont(filename: string, updates: Partial<FontMetadata>): Promise<boolean> {
-    console.log(`✏️ Updating font: ${filename}`)
+    console.log(`✏️ Updating font: ${filename} with updates:`, updates)
     
     try {
       // Get current metadata
       const allFonts = await this.getAllFonts()
+      console.log(`🔍 Found ${allFonts.length} total fonts in storage`)
+      
       const currentFont = allFonts.find(f => f.filename === filename)
       
       if (!currentFont) {
         console.error(`❌ Font not found: ${filename}`)
+        console.log('🔍 Available filenames:', allFonts.map(f => f.filename))
         return false
       }
       
+      console.log(`✅ Found font to update: ${currentFont.family}`)
+      
       // Merge updates
       const updatedFont = { ...currentFont, ...updates }
+      console.log(`🔧 Merged font data:`, updatedFont)
       
+      let result = false
       if (this.hasBlob && this.isProduction) {
-        return await this.updateFontInBlob(filename, updatedFont)
+        console.log('📡 Updating in Blob storage...')
+        result = await this.updateFontInBlob(filename, updatedFont)
       } else if (this.isProduction) {
-        return await this.updateFontInMemory(filename, updatedFont)
+        console.log('💾 Updating in Memory storage...')
+        result = await this.updateFontInMemory(filename, updatedFont)
       } else {
-        return await this.updateFontLocally(filename, updatedFont)
+        console.log('📁 Updating in Local storage...')
+        result = await this.updateFontLocally(filename, updatedFont)
       }
+      
+      console.log(`🔍 Update result: ${result}`)
+      return result
+      
     } catch (error) {
       console.error('❌ Font update error:', error)
       return false
@@ -339,8 +353,12 @@ export class FontStorageV2 {
   private async updateFontInBlob(filename: string, metadata: FontMetadata): Promise<boolean> {
     try {
       const metadataPath = `${STORAGE_PREFIX}metadata/${filename}.json`
+      console.log(`📡 Updating blob at path: ${metadataPath}`)
       
-      await put(metadataPath, JSON.stringify(metadata, null, 2), {
+      const jsonData = JSON.stringify(metadata, null, 2)
+      console.log(`📝 Updating with data size: ${jsonData.length} chars`)
+      
+      await put(metadataPath, jsonData, {
         access: 'public',
         contentType: 'application/json'
       })
@@ -350,6 +368,7 @@ export class FontStorageV2 {
       
     } catch (error) {
       console.error('❌ Blob update error:', error)
+      console.error('❌ Error details:', JSON.stringify(error))
       return false
     }
   }
