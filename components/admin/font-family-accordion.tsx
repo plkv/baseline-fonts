@@ -116,12 +116,21 @@ export default function FontFamilyAccordion({
   }
 
   const saveFamily = async (familyName: string) => {
+    console.log('🔧 Saving family:', familyName, 'with edits:', familyEdits)
+    
+    if (Object.keys(familyEdits).length === 0) {
+      console.warn('⚠️ No changes to save')
+      toast.info("No changes to save")
+      return
+    }
+    
     try {
       await onFamilyUpdate(familyName, familyEdits)
       setEditingFamily(null)
       setFamilyEdits({})
       toast.success("Family updated successfully")
     } catch (error) {
+      console.error('❌ Family save error:', error)
       toast.error("Failed to update family")
     }
   }

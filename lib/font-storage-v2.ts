@@ -18,6 +18,9 @@ export class FontStorageV2 {
   private static instance: FontStorageV2
   private isProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
   private hasBlob = !!process.env.BLOB_READ_WRITE_TOKEN
+  
+  // Memory storage for production fallback (temporary session storage)
+  private memoryStorage = new Map<string, FontMetadata>()
 
   static getInstance(): FontStorageV2 {
     if (!FontStorageV2.instance) {
@@ -35,16 +38,20 @@ export class FontStorageV2 {
     try {
       if (this.hasBlob && this.isProduction) {
         return await this.storeFontInBlob(metadata, buffer)
+      } else if (this.isProduction) {
+        // Production without blob storage - use memory fallback
+        console.warn('⚠️ Using memory storage in production (temporary)')
+        return await this.storeFontInMemory(metadata, buffer)
       } else {
         return await this.storeFontLocally(metadata, buffer)
       }
     } catch (error) {
       console.error('❌ Font storage failed:', error)
       
-      // Graceful fallback to local storage in production if blob fails
+      // Graceful fallback to memory storage in production
       if (this.isProduction) {
-        console.warn('⚠️ Falling back to local storage')
-        return await this.storeFontLocally(metadata, buffer)
+        console.warn('⚠️ Falling back to memory storage')
+        return await this.storeFontInMemory(metadata, buffer)
       }
       
       throw error
@@ -140,6 +147,9 @@ export class FontStorageV2 {
     try {
       if (this.hasBlob && this.isProduction) {
         return await this.loadFontsFromBlob()
+      } else if (this.isProduction) {
+        // Production without blob storage - use memory fallback
+        return await this.loadFontsFromMemory()
       } else {
         return await this.loadFontsFromLocal()
       }
@@ -149,9 +159,9 @@ export class FontStorageV2 {
       // Graceful fallback
       if (this.isProduction) {
         try {
-          return await this.loadFontsFromLocal()
+          return await this.loadFontsFromMemory()
         } catch (fallbackError) {
-          console.error('❌ Fallback loading failed:', fallbackError)
+          console.error('❌ Memory fallback loading failed:', fallbackError)
           return []
         }
       }
@@ -239,6 +249,8 @@ export class FontStorageV2 {
     try {
       if (this.hasBlob && this.isProduction) {
         return await this.removeFontFromBlob(filename)
+      } else if (this.isProduction) {
+        return await this.removeFontFromMemory(filename)
       } else {
         return await this.removeFontFromLocal(filename)
       }
@@ -313,6 +325,8 @@ export class FontStorageV2 {
       
       if (this.hasBlob && this.isProduction) {
         return await this.updateFontInBlob(filename, updatedFont)
+      } else if (this.isProduction) {
+        return await this.updateFontInMemory(filename, updatedFont)
       } else {
         return await this.updateFontLocally(filename, updatedFont)
       }
@@ -365,10 +379,11 @@ export class FontStorageV2 {
   getStorageInfo() {
     return {
       type: this.hasBlob && this.isProduction ? 'Vercel Blob (Persistent)' : 
-            this.isProduction ? 'Memory Only (NO BLOB TOKEN)' : 'Local Development',
+            this.isProduction ? 'Memory Fallback (Session Only - NO BLOB TOKEN)' : 'Local Development',
       hasBlob: this.hasBlob,
       isProduction: this.isProduction,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
+      fontsInMemory: this.memoryStorage.size
     }
   }
 
@@ -380,6 +395,68 @@ export class FontStorageV2 {
       'woff2': 'font/woff2'
     }
     return types[format.toLowerCase()] || 'application/octet-stream'
+  }
+
+  /**
+   * Memory storage methods for production fallback
+   */
+  private async storeFontInMemory(metadata: FontMetadata, buffer: ArrayBuffer): Promise<FontMetadata> {
+    try {
+      const enhancedMetadata: FontMetadata = {
+        ...metadata,
+        url: `/api/fonts/serve/${metadata.filename}`, // Serve via API
+        storage: 'memory-fallback',
+        uploadedAt: new Date().toISOString(),
+        published: metadata.published ?? true
+      }
+      
+      this.memoryStorage.set(metadata.filename, enhancedMetadata)
+      console.log(`✅ Font stored in memory: ${metadata.family} (${this.memoryStorage.size} total fonts)`)
+      return enhancedMetadata
+      
+    } catch (error) {
+      console.error('❌ Memory storage error:', error)
+      throw error
+    }
+  }
+
+  private async loadFontsFromMemory(): Promise<FontMetadata[]> {
+    const fonts = Array.from(this.memoryStorage.values())
+    console.log(`✅ Loaded ${fonts.length} fonts from memory storage`)
+    return fonts
+  }
+
+  private async updateFontInMemory(filename: string, metadata: FontMetadata): Promise<boolean> {
+    try {
+      if (!this.memoryStorage.has(filename)) {
+        console.error(`❌ Font not found in memory: ${filename}`)
+        return false
+      }
+      
+      this.memoryStorage.set(filename, metadata)
+      console.log(`✅ Font metadata updated in memory: ${filename}`)
+      return true
+      
+    } catch (error) {
+      console.error('❌ Memory update error:', error)
+      return false
+    }
+  }
+
+  private async removeFontFromMemory(filename: string): Promise<boolean> {
+    try {
+      const deleted = this.memoryStorage.delete(filename)
+      if (deleted) {
+        console.log(`✅ Font removed from memory: ${filename}`)
+      } else {
+        console.warn(`⚠️ Font not found in memory: ${filename}`)
+      }
+      return deleted
+      
+    } catch (error) {
+      console.error('❌ Memory removal error:', error)
+      return false
+    }
   }
 }
 
