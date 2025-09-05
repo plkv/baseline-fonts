@@ -293,10 +293,13 @@ export default function AdminPage() {
         console.log('✅ Family updated successfully, updating local state immediately - PRODUCTION FIX v2')
         
         // Update local state immediately for instant UI feedback
-        setFontFamilies(prevFamilies => 
-          prevFamilies.map(family => {
+        console.log('🔧 Applying local state update with:', updates)
+        setFontFamilies(prevFamilies => {
+          console.log('🔧 Current families before update:', prevFamilies.length)
+          const updatedFamilies = prevFamilies.map(family => {
             if (family.name === familyName) {
-              return {
+              console.log('🔧 Updating family:', familyName, 'with updates:', updates)
+              const updatedFamily = {
                 ...family,
                 ...updates,
                 // Update all fonts in the family with the new data
@@ -309,13 +312,21 @@ export default function AdminPage() {
                   ...(updates.downloadLink !== undefined && { downloadLink: updates.downloadLink })
                 }))
               }
+              console.log('🔧 Updated family data:', updatedFamily)
+              return updatedFamily
             }
             return family
           })
-        )
+          console.log('🔧 Updated families count:', updatedFamilies.length)
+          return updatedFamilies
+        })
         
-        // Also reload from server to ensure consistency (without delay)
-        loadFonts()
+        // Delay server reload to allow UI update to show first
+        console.log('🔧 Scheduling server reload...')
+        setTimeout(() => {
+          console.log('🔧 Reloading from server...')
+          loadFonts()
+        }, 1000)
       } else {
         console.error('❌ Family update failed:', result)
         throw new Error(result.error || 'Family update failed')
