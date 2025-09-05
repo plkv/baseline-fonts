@@ -290,9 +290,32 @@ export default function AdminPage() {
       console.log('🔍 Family update API response:', response.status, result)
       
       if (response.ok) {
-        console.log('✅ Family updated successfully, reloading fonts after delay')
-        // Small delay to ensure the update is propagated
-        setTimeout(() => loadFonts(), 500)
+        console.log('✅ Family updated successfully, updating local state immediately')
+        
+        // Update local state immediately for instant UI feedback
+        setFontFamilies(prevFamilies => 
+          prevFamilies.map(family => {
+            if (family.name === familyName) {
+              return {
+                ...family,
+                ...updates,
+                // Update all fonts in the family with the new data
+                fonts: family.fonts.map(font => ({
+                  ...font,
+                  // Apply family-level updates to individual fonts
+                  ...(updates.foundry && { foundry: updates.foundry }),
+                  ...(updates.category && { category: updates.category }),
+                  ...(updates.languages && { languages: updates.languages }),
+                  ...(updates.downloadLink !== undefined && { downloadLink: updates.downloadLink })
+                }))
+              }
+            }
+            return family
+          })
+        )
+        
+        // Also reload from server to ensure consistency (without delay)
+        loadFonts()
       } else {
         console.error('❌ Family update failed:', result)
         throw new Error(result.error || 'Family update failed')
