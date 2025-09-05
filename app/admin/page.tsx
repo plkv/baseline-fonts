@@ -271,6 +271,7 @@ export default function AdminPage() {
   }
   
   const handleFamilyUpdate = async (familyName: string, updates: Partial<FontFamily>) => {
+    console.log('🔄 Updating family:', familyName, 'with:', updates)
     try {
       const response = await fetch('/api/fonts/family/update', {
         method: 'PATCH',
@@ -280,12 +281,18 @@ export default function AdminPage() {
         body: JSON.stringify({ familyName, updates })
       })
       
+      const result = await response.json()
+      console.log('🔍 Family update API response:', response.status, result)
+      
       if (response.ok) {
+        console.log('✅ Family updated successfully, reloading fonts')
         loadFonts()
       } else {
-        throw new Error('Family update failed')
+        console.error('❌ Family update failed:', result)
+        throw new Error(result.error || 'Family update failed')
       }
     } catch (error) {
+      console.error('❌ Family update error:', error)
       throw error
     }
   }

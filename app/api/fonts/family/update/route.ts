@@ -44,10 +44,13 @@ export async function PATCH(request: NextRequest) {
       updatedCount: updateCount
     })
   } catch (error) {
-    console.error('Failed to update font family:', error)
+    console.error('❌ Failed to update font family:', familyName, error)
+    console.error('❌ Update payload:', updates)
     return NextResponse.json({ 
       error: 'Failed to update font family',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      familyName,
+      updates
     }, { status: 500 })
   }
 }
