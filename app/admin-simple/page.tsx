@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Upload, Trash2, FileText, ChevronDown, ChevronRight } from "lucide-react"
+import { Upload, Trash2, FileText, ChevronDown, ChevronRight, Edit3, Save, X } from "lucide-react"
 import { toast } from "sonner"
 import { Toaster } from "sonner"
 
@@ -19,6 +19,8 @@ interface Font {
   foundry: string
   url: string
   uploadDate?: string
+  languages?: string[]
+  downloadLink?: string
 }
 
 export default function SimpleAdmin() {
@@ -27,6 +29,13 @@ export default function SimpleAdmin() {
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'new' | 'a-z'>('new')
   const [expandedFonts, setExpandedFonts] = useState<Set<string>>(new Set())
+  const [editingFont, setEditingFont] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    family: '',
+    foundry: '',
+    downloadLink: '',
+    languages: [] as string[]
+  })
 
   // Load fonts from API
   const loadFonts = async () => {
@@ -153,6 +162,79 @@ export default function SimpleAdmin() {
     })
   }
 
+  // Available languages for selection
+  const availableLanguages = [
+    'Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 
+    'Korean', 'Thai', 'Devanagari', 'Bengali', 'Tamil', 'Telugu', 'Gujarati'
+  ]
+
+  // Start editing a font
+  const startEditing = (font: Font) => {
+    setEditingFont(font.filename)
+    setEditForm({
+      family: font.family,
+      foundry: font.foundry,
+      downloadLink: font.downloadLink || '',
+      languages: font.languages || []
+    })
+    // Expand the font if it's not already expanded
+    if (!expandedFonts.has(font.filename)) {
+      toggleFontExpansion(font.filename)
+    }
+  }
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingFont(null)
+    setEditForm({
+      family: '',
+      foundry: '',
+      downloadLink: '',
+      languages: []
+    })
+  }
+
+  // Save font edits
+  const saveEdits = async (filename: string) => {
+    try {
+      const response = await fetch('/api/fonts/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename,
+          updates: {
+            family: editForm.family,
+            foundry: editForm.foundry,
+            downloadLink: editForm.downloadLink,
+            languages: editForm.languages
+          }
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Font updated successfully')
+        loadFonts() // Reload fonts to show changes
+        cancelEditing()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Update failed')
+      }
+    } catch (error) {
+      console.error('Update error:', error)
+      toast.error('Update failed')
+    }
+  }
+
+  // Toggle language selection
+  const toggleLanguage = (language: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      languages: prev.languages.includes(language)
+        ? prev.languages.filter(l => l !== language)
+        : [...prev.languages, language]
+    }))
+  }
+
   useEffect(() => {
     loadFonts()
   }, [])
@@ -274,48 +356,140 @@ export default function SimpleAdmin() {
                         </div>
                       </div>
                       
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(font.filename, font.family)
-                        }}
-                        className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startEditing(font)
+                          }}
+                          className="text-blue-500 hover:text-blue-700 p-1 flex-shrink-0"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(font.filename, font.family)
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Expanded Details - Compact */}
                     {isExpanded && (
                       <div className="border-t bg-gray-50 px-3 py-2">
-                        <div className="grid md:grid-cols-2 gap-3">
-                          {/* Font Preview */}
-                          <div>
-                            <div 
-                              className="bg-white rounded p-2 text-lg border"
-                              style={{
-                                fontFamily: `"${font.family}", system-ui, sans-serif`,
-                                fontWeight: font.weight
-                              }}
-                            >
-                              The quick brown fox
+                        {editingFont === font.filename ? (
+                          /* Edit Form */
+                          <div className="space-y-3">
+                            {/* Edit Fields */}
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="text-xs font-medium text-gray-700">Name</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.family}
+                                    onChange={(e) => setEditForm(prev => ({...prev, family: e.target.value}))}
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium text-gray-700">Author</label>
+                                  <input
+                                    type="text"
+                                    value={editForm.foundry}
+                                    onChange={(e) => setEditForm(prev => ({...prev, foundry: e.target.value}))}
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium text-gray-700">Link</label>
+                                  <input
+                                    type="url"
+                                    value={editForm.downloadLink}
+                                    onChange={(e) => setEditForm(prev => ({...prev, downloadLink: e.target.value}))}
+                                    className="w-full px-2 py-1 text-xs border rounded"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <label className="text-xs font-medium text-gray-700 mb-1 block">Languages</label>
+                                <div className="flex gap-1 flex-wrap">
+                                  {availableLanguages.map(lang => (
+                                    <button
+                                      key={lang}
+                                      type="button"
+                                      onClick={() => toggleLanguage(lang)}
+                                      className={`text-xs px-2 py-0.5 rounded border ${
+                                        editForm.languages.includes(lang)
+                                          ? 'bg-blue-100 border-blue-300 text-blue-800'
+                                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      {lang}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Edit Buttons */}
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={cancelEditing}
+                                className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                              >
+                                <X className="w-3 h-3" /> Cancel
+                              </button>
+                              <button
+                                onClick={() => saveEdits(font.filename)}
+                                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                              >
+                                <Save className="w-3 h-3" /> Save
+                              </button>
                             </div>
                           </div>
-                          
-                          {/* Font Details */}
-                          <div className="space-y-1">
-                            <div className="flex gap-1 flex-wrap">
-                              <Badge variant="outline" className="text-xs px-1 py-0">{font.format.toUpperCase()}</Badge>
-                              <Badge variant="outline" className="text-xs px-1 py-0">{font.category}</Badge>
-                              <Badge variant="outline" className="text-xs px-1 py-0">{Math.round(font.fileSize / 1024)}KB</Badge>
+                        ) : (
+                          /* Normal View */
+                          <div className="grid md:grid-cols-2 gap-3">
+                            {/* Font Preview */}
+                            <div>
+                              <div 
+                                className="bg-white rounded p-2 text-lg border"
+                                style={{
+                                  fontFamily: `"${font.family}", system-ui, sans-serif`,
+                                  fontWeight: font.weight
+                                }}
+                              >
+                                The quick brown fox
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-600 space-y-0.5">
-                              <div>{font.style} {font.weight}</div>
-                              <div>{font.foundry}</div>
-                              <div className="truncate">{font.filename}</div>
+                            
+                            {/* Font Details */}
+                            <div className="space-y-1">
+                              <div className="flex gap-1 flex-wrap">
+                                <Badge variant="outline" className="text-xs px-1 py-0">{font.format.toUpperCase()}</Badge>
+                                <Badge variant="outline" className="text-xs px-1 py-0">{font.category}</Badge>
+                                <Badge variant="outline" className="text-xs px-1 py-0">{Math.round(font.fileSize / 1024)}KB</Badge>
+                              </div>
+                              <div className="text-xs text-gray-600 space-y-0.5">
+                                <div>{font.style} {font.weight}</div>
+                                <div>{font.foundry}</div>
+                                {font.languages && font.languages.length > 0 && (
+                                  <div>Languages: {font.languages.join(', ')}</div>
+                                )}
+                                {font.downloadLink && (
+                                  <div><a href={font.downloadLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download</a></div>
+                                )}
+                                <div className="truncate">{font.filename}</div>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
