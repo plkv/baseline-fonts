@@ -197,7 +197,7 @@ export default function SimpleAdmin() {
   // Save font edits
   const saveEdits = async (filename: string) => {
     try {
-      const response = await fetch('/api/fonts/update', {
+      const response = await fetch('/api/fonts/update-v2', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
