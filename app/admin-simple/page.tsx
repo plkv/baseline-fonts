@@ -40,7 +40,7 @@ export default function SimpleAdmin() {
   // Load fonts from API
   const loadFonts = async () => {
     try {
-      const response = await fetch('/api/fonts/list-v2')
+      const response = await fetch('/api/fonts/list-v2?includeUnpublished=true')
       if (response.ok) {
         const data = await response.json()
         setFonts(data.fonts || [])
