@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseFontFile } from '@/lib/font-parser'
 import { fontStorageV2 } from '@/lib/font-storage-v2'
+import { kv } from '@vercel/kv'
 
 interface UploadError {
   code: string
@@ -178,6 +179,15 @@ export async function POST(request: NextRequest) {
         message: 'Failed to store font',
         details: error instanceof Error ? error.message : 'Unknown'
       } as UploadError
+    }
+
+    // STEP 5.5: Also store metadata in KV for easy updates
+    try {
+      await kv.hset('fonts', { [storedFont.filename]: storedFont })
+      console.log('✅ Font metadata stored in KV:', storedFont.filename)
+    } catch (error) {
+      console.warn('⚠️ Failed to store in KV (non-critical):', error)
+      // Don't fail the upload if KV storage fails
     }
 
     // STEP 6: Success response
