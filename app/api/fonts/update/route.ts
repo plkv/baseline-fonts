@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { kv } from '@vercel/kv'
+import { fontStorageV2 } from '@/lib/font-storage-v2'
 
 export async function PATCH(request: NextRequest) {
   console.log('🔧 Font update endpoint called')
@@ -15,30 +15,50 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
-    // Get current font metadata from KV
-    console.log('📋 Getting font from KV:', filename)
-    const current = await kv.hget('fonts', filename)
+    // Check if KV is available
+    const hasKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+    console.log('🔧 KV available:', hasKV)
+
+    if (hasKV) {
+      // Use KV if available
+      try {
+        const { kv } = await import('@vercel/kv')
+        const current = await kv.hget('fonts', filename)
+        
+        if (!current) {
+          console.log('❌ Font not found in KV:', filename)
+          return NextResponse.json({ error: 'Font not found' }, { status: 404 })
+        }
+        
+        const updated = { ...current, ...updates }
+        await kv.hset('fonts', { [filename]: updated })
+        
+        console.log('✅ Font updated successfully in KV')
+        return NextResponse.json({ 
+          success: true, 
+          message: `Font ${filename} updated successfully`,
+          updated: updated
+        })
+      } catch (kvError) {
+        console.warn('⚠️ KV failed, falling back to V2:', kvError)
+      }
+    }
+
+    // Fallback to V2 storage
+    console.log('📋 Using V2 storage fallback')
+    const success = await fontStorageV2.updateFont(filename, updates)
     
-    if (!current) {
-      console.log('❌ Font not found in KV:', filename)
+    if (!success) {
       return NextResponse.json({ error: 'Font not found' }, { status: 404 })
     }
     
-    console.log('✅ Current font data:', current)
-    
-    // Update and save back to KV
-    const updated = { ...current, ...updates }
-    console.log('🔧 Saving updated font:', updated)
-    
-    await kv.hset('fonts', { [filename]: updated })
-    
-    console.log('✅ Font updated successfully in KV')
-    
+    console.log('✅ Font updated successfully in V2 storage')
     return NextResponse.json({ 
       success: true, 
-      message: `Font ${filename} updated successfully`,
-      updated: updated
+      message: `Font ${filename} updated successfully (V2 fallback)`,
+      updated: updates
     })
+    
   } catch (error) {
     console.error('❌ Update error:', error)
     return NextResponse.json({ 

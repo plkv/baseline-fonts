@@ -181,13 +181,18 @@ export async function POST(request: NextRequest) {
       } as UploadError
     }
 
-    // STEP 5.5: Also store metadata in KV for easy updates
-    try {
-      await kv.hset('fonts', { [storedFont.filename]: storedFont })
-      console.log('✅ Font metadata stored in KV:', storedFont.filename)
-    } catch (error) {
-      console.warn('⚠️ Failed to store in KV (non-critical):', error)
-      // Don't fail the upload if KV storage fails
+    // STEP 5.5: Also store metadata in KV for easy updates (if available)
+    const hasKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+    if (hasKV) {
+      try {
+        await kv.hset('fonts', { [storedFont.filename]: storedFont })
+        console.log('✅ Font metadata stored in KV:', storedFont.filename)
+      } catch (error) {
+        console.warn('⚠️ Failed to store in KV (non-critical):', error)
+        // Don't fail the upload if KV storage fails
+      }
+    } else {
+      console.log('ℹ️ KV not available, skipping KV storage')
     }
 
     // STEP 6: Success response
