@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   console.log('🔄 Starting V2 to KV migration')
+  console.log('🔧 Environment check - Upstash:', !!process.env.UPSTASH_REDIS_REST_URL, 'KV:', !!process.env.KV_REST_API_URL)
   
   try {
     // Check if Redis is configured (Upstash or legacy KV)

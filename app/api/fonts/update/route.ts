@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(request: NextRequest) {
   console.log('🔧 Font update endpoint called')
+  console.log('🔧 Environment check - Upstash:', !!process.env.UPSTASH_REDIS_REST_URL, 'KV:', !!process.env.KV_REST_API_URL)
   
   try {
     const body = await request.json()
