@@ -95,17 +95,43 @@ export default function FontCatalog() {
       )
       
       if (weightAxis) {
-        // Generate weight variations based on actual axis range
-        const min = weightAxis.min || 100
-        const max = weightAxis.max || 900
-        const range = max - min
+        // Generate weight variations based on actual axis range - only create styles that make sense
+        const min = Math.round(weightAxis.min || 100)
+        const max = Math.round(weightAxis.max || 900)
         
-        // Create 9 weight steps across the full range
-        const weightNames = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black']
-        for (let i = 0; i < 9; i++) {
-          const weight = min + (range * i / 8)
+        // Define standard weight points and their names
+        const standardWeights = [
+          { weight: 100, name: 'Thin' },
+          { weight: 200, name: 'ExtraLight' },
+          { weight: 300, name: 'Light' },
+          { weight: 400, name: 'Regular' },
+          { weight: 500, name: 'Medium' },
+          { weight: 600, name: 'SemiBold' },
+          { weight: 700, name: 'Bold' },
+          { weight: 800, name: 'ExtraBold' },
+          { weight: 900, name: 'Black' }
+        ]
+        
+        // Only add styles that fall within the font's actual weight range
+        standardWeights.forEach(({ weight, name }) => {
           if (weight >= min && weight <= max) {
-            styles.push(weightNames[i])
+            styles.push(name)
+          }
+        })
+        
+        // If no standard weights fit, create a reasonable subset
+        if (styles.length === 0) {
+          // Create 3-5 evenly distributed styles within the actual range
+          const steps = Math.min(5, Math.max(3, Math.floor((max - min) / 100)))
+          for (let i = 0; i < steps; i++) {
+            const weight = Math.round(min + (max - min) * i / (steps - 1))
+            const name = weight <= 300 ? 'Light' :
+                        weight <= 450 ? 'Regular' :
+                        weight <= 600 ? 'Medium' :
+                        weight <= 750 ? 'Bold' : 'Heavy'
+            if (!styles.includes(name)) {
+              styles.push(name)
+            }
           }
         }
         
@@ -227,22 +253,51 @@ export default function FontCatalog() {
       return {
         ...baseFont,
         style: selectedStyle,
-        // Map style to approximate weight for variable fonts
-        weight: getWeightFromStyle(selectedStyle)
+        // Map style to weight within the font's actual range
+        weight: getWeightFromStyle(selectedStyle, font)
       }
     }
     
     return baseFont || font.allFonts[0]
   }, [])
   
-  // Helper to map style names to weights for variable fonts
-  const getWeightFromStyle = useCallback((style: string) => {
+  // Helper to map style names to weights for variable fonts (using actual font ranges)
+  const getWeightFromStyle = useCallback((style: string, font?: any) => {
     const styleLower = style.toLowerCase()
+    
+    // If we have font axis info, use the actual range
+    if (font?.isVariable && font?.variableAxes) {
+      const weightAxis = font.variableAxes.find((axis: any) => 
+        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
+      )
+      
+      if (weightAxis) {
+        const min = weightAxis.min || 100
+        const max = weightAxis.max || 900
+        
+        // Map style names to weights within the actual range
+        if (styleLower.includes('thin')) return Math.max(min, 100)
+        if (styleLower.includes('extralight')) return Math.max(min, 200)
+        if (styleLower.includes('light')) return Math.max(min, 300)
+        if (styleLower.includes('regular') || styleLower.includes('normal')) return Math.min(Math.max(min, 400), max)
+        if (styleLower.includes('medium')) return Math.min(Math.max(min, 500), max)
+        if (styleLower.includes('semibold')) return Math.min(Math.max(min, 600), max)
+        if (styleLower.includes('bold') && !styleLower.includes('semi') && !styleLower.includes('extra')) return Math.min(Math.max(min, 700), max)
+        if (styleLower.includes('extrabold')) return Math.min(max, 800)
+        if (styleLower.includes('black') || styleLower.includes('heavy')) return Math.min(max, 900)
+      }
+    }
+    
+    // Fallback to standard weights
+    if (styleLower.includes('thin')) return 100
+    if (styleLower.includes('extralight')) return 200
     if (styleLower.includes('light')) return 300
     if (styleLower.includes('regular') || styleLower === 'normal') return 400
     if (styleLower.includes('medium')) return 500
     if (styleLower.includes('semibold')) return 600
     if (styleLower.includes('bold')) return 700
+    if (styleLower.includes('extrabold')) return 800
+    if (styleLower.includes('black')) return 900
     return 400 // Default to regular weight
   }, [])
   
