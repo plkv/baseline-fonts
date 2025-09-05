@@ -44,12 +44,28 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Fallback to V2 storage
+    // Fallback to V2 storage - direct approach
     console.log('📋 Using V2 storage fallback')
+    
+    // Get all fonts to debug
+    const allFonts = await fontStorageV2.getAllFonts()
+    console.log('🔍 Available fonts:', allFonts.map(f => f.filename))
+    console.log('🔍 Looking for:', filename)
+    
+    const currentFont = allFonts.find(f => f.filename === filename)
+    if (!currentFont) {
+      console.log('❌ Font not found in V2 storage')
+      return NextResponse.json({ error: `Font ${filename} not found` }, { status: 404 })
+    }
+    
+    console.log('✅ Found font:', currentFont.family)
+    
+    // Try V2 update
     const success = await fontStorageV2.updateFont(filename, updates)
     
     if (!success) {
-      return NextResponse.json({ error: 'Font not found' }, { status: 404 })
+      console.log('❌ V2 update failed')
+      return NextResponse.json({ error: 'Update failed' }, { status: 500 })
     }
     
     console.log('✅ Font updated successfully in V2 storage')
