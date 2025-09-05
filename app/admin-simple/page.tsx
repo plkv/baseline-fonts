@@ -196,21 +196,14 @@ export default function SimpleAdmin() {
 
   // Save font edits
   const saveEdits = async (filename: string) => {
-    // Find the font to get its current family name
-    const font = fonts.find(f => f.filename === filename)
-    if (!font) {
-      toast.error('Font not found')
-      return
-    }
-
     try {
-      const response = await fetch('/api/fonts/family/update', {
+      const response = await fetch('/api/fonts/update', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          familyName: font.family,
+          filename: filename,
           updates: {
-            name: editForm.family,
+            family: editForm.family,
             foundry: editForm.foundry,
             downloadLink: editForm.downloadLink,
             languages: editForm.languages
@@ -224,7 +217,8 @@ export default function SimpleAdmin() {
         cancelEditing()
       } else {
         const error = await response.json()
-        toast.error(error.message || 'Update failed')
+        console.error('Update failed:', error)
+        toast.error(error.error || error.message || 'Update failed')
       }
     } catch (error) {
       console.error('Update error:', error)
