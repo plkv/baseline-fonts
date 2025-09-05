@@ -82,41 +82,20 @@ export default function FontCatalog() {
 
   // Generate available styles for variable fonts
   const generateVariableFontStyles = useCallback((font: any) => {
-    const styles = [font.style] // Always include the original style
-    
-    // If it's a variable font with weight axis, generate common weight variations
+    // For variable fonts, create a limited, well-ordered set of common styles
     if (font.isVariable && font.variableAxes) {
       const hasWeightAxis = font.variableAxes.some((axis: any) => 
         axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
       )
-      const hasSlantAxis = font.variableAxes.some((axis: any) => 
-        axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital' || 
-        axis.name.toLowerCase().includes('slant') || axis.name.toLowerCase().includes('italic')
-      )
       
       if (hasWeightAxis) {
-        // Generate common weight styles if not already present
-        const commonWeights = ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold']
-        commonWeights.forEach(weight => {
-          if (!styles.some(s => s.toLowerCase().includes(weight.toLowerCase()))) {
-            styles.push(weight)
-          }
-        })
-      }
-      
-      if (hasSlantAxis) {
-        // Generate italic versions if font supports slant/italic axis
-        const baseStyles = [...styles]
-        baseStyles.forEach(style => {
-          const italicStyle = style === 'Regular' ? 'Italic' : `${style} Italic`
-          if (!styles.includes(italicStyle)) {
-            styles.push(italicStyle)
-          }
-        })
+        // Return a clean, ordered set of common weights only
+        return ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold']
       }
     }
     
-    return styles
+    // For non-variable or fonts without weight axis, return original style
+    return [font.style]
   }, [])
 
   // Group fonts by family to create family-level entries
@@ -738,18 +717,22 @@ export default function FontCatalog() {
     
     // Add uploaded font family using the specific font file for the selected style
     if (selectedFont) {
-      // Create unique font-family name for each font file to prevent CSS conflicts
+      // Create highly unique font-family name for each font file to prevent CSS conflicts
       const normalizedFamilyName = selectedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
       const normalizedFileName = selectedFont.filename.replace(/[^a-zA-Z0-9]/g, '')
-      const uniqueFontFamily = `${normalizedFamilyName}-${normalizedFileName}`
+      const styleKey = selectedFont.style.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+      const uniqueFontFamily = `${normalizedFamilyName}-${normalizedFileName}-${styleKey}`
       
       baseStyle.fontFamily = `"${uniqueFontFamily}", "${normalizedFamilyName}", monospace, system-ui, sans-serif`
       
-      // Set font style based on the selected style
-      if (selectedFont.style.toLowerCase().includes('italic') || selectedFont.style.toLowerCase().includes('oblique')) {
+      // Set font style based on the selected style - be very explicit
+      const styleLower = selectedFont.style.toLowerCase()
+      if (styleLower.includes('italic') || styleLower.includes('oblique')) {
         baseStyle.fontStyle = 'italic'
       } else {
+        // Explicitly force normal style for non-italic fonts
         baseStyle.fontStyle = 'normal'
+        baseStyle.fontSynthesis = 'none' // Prevent browser from synthesizing italic
       }
       
       // Set font weight
