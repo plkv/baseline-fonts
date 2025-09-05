@@ -78,6 +78,7 @@ export default function FontCatalog() {
   const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
   const [allFonts, setAllFonts] = useState<any[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({})
 
   // Group fonts by family to create family-level entries
   const groupFontsByFamily = useCallback((fonts: any[]) => {
@@ -128,6 +129,30 @@ export default function FontCatalog() {
     
     return Array.from(familyMap.values())
   }, [])
+  
+  // Helper to get default style (prefer Regular over Italic)
+  const getDefaultStyle = useCallback((font: any) => {
+    if (font.styles === 1) return font.allFonts[0].style
+    
+    // Prefer Regular, then any non-italic style, then fallback to first
+    const regularFont = font.allFonts.find((f: any) => 
+      f.style.toLowerCase().includes('regular') || f.style.toLowerCase() === 'normal'
+    )
+    if (regularFont) return regularFont.style
+    
+    const nonItalicFont = font.allFonts.find((f: any) => 
+      !f.style.toLowerCase().includes('italic') && !f.style.toLowerCase().includes('oblique')
+    )
+    if (nonItalicFont) return nonItalicFont.style
+    
+    return font.allFonts[0].style
+  }, [])
+  
+  // Helper to get font for selected style
+  const getFontForStyle = useCallback((font: any, selectedStyle: string) => {
+    return font.allFonts.find((f: any) => f.style === selectedStyle) || font.allFonts[0]
+  }, [])
+  
   const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
 
   const letterSpacingPresets = [-0.05, -0.025, 0, 0.025, 0.05, 0.1, 0.15, 0.2]
@@ -628,11 +653,31 @@ export default function FontCatalog() {
   const getVariableFontStyle = (font: any) => {
     const baseStyle: any = {}
     
-    // Add uploaded font family
-    const uploadedFont = uploadedFonts.find(f => f.family === font.family || f.name === font.name)
-    if (uploadedFont) {
-      const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-      baseStyle.fontFamily = `"${normalizedName}", monospace, system-ui, sans-serif`
+    // Get the selected style for this font
+    const selectedStyle = selectedStyles[font.name] || getDefaultStyle(font)
+    const selectedFont = getFontForStyle(font, selectedStyle)
+    
+    // Add uploaded font family using the specific font file for the selected style
+    if (selectedFont) {
+      const normalizedName = selectedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+      baseStyle.fontFamily = `"${normalizedName}-${selectedFont.filename}", "${normalizedName}", monospace, system-ui, sans-serif`
+      
+      // Set font style based on the selected style
+      if (selectedFont.style.toLowerCase().includes('italic') || selectedFont.style.toLowerCase().includes('oblique')) {
+        baseStyle.fontStyle = 'italic'
+      } else {
+        baseStyle.fontStyle = 'normal'
+      }
+      
+      // Set font weight
+      baseStyle.fontWeight = selectedFont.weight
+    } else {
+      // Fallback to first available font
+      const uploadedFont = uploadedFonts.find(f => f.family === font.family || f.name === font.name)
+      if (uploadedFont) {
+        const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
+        baseStyle.fontFamily = `"${normalizedName}", monospace, system-ui, sans-serif`
+      }
     }
     
     // Add variable font settings if applicable
@@ -1184,6 +1229,39 @@ export default function FontCatalog() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <h3 className={`font-semibold text-lg tracking-tighter ${getThemeText()}`}>{font.family}</h3>
+                            {font.availableStyles.length > 1 && (
+                              <Select
+                                value={selectedStyles[font.name] || getDefaultStyle(font)}
+                                onValueChange={(value) => setSelectedStyles(prev => ({ ...prev, [font.name]: value }))}
+                              >
+                                <SelectTrigger className={`w-32 h-7 text-xs ${
+                                  darkMode 
+                                    ? "bg-stone-800 border-stone-700 text-stone-200" 
+                                    : "bg-white border-stone-300 text-stone-700"
+                                }`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className={
+                                  darkMode 
+                                    ? "bg-stone-800 border-stone-700" 
+                                    : "bg-white border-stone-300"
+                                }>
+                                  {font.availableStyles.map((style) => (
+                                    <SelectItem 
+                                      key={style} 
+                                      value={style}
+                                      className={`text-xs ${
+                                        darkMode 
+                                          ? "text-stone-200 hover:bg-stone-700" 
+                                          : "text-stone-700 hover:bg-stone-100"
+                                      }`}
+                                    >
+                                      {style}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
                             <span className={`text-sm tracking-tighter ${getThemeAccent()}`}>
                               by {font.foundry || "Unknown"}
                             </span>
