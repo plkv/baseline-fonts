@@ -6,15 +6,31 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { filename, updates } = body
     
+    console.log('🔧 Update request:', { filename, updates })
+    
     if (!filename) {
       return NextResponse.json({ error: 'Filename required' }, { status: 400 })
     }
 
+    // First, check if font exists by listing all fonts
+    const allFonts = await fontStorageV2.getAllFonts()
+    console.log('📋 All fonts:', allFonts.map(f => f.filename))
+    
+    const fontExists = allFonts.find(f => f.filename === filename)
+    if (!fontExists) {
+      console.log('❌ Font not found:', filename)
+      return NextResponse.json({ error: `Font ${filename} not found` }, { status: 404 })
+    }
+    
+    console.log('✅ Font found, updating:', fontExists.family)
+
     // Update font using V2 storage
     const success = await fontStorageV2.updateFont(filename, updates)
     
+    console.log('🔧 Update result:', success)
+    
     if (!success) {
-      return NextResponse.json({ error: 'Font not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Update failed' }, { status: 500 })
     }
     
     return NextResponse.json({ 
