@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
-import { blobOnlyStorage } from '@/lib/blob-only-storage'
+import { fontStorageV2 } from '@/lib/font-storage-v2'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const includeUnpublished = searchParams.get('includeUnpublished') === 'true'
     
-    // Get fonts from blob-only storage manager
-    let fonts = await blobOnlyStorage.getAllFonts()
+    // Get fonts from V2 storage system (unified)
+    let fonts = await fontStorageV2.getAllFonts()
 
     // Filter published fonts for public API (unless admin view)
     if (!includeUnpublished) {
