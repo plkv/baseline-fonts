@@ -290,7 +290,7 @@ export default function AdminPage() {
       console.log('🔍 Family update API response:', response.status, result)
       
       if (response.ok) {
-        console.log('✅ Family updated successfully, updating local state immediately')
+        console.log('✅ Family updated successfully, updating local state immediately - PRODUCTION FIX v2')
         
         // Update local state immediately for instant UI feedback
         setFontFamilies(prevFamilies => 
