@@ -250,52 +250,49 @@ export default function SimpleAdmin() {
               <div className="text-gray-500">No fonts uploaded yet. Upload your first font above.</div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {sortedFonts.map((font) => {
                 const isExpanded = expandedFonts.has(font.filename)
                 return (
-                  <Card key={font.filename} className="overflow-hidden">
-                    {/* Collapsed Row */}
+                  <div key={font.filename} className="border border-gray-200 rounded-md overflow-hidden">
+                    {/* Collapsed Row - Ultra Compact */}
                     <div 
-                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
                       onClick={() => toggleFontExpansion(font.filename)}
                     >
-                      <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="sm" className="p-0">
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{font.family}</h3>
-                          <p className="text-sm text-gray-500">{formatDate(font.uploadDate)}</p>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {isExpanded ? (
+                          <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-sm text-gray-900 truncate">{font.family}</span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">{formatDate(font.uploadDate)}</span>
+                          </div>
                         </div>
                       </div>
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={(e) => {
                           e.stopPropagation()
                           handleDelete(font.filename, font.family)
                         }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
 
-                    {/* Expanded Details */}
+                    {/* Expanded Details - Compact */}
                     {isExpanded && (
-                      <div className="border-t bg-white p-4">
-                        <div className="grid md:grid-cols-2 gap-4">
+                      <div className="border-t bg-gray-50 px-3 py-2">
+                        <div className="grid md:grid-cols-2 gap-3">
                           {/* Font Preview */}
                           <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
                             <div 
-                              className="bg-gray-100 rounded-lg p-4 text-2xl"
+                              className="bg-white rounded p-2 text-lg border"
                               style={{
                                 fontFamily: `"${font.family}", system-ui, sans-serif`,
                                 fontWeight: font.weight
@@ -306,25 +303,22 @@ export default function SimpleAdmin() {
                           </div>
                           
                           {/* Font Details */}
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Details</h4>
-                            <div className="space-y-2">
-                              <div className="flex gap-2 flex-wrap">
-                                <Badge variant="outline">{font.format.toUpperCase()}</Badge>
-                                <Badge variant="outline">{font.category}</Badge>
-                                <Badge variant="outline">{Math.round(font.fileSize / 1024)}KB</Badge>
-                              </div>
-                              <div className="text-sm text-gray-600 space-y-1">
-                                <div><span className="font-medium">Style:</span> {font.style} {font.weight}</div>
-                                <div><span className="font-medium">Foundry:</span> {font.foundry}</div>
-                                <div><span className="font-medium">File:</span> {font.filename}</div>
-                              </div>
+                          <div className="space-y-1">
+                            <div className="flex gap-1 flex-wrap">
+                              <Badge variant="outline" className="text-xs px-1 py-0">{font.format.toUpperCase()}</Badge>
+                              <Badge variant="outline" className="text-xs px-1 py-0">{font.category}</Badge>
+                              <Badge variant="outline" className="text-xs px-1 py-0">{Math.round(font.fileSize / 1024)}KB</Badge>
+                            </div>
+                            <div className="text-xs text-gray-600 space-y-0.5">
+                              <div>{font.style} {font.weight}</div>
+                              <div>{font.foundry}</div>
+                              <div className="truncate">{font.filename}</div>
                             </div>
                           </div>
                         </div>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 )
               })}
             </div>
