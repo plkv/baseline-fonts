@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -94,14 +94,6 @@ export default function FontFamilyAccordion({
   const [fontEdits, setFontEdits] = useState<Partial<FontFile>>({})
   const [uploading, setUploading] = useState<string | null>(null)
 
-  // Reset editing state when fontFamilies updates (after successful save)
-  useEffect(() => {
-    if (editingFamily) {
-      // If we're editing a family and the data updates, exit edit mode
-      setEditingFamily(null)
-      setFamilyEdits({})
-    }
-  }, [fontFamilies, editingFamily])
 
   const toggleFamily = (familyName: string) => {
     const newExpanded = new Set(expandedFamilies)
