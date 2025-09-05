@@ -22,8 +22,23 @@ export async function PATCH(request: NextRequest) {
     const fonts = await fontStorageV2.getAllFonts()
     console.log('🔍 Total fonts in storage:', fonts.length)
     
+    // Debug: log all family names in storage
+    const allFamilyNames = fonts.map(f => f.family)
+    console.log('🔍 All family names in storage:', allFamilyNames)
+    console.log('🔍 Searching for family name:', `"${familyName}"`)
+    
     const familyFonts = fonts.filter(f => f.family === familyName)
     console.log('🔍 Fonts in family', familyName, ':', familyFonts.length)
+    
+    // Try fuzzy matching if exact match fails
+    if (familyFonts.length === 0) {
+      console.log('🔍 Exact match failed, trying fuzzy matching...')
+      const fuzzyMatches = fonts.filter(f => 
+        f.family.toLowerCase().includes(familyName.toLowerCase()) || 
+        familyName.toLowerCase().includes(f.family.toLowerCase())
+      )
+      console.log('🔍 Fuzzy matches found:', fuzzyMatches.length, fuzzyMatches.map(f => f.family))
+    }
     
     if (familyFonts.length === 0) {
       return NextResponse.json({ 
