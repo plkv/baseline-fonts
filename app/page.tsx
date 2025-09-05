@@ -82,19 +82,54 @@ export default function FontCatalog() {
 
   // Generate available styles for variable fonts
   const generateVariableFontStyles = useCallback((font: any) => {
-    // For variable fonts, create a limited, well-ordered set of common styles
     if (font.isVariable && font.variableAxes) {
-      const hasWeightAxis = font.variableAxes.some((axis: any) => 
+      const styles: string[] = []
+      
+      // Find weight and italic/slant axes
+      const weightAxis = font.variableAxes.find((axis: any) => 
         axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
       )
+      const slantAxis = font.variableAxes.find((axis: any) => 
+        axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital' || 
+        axis.name.toLowerCase().includes('slant') || axis.name.toLowerCase().includes('italic')
+      )
       
-      if (hasWeightAxis) {
-        // Return a clean, ordered set of common weights only
-        return ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold']
+      if (weightAxis) {
+        // Generate weight variations based on actual axis range
+        const min = weightAxis.min || 100
+        const max = weightAxis.max || 900
+        const range = max - min
+        
+        // Create 9 weight steps across the full range
+        const weightNames = ['Thin', 'ExtraLight', 'Light', 'Regular', 'Medium', 'SemiBold', 'Bold', 'ExtraBold', 'Black']
+        for (let i = 0; i < 9; i++) {
+          const weight = min + (range * i / 8)
+          if (weight >= min && weight <= max) {
+            styles.push(weightNames[i])
+          }
+        }
+        
+        // If there's also a slant/italic axis, add italic versions
+        if (slantAxis) {
+          const baseStyles = [...styles]
+          baseStyles.forEach(style => {
+            styles.push(`${style} Italic`)
+          })
+        }
+      } else {
+        // No weight axis, just use the original style
+        styles.push(font.style)
+        
+        // Add italic if slant axis exists
+        if (slantAxis) {
+          styles.push(`${font.style} Italic`)
+        }
       }
+      
+      return styles.length > 0 ? styles : [font.style]
     }
     
-    // For non-variable or fonts without weight axis, return original style
+    // For non-variable fonts, return original style
     return [font.style]
   }, [])
 
