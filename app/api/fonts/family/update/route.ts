@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageV2 } from '@/lib/font-storage-v2'
 
 export async function PATCH(request: NextRequest) {
+  console.log('🔥 PATCH endpoint called - v0.034')
   let familyName = 'unknown'
   let updates = {}
   
