@@ -16,10 +16,28 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Use V2 storage directly - no Redis needed
+    console.log('🔍 Attempting to update font with V2 storage...')
+    
+    // First, check if font exists
+    const allFonts = await fontStorageV2.getAllFonts()
+    console.log(`📋 Found ${allFonts.length} fonts in V2 storage`)
+    console.log(`🔍 Looking for filename: "${filename}"`)
+    console.log(`📝 Available filenames:`, allFonts.map(f => f.filename))
+    
+    const foundFont = allFonts.find(f => f.filename === filename)
+    if (!foundFont) {
+      return NextResponse.json({ 
+        error: 'Font not found', 
+        filename: filename,
+        available: allFonts.map(f => f.filename).slice(0, 3)
+      }, { status: 404 })
+    }
+    
+    console.log(`✅ Found font: ${foundFont.family}`)
     const success = await fontStorageV2.updateFont(filename, updates)
     
     if (!success) {
-      return NextResponse.json({ error: 'Font not found or update failed' }, { status: 404 })
+      return NextResponse.json({ error: 'Update failed' }, { status: 500 })
     }
     
     console.log('✅ Font updated successfully in V2 storage')
