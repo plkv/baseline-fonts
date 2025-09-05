@@ -97,18 +97,22 @@ export class FontStorageV2 {
       const fs = require('fs').promises
       const path = require('path')
       
+      console.log(`🔍 V2 Local storage starting for: ${metadata.filename}`)
+      
       const fontsDir = path.join(process.cwd(), 'public', 'fonts')
       await fs.mkdir(fontsDir, { recursive: true })
+      console.log(`✅ Fonts directory ensured: ${fontsDir}`)
       
       // Save font file
       const fontPath = path.join(fontsDir, metadata.filename)
       await fs.writeFile(fontPath, new Uint8Array(buffer))
+      console.log(`✅ Font file written: ${fontPath}`)
       
       // Enhanced metadata
       const enhancedMetadata: FontMetadata = {
         ...metadata,
         url: `/fonts/${metadata.filename}`,
-        storage: 'local-dev',
+        storage: 'local-dev-v2',
         uploadedAt: new Date().toISOString(),
         published: metadata.published ?? true
       }
@@ -116,13 +120,14 @@ export class FontStorageV2 {
       // Save metadata as individual file
       const metadataPath = path.join(fontsDir, `${metadata.filename}.meta.json`)
       await fs.writeFile(metadataPath, JSON.stringify(enhancedMetadata, null, 2))
+      console.log(`✅ Metadata file written: ${metadataPath}`)
       
-      console.log(`✅ Font stored locally: ${metadata.family}`)
+      console.log(`✅ Font stored locally with V2: ${metadata.family}`)
       return enhancedMetadata
       
     } catch (error) {
-      console.error('❌ Local storage error:', error)
-      throw new Error(`Local storage failed: ${error instanceof Error ? error.message : 'Unknown'}`)
+      console.error('❌ V2 Local storage error:', error)
+      throw new Error(`V2 Local storage failed: ${error instanceof Error ? error.message : 'Unknown'}`)
     }
   }
 
