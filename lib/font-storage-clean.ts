@@ -90,7 +90,8 @@ class FontStorageClean {
    */
   async uploadFont(
     file: File,
-    parseFont?: boolean
+    parseFont?: boolean,
+    overrideFamilyName?: string
   ): Promise<FontMetadata> {
     const id = `font_${Date.now()}_${Math.random().toString(36).slice(2)}`
     const uploadedAt = new Date().toISOString()
@@ -98,7 +99,7 @@ class FontStorageClean {
     // Upload file to Blob
     const blob = await blobPut(file.name, file, {
       access: 'public',
-      addRandomSuffix: false
+      addRandomSuffix: true  // Allow unique filenames to avoid conflicts
     })
     
     let extractedMetadata: Partial<FontMetadata> = {
@@ -160,6 +161,13 @@ class FontStorageClean {
       }
     }
     
+    // Generate consistent family ID when overriding family name
+    let familyIdOverride = undefined
+    if (overrideFamilyName) {
+      const baseFamilyName = overrideFamilyName.replace(/\s+(italic|oblique|slanted)$/i, '').trim()
+      familyIdOverride = `family_${baseFamilyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+    }
+
     // Create full metadata
     const fullMetadata: FontMetadata = {
       id,
@@ -169,7 +177,12 @@ class FontStorageClean {
       uploadedAt,
       blobUrl: blob.url,
       downloadLink: undefined,
-      ...extractedMetadata
+      ...extractedMetadata,
+      // Override family name and ID if provided (for adding to existing families)
+      ...(overrideFamilyName && { 
+        family: overrideFamilyName,
+        familyId: familyIdOverride 
+      })
     }
     
     // Store metadata in KV
@@ -281,7 +294,7 @@ class FontStorageClean {
   }
   
   /**
-   * Add style to existing font family - Direct attachment approach
+   * Add style to existing font family - Smart style detection approach
    */
   async addStyleToFamily(familyName: string, file: File): Promise<FontMetadata> {
     // Find existing fonts in this family
@@ -290,35 +303,99 @@ class FontStorageClean {
     if (existingFonts.length === 0) {
       throw new Error(`No existing family found with name: ${familyName}`)
     }
+
+    // Upload the font with parsing first to get metadata
+    const newFont = await this.uploadFont(file, true, familyName)
     
-    // Get the first font as the "parent" font
-    const parentFont = existingFonts[0]
+    // Now perform smart style detection and correction
+    await this.correctStylesInFamily(familyName)
     
-    // Upload font normally but then immediately override its family info
-    const newFont = await this.uploadFont(file, true)
+    // Return the corrected font
+    return await this.getFontById(newFont.id) || newFont
+  }
+
+  /**
+   * Smart style correction for a font family based on metadata comparison
+   */
+  private async correctStylesInFamily(familyName: string): Promise<void> {
+    const familyFonts = await this.getFontsByFamily(familyName)
+    if (familyFonts.length <= 1) return // No correction needed for single font
+
+    // Determine the true family name by finding common prefix in filenames
+    const filenames = familyFonts.map(f => f.filename.replace(/\.(ttf|otf|woff2?)$/i, ''))
+    const trueFamilyName = this.findCommonPrefix(filenames)
     
-    // IMMEDIATELY override the new font to attach it to the existing family
-    const attachedFont = {
-      ...newFont,
-      family: parentFont.family, // Use parent's exact family name
-      familyId: parentFont.familyId,
-      isDefaultStyle: false,
-      relatedStyles: existingFonts.map(f => f.id)
+    // Correct each font's style based on weight and filename analysis
+    for (const font of familyFonts) {
+      const correctedStyle = this.determineCorrectStyle(font, trueFamilyName)
+      
+      if (correctedStyle !== font.style) {
+        await kv.set(font.id, {
+          ...font,
+          style: correctedStyle
+        })
+      }
+    }
+  }
+
+  /**
+   * Find common prefix in font filenames to determine true family name
+   */
+  private findCommonPrefix(names: string[]): string {
+    if (names.length === 0) return ''
+    if (names.length === 1) return names[0].replace(/\s+(Regular|Light|Bold|Medium|Thin|Black)$/i, '').trim()
+
+    let prefix = names[0]
+    for (let i = 1; i < names.length; i++) {
+      while (names[i].indexOf(prefix) !== 0) {
+        prefix = prefix.substring(0, prefix.length - 1)
+        if (prefix === '') return names[0].split(/[-\s]/)[0]
+      }
     }
     
-    // Update the new font in KV with correct family attachment
-    await kv.set(newFont.id, attachedFont)
+    // Clean up the prefix by removing trailing separators and common style words
+    return prefix.replace(/[-\s]+$/, '').replace(/\s+(Regular|Light|Bold|Medium|Thin|Black)$/i, '').trim()
+  }
+
+  /**
+   * Determine correct style name based on font metadata
+   */
+  private determineCorrectStyle(font: FontMetadata, trueFamilyName: string): string {
+    // Extract style from filename by removing family name
+    const filename = font.filename.replace(/\.(ttf|otf|woff2?)$/i, '')
+    let styleFromFilename = filename.replace(trueFamilyName, '').replace(/^[-\s]+/, '').trim()
     
-    // Add this new font to all existing fonts' relatedStyles
-    for (const existingFont of existingFonts) {
-      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), newFont.id]
-      await kv.set(existingFont.id, {
-        ...existingFont,
-        relatedStyles: updatedRelatedStyles
-      })
+    // If no style in filename, determine from weight
+    if (!styleFromFilename) {
+      styleFromFilename = this.weightToStyleName(font.weight, font.italicStyle || false)
     }
+
+    // Clean up and normalize style name
+    if (styleFromFilename) {
+      return styleFromFilename
+    }
+
+    // Fallback: determine style from weight
+    return this.weightToStyleName(font.weight, font.italicStyle || false)
+  }
+
+  /**
+   * Convert weight to standard style name
+   */
+  private weightToStyleName(weight: number, isItalic: boolean): string {
+    let styleName = 'Regular'
     
-    return attachedFont
+    if (weight <= 150) styleName = 'Thin'
+    else if (weight <= 250) styleName = 'ExtraLight'  
+    else if (weight <= 350) styleName = 'Light'
+    else if (weight <= 450) styleName = 'Regular'
+    else if (weight <= 550) styleName = 'Medium'
+    else if (weight <= 650) styleName = 'SemiBold'
+    else if (weight <= 750) styleName = 'Bold'
+    else if (weight <= 850) styleName = 'ExtraBold'
+    else styleName = 'Black'
+    
+    return isItalic ? `${styleName} Italic` : styleName
   }
   
   /**
