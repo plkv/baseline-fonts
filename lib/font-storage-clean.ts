@@ -291,18 +291,23 @@ class FontStorageClean {
       throw new Error(`No existing family found with name: ${familyName}`)
     }
     
-    // Upload the new style with automatic parsing
+    // Upload the new style with automatic parsing, but force family name override
     const newFont = await this.uploadFont(file, true)
     
     // Generate or use existing family ID
-    const familyId = existingFonts[0].familyId || `family_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const familyId = existingFonts[0].familyId || `family_${familyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
     
-    // Update the new font with family information
+    // CRITICAL FIX: Force the family name to match the target family
+    // This prevents creating duplicate families when font metadata has different family names
     const relatedStyleIds = existingFonts.map(f => f.id)
-    await this.updateFont(newFont.id, {
+    
+    // Update the new font directly in KV with forced family information
+    await kv.set(newFont.id, {
+      ...newFont,
+      family: familyName, // FORCE the family name to match existing family
       familyId,
-      family: familyName, // Ensure consistent family name
-      isDefaultStyle: false // New styles are not default by default
+      isDefaultStyle: false,
+      relatedStyles: relatedStyleIds
     })
     
     // Update all existing fonts in the family to include this new style
@@ -315,15 +320,8 @@ class FontStorageClean {
       })
     }
     
-    // Update the new font with all related styles
+    // Return the updated font with correct family name
     const updatedNewFont = await this.getFontById(newFont.id)
-    if (updatedNewFont) {
-      await kv.set(newFont.id, {
-        ...updatedNewFont,
-        relatedStyles: relatedStyleIds
-      })
-    }
-    
     return updatedNewFont || newFont
   }
   
