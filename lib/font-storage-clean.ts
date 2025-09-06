@@ -281,57 +281,100 @@ class FontStorageClean {
   }
   
   /**
-   * Add style to existing font family
+   * Add style to existing font family - Clean implementation without patches
    */
   async addStyleToFamily(familyName: string, file: File): Promise<FontMetadata> {
-    console.log(`🔄 Adding style to family: "${familyName}", file: ${file.name}`)
-    
     // Find existing fonts in this family
     const existingFonts = await this.getFontsByFamily(familyName)
-    console.log(`📂 Found ${existingFonts.length} existing fonts in family "${familyName}":`, existingFonts.map(f => f.style))
     
     if (existingFonts.length === 0) {
       throw new Error(`No existing family found with name: ${familyName}`)
     }
     
-    // Upload the new style with automatic parsing, but force family name override
-    const newFont = await this.uploadFont(file, true)
-    console.log(`📄 Uploaded new font with original family: "${newFont.family}", target family: "${familyName}"`)
+    // Create unique ID and timestamp
+    const id = `font_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    const uploadedAt = new Date().toISOString()
+    
+    // Upload file to Blob
+    const blob = await blobPut(file.name, file, {
+      access: 'public',
+      addRandomSuffix: false
+    })
+    
+    // Parse font metadata
+    let parsedMetadata: any = {}
+    try {
+      const { parseFontFile } = await import('./font-parser')
+      const buffer = await file.arrayBuffer()
+      parsedMetadata = await parseFontFile(buffer, file.name, file.size)
+    } catch (parseError) {
+      console.warn('Font parsing failed, using defaults:', parseError)
+    }
     
     // Generate or use existing family ID
     const familyId = existingFonts[0].familyId || `family_${familyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
-    
-    // CRITICAL FIX: Force the family name to match the target family
-    // This prevents creating duplicate families when font metadata has different family names
     const relatedStyleIds = existingFonts.map(f => f.id)
     
-    // Update the new font directly in KV with forced family information
-    const updatedFontData = {
-      ...newFont,
-      family: familyName, // FORCE the family name to match existing family
+    // Create font metadata with FORCED family name from the start
+    const fontMetadata: FontMetadata = {
+      id,
+      filename: file.name,
+      family: familyName, // ALWAYS use the target family name
+      style: parsedMetadata.style || 'Regular',
+      weight: parsedMetadata.weight || 400,
+      format: file.name.split('.').pop()?.toLowerCase() || 'unknown',
+      fileSize: file.size,
+      uploadedAt,
+      blobUrl: blob.url,
+      
+      // Family management
       familyId,
       isDefaultStyle: false,
-      relatedStyles: relatedStyleIds
+      italicStyle: parsedMetadata.italicStyle || false,
+      relatedStyles: relatedStyleIds,
+      
+      // Metadata from parser
+      foundry: parsedMetadata.foundry || 'Unknown',
+      downloadLink: undefined,
+      languages: parsedMetadata.languages || ['Latin'],
+      collection: parsedMetadata.collection || 'Text',
+      category: parsedMetadata.category || 'Sans Serif',
+      isVariable: parsedMetadata.isVariable || false,
+      availableWeights: parsedMetadata.availableWeights || [parsedMetadata.weight || 400],
+      availableStyles: parsedMetadata.availableStyles || [parsedMetadata.style || 'Regular'],
+      variableAxes: parsedMetadata.variableAxes,
+      openTypeFeatures: parsedMetadata.openTypeFeatures || ['Standard Ligatures', 'Kerning'],
+      version: parsedMetadata.version,
+      copyright: parsedMetadata.copyright,
+      license: parsedMetadata.license,
+      glyphCount: parsedMetadata.glyphCount,
+      embeddingPermissions: parsedMetadata.embeddingPermissions,
+      fontMetrics: parsedMetadata.fontMetrics,
+      panoseClassification: parsedMetadata.panoseClassification,
+      creationDate: parsedMetadata.creationDate,
+      modificationDate: parsedMetadata.modificationDate,
+      designerInfo: parsedMetadata.designerInfo,
+      description: parsedMetadata.description,
+      styleTags: parsedMetadata.styleTags || [],
     }
     
-    await kv.set(newFont.id, updatedFontData)
-    console.log(`✅ Updated font ${newFont.id} with forced family: "${updatedFontData.family}"`)
+    // Store metadata in KV
+    await kv.set(id, fontMetadata)
+    
+    // Add to index
+    await this.addToIndex(id)
     
     // Update all existing fonts in the family to include this new style
     for (const existingFont of existingFonts) {
-      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), newFont.id]
+      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), id]
       await kv.set(existingFont.id, {
         ...existingFont,
         familyId,
         relatedStyles: updatedRelatedStyles
       })
-      console.log(`🔗 Updated existing font ${existingFont.id} with new related style`)
     }
     
-    // Return the updated font with correct family name
-    const updatedNewFont = await this.getFontById(newFont.id)
-    console.log(`🎯 Final result - font family: "${updatedNewFont?.family}"`)
-    return updatedNewFont || newFont
+    return fontMetadata
   }
   
   /**
