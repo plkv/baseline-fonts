@@ -29,6 +29,11 @@ interface Font {
   editableCreationDate?: string
   editableVersion?: string
   editableLicenseType?: string
+  // Font family management
+  familyId?: string
+  isDefaultStyle?: boolean
+  italicStyle?: boolean
+  relatedStyles?: string[]
   // Extended metadata
   version?: string
   copyright?: string
@@ -84,8 +89,11 @@ const WEIGHT_OPTIONS = [
 
 export default function CleanAdmin() {
   const [fonts, setFonts] = useState<Font[]>([])
+  const [families, setFamilies] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [addingStyle, setAddingStyle] = useState(false)
+  const [selectedFamily, setSelectedFamily] = useState('')
   const [sortBy, setSortBy] = useState<'new' | 'a-z'>('new')
   const [filterCollection, setFilterCollection] = useState<'all' | 'Text' | 'Display' | 'Weirdo'>('all')
   const [expandedFonts, setExpandedFonts] = useState<Set<string>>(new Set())
@@ -105,13 +113,22 @@ export default function CleanAdmin() {
   })
   const [newStyleTag, setNewStyleTag] = useState('')
 
-  // Load fonts
+  // Load fonts and families
   const loadFonts = async () => {
     try {
-      const response = await fetch('/api/fonts-clean/list')
-      if (response.ok) {
-        const data = await response.json()
+      const [fontsResponse, familiesResponse] = await Promise.all([
+        fetch('/api/fonts-clean/list'),
+        fetch('/api/fonts-clean/families')
+      ])
+      
+      if (fontsResponse.ok) {
+        const data = await fontsResponse.json()
         setFonts(data.fonts || [])
+      }
+      
+      if (familiesResponse.ok) {
+        const data = await familiesResponse.json()
+        setFamilies(data.families || [])
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
@@ -155,7 +172,66 @@ export default function CleanAdmin() {
     }
 
     setUploading(false)
-    loadFonts() // Reload fonts
+    loadFonts() // Reload fonts and families
+  }
+  
+  // Add style to existing family
+  const handleAddStyle = async (files: FileList) => {
+    if (files.length === 0 || !selectedFamily) return
+
+    setAddingStyle(true)
+    
+    for (const file of files) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('familyName', selectedFamily)
+
+        const response = await fetch('/api/fonts-clean/add-style', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (response.ok) {
+          toast.success(`${file.name} added to ${selectedFamily} family`)
+        } else {
+          const error = await response.json()
+          toast.error(`Failed to add style: ${error.error}`)
+        }
+      } catch (error) {
+        console.error('Add style error:', error)
+        toast.error(`Failed to add style for ${file.name}`)
+      }
+    }
+
+    setAddingStyle(false)
+    loadFonts() // Reload fonts and families
+  }
+  
+  // Set default style for family
+  const setDefaultStyle = async (familyName: string, styleId: string) => {
+    try {
+      const response = await fetch('/api/fonts-clean/set-default', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ familyName, styleId })
+      })
+
+      if (response.ok) {
+        toast.success(`Default style set for ${familyName}`)
+        loadFonts() // Reload to update default style indicators
+      } else {
+        toast.error('Failed to set default style')
+      }
+    } catch (error) {
+      console.error('Set default error:', error)
+      toast.error('Failed to set default style')
+    }
+  }
+  
+  // Get family fonts for default style selection
+  const getFamilyFonts = (familyName: string) => {
+    return fonts.filter(font => font.family === familyName)
   }
 
   // Delete font
@@ -380,6 +456,69 @@ export default function CleanAdmin() {
               >
                 {uploading ? 'Uploading...' : 'Choose Files'}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Add Style to Family */}
+        <Card className="mb-8">
+          <CardHeader>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Add Style to Existing Family
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Select Family</label>
+                <select
+                  value={selectedFamily}
+                  onChange={(e) => setSelectedFamily(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  disabled={families.length === 0}
+                >
+                  <option value="">Choose a font family...</option>
+                  {families.map(family => (
+                    <option key={family} value={family}>{family}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedFamily && (
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleAddStyle(e.dataTransfer.files)
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                >
+                  <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    Add style to "{selectedFamily}" family
+                  </p>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Drop font files here or click to browse
+                  </p>
+                  <input
+                    type="file"
+                    accept=".ttf,.otf,.woff,.woff2"
+                    multiple
+                    className="hidden"
+                    id="style-upload"
+                    onChange={(e) => e.target.files && handleAddStyle(e.target.files)}
+                  />
+                  <Button 
+                    onClick={() => document.getElementById('style-upload')?.click()}
+                    disabled={addingStyle}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {addingStyle ? 'Adding...' : 'Choose Style Files'}
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -701,7 +840,12 @@ export default function CleanAdmin() {
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="space-y-1">
                               <p><span className="font-medium">Collection:</span> <Badge variant="secondary" className="text-xs px-1 py-0">{font.collection || 'Text'}</Badge></p>
-                              <p><span className="font-medium">Style:</span> {font.style} {font.isVariable && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}</p>
+                              <p>
+                                <span className="font-medium">Style:</span> {font.style} 
+                                {font.isVariable && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}
+                                {font.italicStyle && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Italic</Badge>}
+                                {font.isDefaultStyle && <Badge variant="default" className="text-xs px-1 py-0 ml-1">Default</Badge>}
+                              </p>
                               <p><span className="font-medium">Weight:</span> {font.weight}</p>
                               <p><span className="font-medium">Category:</span> {font.category || getDefaultCategory(font.collection || 'Text')}</p>
                               <p><span className="font-medium">Author:</span> {font.foundry}</p>
@@ -756,6 +900,41 @@ export default function CleanAdmin() {
                               {font.license && (
                                 <p><span className="font-medium">License:</span> <span className="text-gray-600 truncate">{font.license.length > 40 ? font.license.substring(0, 40) + '...' : font.license}</span></p>
                               )}
+                              
+                              {/* Family Styles Management */}
+                              {(() => {
+                                const familyFonts = getFamilyFonts(font.family)
+                                return familyFonts.length > 1 ? (
+                                  <div className="col-span-2 mt-2">
+                                    <span className="font-medium text-xs">Family Styles ({familyFonts.length}):</span>
+                                    <div className="mt-1 space-y-1">
+                                      {familyFonts.map((familyFont, index) => (
+                                        <div key={index} className="flex items-center justify-between text-xs bg-gray-100 px-2 py-1 rounded">
+                                          <span>
+                                            <span className="font-medium">{familyFont.style}</span> ({familyFont.weight})
+                                            {familyFont.italicStyle && <span className="text-gray-500 ml-1">Italic</span>}
+                                          </span>
+                                          <div className="flex items-center gap-1">
+                                            {familyFont.isDefaultStyle ? (
+                                              <Badge variant="default" className="text-xs px-1 py-0">Default</Badge>
+                                            ) : (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-5 px-2 text-xs"
+                                                onClick={() => setDefaultStyle(font.family, familyFont.id)}
+                                              >
+                                                Set Default
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : null
+                              })()
+                              }
                               
                               {/* Font Preview */}
                               <div className="col-span-2 mt-2">

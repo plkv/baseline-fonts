@@ -69,6 +69,14 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const rawStyle = font.names.fontSubfamily?.en || 'Regular'
     const style = rawStyle.trim() || 'Regular' // Fix empty/whitespace styles
     
+    // Detect italic/oblique styles
+    const isItalicStyle = /\b(italic|oblique|slanted)\b/i.test(style) || 
+                         /\b(italic|oblique|slanted)\b/i.test(family)
+    
+    // Generate family ID for grouping (consistent across styles)
+    const baseFamilyName = family.replace(/\s+(italic|oblique|slanted)$/i, '').trim()
+    const familyId = `family_${baseFamilyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`
+    
     // Enhanced foundry detection with whitespace cleanup
     let foundry = 'Unknown'
     if (font.names.manufacturer?.en && font.names.manufacturer.en.trim()) foundry = font.names.manufacturer.en.trim()
@@ -661,7 +669,12 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       // User-customizable style tags (separate from technical availableStyles)
       styleTags: [] as string[],
       // Collection classification - use detected collection
-      collection: detectedCollection
+      collection: detectedCollection,
+      // Font family management
+      familyId: familyId,
+      isDefaultStyle: weight === 400 && (style === 'Regular' || style === 'Normal') && !isItalicStyle,
+      italicStyle: isItalicStyle,
+      relatedStyles: [] as string[]
     }
     
     // Final safety check - ensure the entire object is serializable

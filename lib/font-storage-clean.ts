@@ -26,6 +26,12 @@ export interface FontMetadata {
   editableVersion?: string // User can override the extracted version
   editableLicenseType?: string // User can set/override license type
   
+  // Font family management
+  familyId?: string // Groups fonts of the same family together
+  isDefaultStyle?: boolean // Is this the default style for the family?
+  italicStyle?: boolean // Is this an italic/oblique variant?
+  relatedStyles?: string[] // IDs of other styles in the same family
+  
   // Storage info
   blobUrl: string
   
@@ -188,7 +194,7 @@ class FontStorageClean {
    */
   async updateFont(id: string, updates: Partial<Pick<FontMetadata, 
     'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
-    'editableCreationDate' | 'editableVersion' | 'editableLicenseType'
+    'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
@@ -255,6 +261,88 @@ class FontStorageClean {
     const index = await kv.get<string[]>('font_index') || []
     const newIndex = index.filter(fontId => fontId !== id)
     await kv.set('font_index', newIndex)
+  }
+  
+  /**
+   * Add style to existing font family
+   */
+  async addStyleToFamily(familyName: string, file: File): Promise<FontMetadata> {
+    // Find existing fonts in this family
+    const existingFonts = await this.getFontsByFamily(familyName)
+    
+    if (existingFonts.length === 0) {
+      throw new Error(`No existing family found with name: ${familyName}`)
+    }
+    
+    // Upload the new style with automatic parsing
+    const newFont = await this.uploadFont(file, true)
+    
+    // Generate or use existing family ID
+    const familyId = existingFonts[0].familyId || `family_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    
+    // Update the new font with family information
+    const relatedStyleIds = existingFonts.map(f => f.id)
+    await this.updateFont(newFont.id, {
+      familyId,
+      family: familyName, // Ensure consistent family name
+      isDefaultStyle: false // New styles are not default by default
+    })
+    
+    // Update all existing fonts in the family to include this new style
+    for (const existingFont of existingFonts) {
+      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), newFont.id]
+      await kv.set(existingFont.id, {
+        ...existingFont,
+        familyId,
+        relatedStyles: updatedRelatedStyles
+      })
+    }
+    
+    // Update the new font with all related styles
+    const updatedNewFont = await this.getFontById(newFont.id)
+    if (updatedNewFont) {
+      await kv.set(newFont.id, {
+        ...updatedNewFont,
+        relatedStyles: relatedStyleIds
+      })
+    }
+    
+    return updatedNewFont || newFont
+  }
+  
+  /**
+   * Get fonts by family name
+   */
+  async getFontsByFamily(familyName: string): Promise<FontMetadata[]> {
+    const allFonts = await this.getAllFonts()
+    return allFonts.filter(font => font.family === familyName)
+  }
+  
+  /**
+   * Set default style for a family
+   */
+  async setDefaultStyle(familyName: string, styleId: string): Promise<boolean> {
+    const familyFonts = await this.getFontsByFamily(familyName)
+    
+    // Remove default from all fonts in family
+    for (const font of familyFonts) {
+      await kv.set(font.id, {
+        ...font,
+        isDefaultStyle: font.id === styleId
+      })
+    }
+    
+    return true
+  }
+  
+  /**
+   * Get all unique font families
+   */
+  async getAllFamilies(): Promise<string[]> {
+    const allFonts = await this.getAllFonts()
+    const families = new Set<string>()
+    allFonts.forEach(font => families.add(font.family))
+    return Array.from(families).sort()
   }
 }
 
