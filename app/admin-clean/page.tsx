@@ -21,11 +21,37 @@ interface Font {
   downloadLink?: string
   languages: string[]
   blobUrl: string
+  category: string
+  weight: number
+  styleTags: string[]
+  // Extended metadata
+  version?: string
+  copyright?: string
+  license?: string
+  glyphCount?: number
+  embeddingPermissions?: string
+  description?: string
 }
 
 const LANGUAGE_OPTIONS = [
   'Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese',
   'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu'
+]
+
+const CATEGORY_OPTIONS = [
+  'Sans Serif', 'Serif', 'Monospace', 'Display', 'Script', 'Pixel', 'Symbol', 'Decorative'
+]
+
+const WEIGHT_OPTIONS = [
+  { value: 100, label: '100 - Thin' },
+  { value: 200, label: '200 - ExtraLight' },
+  { value: 300, label: '300 - Light' },
+  { value: 400, label: '400 - Regular' },
+  { value: 500, label: '500 - Medium' },
+  { value: 600, label: '600 - SemiBold' },
+  { value: 700, label: '700 - Bold' },
+  { value: 800, label: '800 - ExtraBold' },
+  { value: 900, label: '900 - Black' }
 ]
 
 export default function CleanAdmin() {
@@ -39,8 +65,12 @@ export default function CleanAdmin() {
     family: '',
     foundry: '',
     downloadLink: '',
-    languages: [] as string[]
+    languages: [] as string[],
+    category: '',
+    weight: 400,
+    styleTags: [] as string[]
   })
+  const [newStyleTag, setNewStyleTag] = useState('')
 
   // Load fonts
   const loadFonts = async () => {
@@ -125,14 +155,26 @@ export default function CleanAdmin() {
       family: font.family,
       foundry: font.foundry,
       downloadLink: font.downloadLink || '',
-      languages: [...font.languages]
+      languages: [...font.languages],
+      category: font.category || 'Sans Serif',
+      weight: font.weight || 400,
+      styleTags: [...(font.styleTags || [])]
     })
   }
 
   // Cancel edit
   const cancelEdit = () => {
     setEditingFont(null)
-    setEditForm({ family: '', foundry: '', downloadLink: '', languages: [] })
+    setEditForm({ 
+      family: '', 
+      foundry: '', 
+      downloadLink: '', 
+      languages: [], 
+      category: 'Sans Serif', 
+      weight: 400, 
+      styleTags: [] 
+    })
+    setNewStyleTag('')
   }
 
   // Save edit
@@ -168,6 +210,46 @@ export default function CleanAdmin() {
         ? prev.languages.filter(l => l !== language)
         : [...prev.languages, language]
     }))
+  }
+  
+  // Toggle category
+  const toggleCategory = (category: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      category: prev.category === category ? 'Sans Serif' : category
+    }))
+  }
+  
+  // Toggle style tag
+  const toggleStyleTag = (tag: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      styleTags: prev.styleTags.includes(tag)
+        ? prev.styleTags.filter(t => t !== tag)
+        : [...prev.styleTags, tag]
+    }))
+  }
+  
+  // Add new style tag
+  const addNewStyleTag = () => {
+    if (newStyleTag.trim() && !editForm.styleTags.includes(newStyleTag.trim())) {
+      setEditForm(prev => ({
+        ...prev,
+        styleTags: [...prev.styleTags, newStyleTag.trim()]
+      }))
+      setNewStyleTag('')
+    }
+  }
+  
+  // Get all unique style tags from all fonts
+  const getAllStyleTags = () => {
+    const allTags = new Set<string>()
+    fonts.forEach(font => {
+      if (font.styleTags) {
+        font.styleTags.forEach(tag => allTags.add(tag))
+      }
+    })
+    return Array.from(allTags).sort()
   }
 
   // Sort fonts
@@ -322,7 +404,7 @@ export default function CleanAdmin() {
                     {isExpanded && (
                       <div className="border-t bg-gray-50 p-2">
                         {isEditing ? (
-                          /* Compact Edit Form */
+                          /* Comprehensive Edit Form */
                           <div className="space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
@@ -345,13 +427,45 @@ export default function CleanAdmin() {
                               </div>
                             </div>
                             <div>
-                              <label className="block text-xs font-medium mb-1">Link</label>
+                              <label className="block text-xs font-medium mb-1">Download Link</label>
                               <input
                                 type="url"
                                 value={editForm.downloadLink}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, downloadLink: e.target.value }))}
                                 className="w-full p-1 text-xs border rounded"
                               />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Weight</label>
+                                <select
+                                  value={editForm.weight}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, weight: Number(e.target.value) }))}
+                                  className="w-full p-1 text-xs border rounded"
+                                >
+                                  {WEIGHT_OPTIONS.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Category</label>
+                                <div className="flex flex-wrap gap-1">
+                                  {CATEGORY_OPTIONS.map(cat => (
+                                    <Button
+                                      key={cat}
+                                      size="sm"
+                                      className="h-5 px-1 text-xs"
+                                      variant={editForm.category === cat ? "default" : "outline"}
+                                      onClick={() => toggleCategory(cat)}
+                                    >
+                                      {cat}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                             <div>
                               <label className="block text-xs font-medium mb-1">Languages</label>
@@ -369,6 +483,42 @@ export default function CleanAdmin() {
                                 ))}
                               </div>
                             </div>
+                            <div>
+                              <label className="block text-xs font-medium mb-1">Style Tags</label>
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap gap-1">
+                                  {getAllStyleTags().map(tag => (
+                                    <Button
+                                      key={tag}
+                                      size="sm"
+                                      className="h-5 px-2 text-xs"
+                                      variant={editForm.styleTags.includes(tag) ? "default" : "outline"}
+                                      onClick={() => toggleStyleTag(tag)}
+                                    >
+                                      {tag}
+                                    </Button>
+                                  ))}
+                                </div>
+                                <div className="flex gap-1">
+                                  <input
+                                    type="text"
+                                    value={newStyleTag}
+                                    onChange={(e) => setNewStyleTag(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && addNewStyleTag()}
+                                    placeholder="Add new style tag"
+                                    className="flex-1 p-1 text-xs border rounded"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={addNewStyleTag}
+                                    disabled={!newStyleTag.trim()}
+                                  >
+                                    Add
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                             <div className="flex gap-1">
                               <Button size="sm" className="h-6 px-2 text-xs" onClick={() => saveEdit(font.id)}>
                                 <Save className="w-3 h-3 mr-1" />
@@ -381,12 +531,19 @@ export default function CleanAdmin() {
                             </div>
                           </div>
                         ) : (
-                          /* Compact Display Mode */
+                          /* Enhanced Display Mode */
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="space-y-1">
                               <p><span className="font-medium">Style:</span> {font.style}</p>
                               <p><span className="font-medium">Weight:</span> {font.weight}</p>
+                              <p><span className="font-medium">Category:</span> {font.category || 'Sans Serif'}</p>
                               <p><span className="font-medium">Author:</span> {font.foundry}</p>
+                              {font.version && (
+                                <p><span className="font-medium">Version:</span> {font.version}</p>
+                              )}
+                              {font.glyphCount && (
+                                <p><span className="font-medium">Glyphs:</span> {font.glyphCount}</p>
+                              )}
                             </div>
                             <div className="space-y-1">
                               {font.downloadLink && (
@@ -400,6 +557,22 @@ export default function CleanAdmin() {
                                   ))}
                                 </div>
                               </div>
+                              {font.styleTags && font.styleTags.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Style Tags:</span>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {font.styleTags.map(tag => (
+                                      <Badge key={tag} variant="outline" className="text-xs px-1 py-0">{tag}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {font.copyright && (
+                                <p><span className="font-medium">Copyright:</span> <span className="text-gray-600 truncate">{font.copyright.length > 40 ? font.copyright.substring(0, 40) + '...' : font.copyright}</span></p>
+                              )}
+                              {font.license && (
+                                <p><span className="font-medium">License:</span> <span className="text-gray-600 truncate">{font.license.length > 40 ? font.license.substring(0, 40) + '...' : font.license}</span></p>
+                              )}
                             </div>
                           </div>
                         )}

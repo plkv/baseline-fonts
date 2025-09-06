@@ -452,12 +452,141 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const languages: string[] = ['Latin'] // Default
     if (font.tables?.os2) {
       const os2 = font.tables.os2
-      // This is simplified - real language detection would need more complex analysis
+      // Unicode range analysis for language support
       if (os2.ulUnicodeRange2 & 0x00000001) languages.push('Cyrillic')
       if (os2.ulUnicodeRange1 & 0x00000080) languages.push('Greek')  
       if (os2.ulUnicodeRange1 & 0x00000100) languages.push('Armenian')
       if (os2.ulUnicodeRange1 & 0x00000200) languages.push('Hebrew')
       if (os2.ulUnicodeRange1 & 0x00000400) languages.push('Arabic')
+      if (os2.ulUnicodeRange1 & 0x00020000) languages.push('Thai')
+      if (os2.ulUnicodeRange1 & 0x00100000) languages.push('Chinese')
+      if (os2.ulUnicodeRange2 & 0x00000004) languages.push('Japanese')
+      if (os2.ulUnicodeRange2 & 0x00000008) languages.push('Korean')
+      if (os2.ulUnicodeRange1 & 0x01000000) languages.push('Vietnamese')
+    }
+    
+    // Extract additional comprehensive metadata
+    let version: string | undefined
+    let copyright: string | undefined
+    let license: string | undefined
+    let glyphCount: number | undefined
+    let embeddingPermissions: string | undefined
+    let fontMetrics: any = {}
+    let panoseClassification: string | undefined
+    let creationDate: string | undefined
+    let modificationDate: string | undefined
+    let designerInfo: any = {}
+    let description: string | undefined
+    
+    // Font version from head table or name table
+    if (font.tables?.head?.fontRevision) {
+      const rev = font.tables.head.fontRevision
+      version = `${Math.floor(rev)}.${Math.round((rev % 1) * 1000)}`
+    } else if (font.names?.version?.en) {
+      version = font.names.version.en.replace(/^Version\s+/i, '')
+    }
+    
+    // Copyright information
+    if (font.names?.copyright?.en) {
+      copyright = font.names.copyright.en.trim()
+    }
+    
+    // License information
+    if (font.names?.license?.en) {
+      license = font.names.license.en.trim()
+    } else if (font.names?.licenseURL?.en) {
+      license = `See: ${font.names.licenseURL.en}`
+    }
+    
+    // Glyph count
+    if (font.glyphs && font.glyphs.length) {
+      glyphCount = font.glyphs.length
+    } else if (font.numGlyphs) {
+      glyphCount = font.numGlyphs
+    }
+    
+    // Embedding permissions from OS/2 table
+    if (font.tables?.os2?.fsType !== undefined) {
+      const fsType = font.tables.os2.fsType
+      if (fsType === 0) {
+        embeddingPermissions = 'Unrestricted'
+      } else if (fsType & 0x0002) {
+        embeddingPermissions = 'Restricted License'
+      } else if (fsType & 0x0004) {
+        embeddingPermissions = 'Preview & Print'
+      } else if (fsType & 0x0008) {
+        embeddingPermissions = 'Editable'
+      } else {
+        embeddingPermissions = 'Unknown'
+      }
+    }
+    
+    // Font metrics from various tables
+    if (font.tables?.hhea || font.tables?.os2) {
+      const hhea = font.tables.hhea
+      const os2 = font.tables.os2
+      
+      fontMetrics = {
+        ascender: hhea?.ascender || os2?.sTypoAscender || 0,
+        descender: hhea?.descender || os2?.sTypoDescender || 0,
+        lineGap: hhea?.lineGap || os2?.sTypoLineGap || 0,
+        xHeight: os2?.sxHeight || 0,
+        capHeight: os2?.sCapHeight || 0,
+        unitsPerEm: font.tables?.head?.unitsPerEm || 1000
+      }
+    }
+    
+    // Panose classification for precise categorization
+    if (font.tables?.os2?.panose) {
+      const panose = font.tables.os2.panose
+      const familyType = panose[0]
+      const serifStyle = panose[1]
+      
+      if (familyType === 2) { // Text and Display
+        if (serifStyle >= 11 && serifStyle <= 15) {
+          panoseClassification = 'Sans Serif'
+        } else if (serifStyle >= 2 && serifStyle <= 10) {
+          panoseClassification = 'Serif'
+        }
+      } else if (familyType === 3) {
+        panoseClassification = 'Script'
+      } else if (familyType === 4) {
+        panoseClassification = 'Decorative'
+      } else if (familyType === 5) {
+        panoseClassification = 'Symbol'
+      }
+    }
+    
+    // Creation and modification dates from head table
+    if (font.tables?.head) {
+      const head = font.tables.head
+      
+      // OpenType dates are seconds since 12:00 midnight, January 1, 1904
+      const openTypeEpoch = new Date('1904-01-01T00:00:00Z').getTime()
+      
+      if (head.created && Array.isArray(head.created) && head.created.length === 2) {
+        const seconds = (head.created[0] << 32) | head.created[1]
+        creationDate = new Date(openTypeEpoch + seconds * 1000).toISOString()
+      }
+      
+      if (head.modified && Array.isArray(head.modified) && head.modified.length === 2) {
+        const seconds = (head.modified[0] << 32) | head.modified[1]
+        modificationDate = new Date(openTypeEpoch + seconds * 1000).toISOString()
+      }
+    }
+    
+    // Extended designer information
+    designerInfo = {
+      designer: font.names?.designer?.en || undefined,
+      designerURL: font.names?.designerURL?.en || undefined,
+      manufacturer: font.names?.manufacturer?.en || undefined,
+      vendorURL: font.names?.vendorURL?.en || undefined,
+      trademark: font.names?.trademark?.en || undefined
+    }
+    
+    // Font description
+    if (font.names?.description?.en) {
+      description = font.names.description.en.trim()
     }
 
     console.log(`🎯 Extracted ${openTypeFeatures.length} OpenType features:`, openTypeFeatures)
@@ -487,7 +616,21 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       languages: languages.filter(l => typeof l === 'string'),
       foundry: String(foundry || 'Unknown'),
       published: true, // New fonts are published by default
-      defaultStyle: weight === 400 && (style === 'Regular' || style === 'Normal') // 400 weight Regular/Normal is default
+      defaultStyle: weight === 400 && (style === 'Regular' || style === 'Normal'), // 400 weight Regular/Normal is default
+      // Enhanced metadata
+      version: version || undefined,
+      copyright: copyright || undefined,
+      license: license || undefined,
+      glyphCount: glyphCount || undefined,
+      embeddingPermissions: embeddingPermissions || undefined,
+      fontMetrics: Object.keys(fontMetrics).length > 0 ? fontMetrics : undefined,
+      panoseClassification: panoseClassification || undefined,
+      creationDate: creationDate || undefined,
+      modificationDate: modificationDate || undefined,
+      designerInfo: Object.values(designerInfo).some(v => v) ? designerInfo : undefined,
+      description: description || undefined,
+      // User-customizable style tags (separate from technical availableStyles)
+      styleTags: [] as string[]
     }
     
     // Final safety check - ensure the entire object is serializable

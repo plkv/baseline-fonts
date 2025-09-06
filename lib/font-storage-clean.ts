@@ -23,6 +23,45 @@ export interface FontMetadata {
   
   // Storage info
   blobUrl: string
+  
+  // Enhanced metadata from OpenType
+  category: string
+  isVariable: boolean
+  availableWeights: number[]
+  availableStyles: string[]
+  variableAxes?: Array<{
+    name: string
+    axis: string
+    min: number
+    max: number
+    default: number
+  }>
+  openTypeFeatures: string[]
+  version?: string
+  copyright?: string
+  license?: string
+  glyphCount?: number
+  embeddingPermissions?: string
+  fontMetrics?: {
+    ascender: number
+    descender: number
+    lineGap: number
+    xHeight: number
+    capHeight: number
+    unitsPerEm: number
+  }
+  panoseClassification?: string
+  creationDate?: string
+  modificationDate?: string
+  designerInfo?: {
+    designer?: string
+    designerURL?: string
+    manufacturer?: string
+    vendorURL?: string
+    trademark?: string
+  }
+  description?: string
+  styleTags: string[] // User-customizable style tags
 }
 
 class FontStorageClean {
@@ -36,11 +75,11 @@ class FontStorageClean {
   }
 
   /**
-   * Upload a font file and store metadata
+   * Upload a font file and store metadata with comprehensive OpenType parsing
    */
   async uploadFont(
     file: File,
-    metadata: Omit<FontMetadata, 'id' | 'uploadedAt' | 'blobUrl' | 'fileSize' | 'format'>
+    parseFont?: boolean
   ): Promise<FontMetadata> {
     const id = `font_${Date.now()}_${Math.random().toString(36).slice(2)}`
     const uploadedAt = new Date().toISOString()
@@ -51,6 +90,49 @@ class FontStorageClean {
       addRandomSuffix: false
     })
     
+    let extractedMetadata: Partial<FontMetadata> = {
+      family: file.name.split('.')[0],
+      style: 'Regular',
+      weight: 400,
+      foundry: 'Unknown',
+      languages: ['Latin'],
+      category: 'Sans Serif',
+      isVariable: false,
+      availableWeights: [400],
+      availableStyles: ['Regular'],
+      openTypeFeatures: ['Standard Ligatures', 'Kerning']
+    }
+    
+    // Parse font metadata if requested (default: true)
+    if (parseFont !== false) {
+      try {
+        const { parseFontFile } = await import('./font-parser')
+        const buffer = await file.arrayBuffer()
+        const parsedData = await parseFontFile(buffer, file.name, file.size)
+        
+        // Extract relevant fields from parsed data
+        extractedMetadata = {
+          family: parsedData.family,
+          style: parsedData.style,
+          weight: parsedData.weight,
+          foundry: parsedData.foundry || 'Unknown',
+          languages: parsedData.languages || ['Latin'],
+          category: parsedData.category || 'Sans Serif',
+          isVariable: parsedData.isVariable || false,
+          availableWeights: parsedData.availableWeights || [parsedData.weight || 400],
+          availableStyles: parsedData.availableStyles || [parsedData.style || 'Regular'],
+          variableAxes: parsedData.variableAxes,
+          openTypeFeatures: parsedData.openTypeFeatures || ['Standard Ligatures', 'Kerning'],
+          // Additional metadata extraction would go here
+        }
+        
+        console.log('✅ Font parsed successfully:', extractedMetadata.family)
+      } catch (parseError) {
+        console.warn('⚠️ Font parsing failed, using filename fallback:', parseError)
+        // Keep default fallback metadata
+      }
+    }
+    
     // Create full metadata
     const fullMetadata: FontMetadata = {
       id,
@@ -59,7 +141,8 @@ class FontStorageClean {
       format: file.name.split('.').pop()?.toLowerCase() || 'unknown',
       uploadedAt,
       blobUrl: blob.url,
-      ...metadata
+      downloadLink: undefined,
+      ...extractedMetadata
     }
     
     // Store metadata in KV
@@ -96,9 +179,11 @@ class FontStorageClean {
   }
 
   /**
-   * Update font metadata
+   * Update font metadata - now supports all editable fields
    */
-  async updateFont(id: string, updates: Partial<Pick<FontMetadata, 'family' | 'foundry' | 'downloadLink' | 'languages'>>): Promise<boolean> {
+  async updateFont(id: string, updates: Partial<Pick<FontMetadata, 
+    'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags'
+  >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
     

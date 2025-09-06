@@ -18,16 +18,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File too large' }, { status: 400 })
     }
 
-    // Basic metadata - user can edit later
-    const metadata = {
-      family: formData.get('family') as string || file.name.split('.')[0],
-      style: 'Regular',
-      weight: 400,
-      foundry: 'Unknown',
-      languages: ['Latin']
-    }
-
-    const font = await fontStorageClean.uploadFont(file, metadata)
+    // Upload with automatic OpenType metadata extraction
+    const font = await fontStorageClean.uploadFont(file, true)
 
     return NextResponse.json({ 
       success: true, 
