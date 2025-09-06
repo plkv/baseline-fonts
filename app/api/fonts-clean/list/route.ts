@@ -5,9 +5,17 @@ export async function GET(request: NextRequest) {
   try {
     const fonts = await fontStorageClean.getAllFonts()
     
+    // Transform fonts to match frontend expectations
+    const transformedFonts = fonts.map(font => ({
+      ...font,
+      name: font.family, // Frontend expects 'name' property
+      url: font.blobUrl,  // Frontend expects 'url' property
+      // Keep original properties too for compatibility
+    }))
+    
     return NextResponse.json({ 
       success: true, 
-      fonts,
+      fonts: transformedFonts,
       total: fonts.length
     })
 
