@@ -229,6 +229,23 @@ export default function CleanAdmin() {
     }
   }
   
+  // Quick add style - opens file browser directly
+  const quickAddStyle = (familyName: string) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.ttf,.otf,.woff,.woff2'
+    input.multiple = true
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files
+      if (files) {
+        setSelectedFamily(familyName)
+        await addStyleToFamily(Array.from(files))
+        setSelectedFamily('')
+      }
+    }
+    input.click()
+  }
+  
   // Delete individual style from family
   const deleteStyle = async (styleId: string, styleName: string, familyName: string) => {
     if (!confirm(`Delete the "${styleName}" style from ${familyName} family?`)) return
@@ -1001,15 +1018,11 @@ export default function CleanAdmin() {
                                       size="sm"
                                       variant="outline"
                                       className="mt-2 h-6 px-2 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-                                      onClick={() => {
-                                        setSelectedFamily(font.family)
-                                        setAddingStyle(true)
-                                        // Scroll to the family upload section
-                                        document.getElementById('family-upload-section')?.scrollIntoView({ behavior: 'smooth' })
-                                      }}
+                                      onClick={() => quickAddStyle(font.family)}
+                                      disabled={addingStyle}
                                     >
                                       <Upload className="w-3 h-3 mr-1" />
-                                      Add Style to Family
+                                      {addingStyle && selectedFamily === font.family ? 'Adding...' : 'Add Style to Family'}
                                     </Button>
                                   </div>
                                 ) : null
