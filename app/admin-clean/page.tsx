@@ -466,57 +466,87 @@ export default function CleanAdmin() {
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Upload className="w-5 h-5" />
               Add Style to Existing Family
+              <Badge variant="outline" className="ml-2">
+                {families.length} families
+              </Badge>
             </h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Select Family</label>
+                <label className="block text-sm font-medium mb-2">
+                  Select Family {families.length === 0 && <span className="text-red-500">(Upload fonts first to create families)</span>}
+                </label>
                 <select
                   value={selectedFamily}
                   onChange={(e) => setSelectedFamily(e.target.value)}
                   className="w-full p-2 border rounded"
                   disabled={families.length === 0}
                 >
-                  <option value="">Choose a font family...</option>
+                  <option value="">
+                    {families.length === 0 ? 'No families available yet...' : 'Choose a font family...'}
+                  </option>
                   {families.map(family => (
                     <option key={family} value={family}>{family}</option>
                   ))}
                 </select>
               </div>
               
-              {selectedFamily && (
-                <div 
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    handleAddStyle(e.dataTransfer.files)
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                >
-                  <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    Add style to "{selectedFamily}" family
+              {families.length > 0 && (
+                <>
+                  {!selectedFamily && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                      <p className="text-sm text-blue-700">
+                        Select a family above to add additional styles (Bold, Italic, Light, etc.)
+                      </p>
+                    </div>
+                  )}
+                  
+                  {selectedFamily && (
+                    <div 
+                      className="border-2 border-dashed border-green-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors bg-green-50"
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        handleAddStyle(e.dataTransfer.files)
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <Upload className="w-8 h-8 mx-auto text-green-600 mb-2" />
+                      <p className="text-sm font-medium text-gray-900 mb-1">
+                        Add style to "{selectedFamily}" family
+                      </p>
+                      <p className="text-xs text-gray-600 mb-2">
+                        Drop font files here or click to browse • Supports: Bold, Italic, Light, etc.
+                      </p>
+                      <input
+                        type="file"
+                        accept=".ttf,.otf,.woff,.woff2"
+                        multiple
+                        className="hidden"
+                        id="style-upload"
+                        onChange={(e) => e.target.files && handleAddStyle(e.target.files)}
+                      />
+                      <Button 
+                        onClick={() => document.getElementById('style-upload')?.click()}
+                        disabled={addingStyle}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {addingStyle ? 'Adding...' : 'Choose Style Files'}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {families.length === 0 && (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                  <p className="text-sm text-yellow-700 mb-2">
+                    No font families available yet.
                   </p>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Drop font files here or click to browse
+                  <p className="text-xs text-yellow-600">
+                    Upload your first fonts above to create families, then return here to add additional styles.
                   </p>
-                  <input
-                    type="file"
-                    accept=".ttf,.otf,.woff,.woff2"
-                    multiple
-                    className="hidden"
-                    id="style-upload"
-                    onChange={(e) => e.target.files && handleAddStyle(e.target.files)}
-                  />
-                  <Button 
-                    onClick={() => document.getElementById('style-upload')?.click()}
-                    disabled={addingStyle}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {addingStyle ? 'Adding...' : 'Choose Style Files'}
-                  </Button>
                 </div>
               )}
             </div>
