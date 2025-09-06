@@ -259,16 +259,16 @@ export default function CleanAdmin() {
           ) : fonts.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No fonts uploaded yet</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {sortedFonts.map((font) => {
                 const isExpanded = expandedFonts.has(font.id)
                 const isEditing = editingFont === font.id
 
                 return (
-                  <Card key={font.id} className="transition-all">
-                    {/* Collapsed Header */}
+                  <Card key={font.id} className="transition-all border">
+                    {/* Compact Header */}
                     <div 
-                      className="flex items-center justify-between p-4 cursor-pointer"
+                      className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50"
                       onClick={() => {
                         const newExpanded = new Set(expandedFonts)
                         if (isExpanded) {
@@ -279,79 +279,88 @@ export default function CleanAdmin() {
                         setExpandedFonts(newExpanded)
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      <div className="flex items-center gap-2">
+                        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         <div>
-                          <h3 className="font-medium">{font.family}</h3>
-                          <p className="text-sm text-gray-500">
-                            {new Date(font.uploadedAt).toLocaleDateString()}
-                          </p>
+                          <h3 className="text-sm font-medium">{font.family}</h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{new Date(font.uploadedAt).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{Math.round(font.fileSize / 1024)}KB</span>
+                            <span>•</span>
+                            <span>{font.format.toUpperCase()}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             startEdit(font)
                           }}
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Edit3 className="w-3 h-3" />
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
                           onClick={(e) => {
                             e.stopPropagation()
                             deleteFont(font.id)
                           }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
 
-                    {/* Expanded Content */}
+                    {/* Compact Expanded Content */}
                     {isExpanded && (
-                      <CardContent>
+                      <div className="border-t bg-gray-50 p-2">
                         {isEditing ? (
-                          /* Edit Form */
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-1">Name</label>
-                              <input
-                                type="text"
-                                value={editForm.family}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, family: e.target.value }))}
-                                className="w-full p-2 border rounded"
-                              />
+                          /* Compact Edit Form */
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Name</label>
+                                <input
+                                  type="text"
+                                  value={editForm.family}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, family: e.target.value }))}
+                                  className="w-full p-1 text-xs border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Author</label>
+                                <input
+                                  type="text"
+                                  value={editForm.foundry}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, foundry: e.target.value }))}
+                                  className="w-full p-1 text-xs border rounded"
+                                />
+                              </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-1">Author</label>
-                              <input
-                                type="text"
-                                value={editForm.foundry}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, foundry: e.target.value }))}
-                                className="w-full p-2 border rounded"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-1">Link</label>
+                              <label className="block text-xs font-medium mb-1">Link</label>
                               <input
                                 type="url"
                                 value={editForm.downloadLink}
                                 onChange={(e) => setEditForm(prev => ({ ...prev, downloadLink: e.target.value }))}
-                                className="w-full p-2 border rounded"
+                                className="w-full p-1 text-xs border rounded"
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">Languages</label>
-                              <div className="flex flex-wrap gap-2">
+                              <label className="block text-xs font-medium mb-1">Languages</label>
+                              <div className="flex flex-wrap gap-1">
                                 {LANGUAGE_OPTIONS.map(lang => (
                                   <Button
                                     key={lang}
                                     size="sm"
+                                    className="h-5 px-2 text-xs"
                                     variant={editForm.languages.includes(lang) ? "default" : "outline"}
                                     onClick={() => toggleLanguage(lang)}
                                   >
@@ -360,43 +369,41 @@ export default function CleanAdmin() {
                                 ))}
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button onClick={() => saveEdit(font.id)}>
-                                <Save className="w-4 h-4 mr-2" />
+                            <div className="flex gap-1">
+                              <Button size="sm" className="h-6 px-2 text-xs" onClick={() => saveEdit(font.id)}>
+                                <Save className="w-3 h-3 mr-1" />
                                 Save
                               </Button>
-                              <Button variant="outline" onClick={cancelEdit}>
-                                <X className="w-4 h-4 mr-2" />
+                              <Button size="sm" className="h-6 px-2 text-xs" variant="outline" onClick={cancelEdit}>
+                                <X className="w-3 h-3 mr-1" />
                                 Cancel
                               </Button>
                             </div>
                           </div>
                         ) : (
-                          /* Display Mode */
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p><strong>Style:</strong> {font.style}</p>
-                              <p><strong>Weight:</strong> {font.weight}</p>
-                              <p><strong>Format:</strong> {font.format.toUpperCase()}</p>
-                              <p><strong>Size:</strong> {Math.round(font.fileSize / 1024)}KB</p>
+                          /* Compact Display Mode */
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="space-y-1">
+                              <p><span className="font-medium">Style:</span> {font.style}</p>
+                              <p><span className="font-medium">Weight:</span> {font.weight}</p>
+                              <p><span className="font-medium">Author:</span> {font.foundry}</p>
                             </div>
-                            <div>
-                              <p><strong>Author:</strong> {font.foundry}</p>
+                            <div className="space-y-1">
                               {font.downloadLink && (
-                                <p><strong>Link:</strong> <a href={font.downloadLink} target="_blank" className="text-blue-600 hover:underline">{font.downloadLink}</a></p>
+                                <p><span className="font-medium">Link:</span> <a href={font.downloadLink} target="_blank" className="text-blue-600 hover:underline truncate block">{font.downloadLink.length > 30 ? font.downloadLink.substring(0, 30) + '...' : font.downloadLink}</a></p>
                               )}
-                              <div className="mt-2">
-                                <strong>Languages:</strong>
+                              <div>
+                                <span className="font-medium">Languages:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {font.languages.map(lang => (
-                                    <Badge key={lang} variant="secondary">{lang}</Badge>
+                                    <Badge key={lang} variant="secondary" className="text-xs px-1 py-0">{lang}</Badge>
                                   ))}
                                 </div>
                               </div>
                             </div>
                           </div>
                         )}
-                      </CardContent>
+                      </div>
                     )}
                   </Card>
                 )
