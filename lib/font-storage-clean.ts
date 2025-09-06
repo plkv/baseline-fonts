@@ -284,8 +284,11 @@ class FontStorageClean {
    * Add style to existing font family
    */
   async addStyleToFamily(familyName: string, file: File): Promise<FontMetadata> {
+    console.log(`🔄 Adding style to family: "${familyName}", file: ${file.name}`)
+    
     // Find existing fonts in this family
     const existingFonts = await this.getFontsByFamily(familyName)
+    console.log(`📂 Found ${existingFonts.length} existing fonts in family "${familyName}":`, existingFonts.map(f => f.style))
     
     if (existingFonts.length === 0) {
       throw new Error(`No existing family found with name: ${familyName}`)
@@ -293,6 +296,7 @@ class FontStorageClean {
     
     // Upload the new style with automatic parsing, but force family name override
     const newFont = await this.uploadFont(file, true)
+    console.log(`📄 Uploaded new font with original family: "${newFont.family}", target family: "${familyName}"`)
     
     // Generate or use existing family ID
     const familyId = existingFonts[0].familyId || `family_${familyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
@@ -302,13 +306,16 @@ class FontStorageClean {
     const relatedStyleIds = existingFonts.map(f => f.id)
     
     // Update the new font directly in KV with forced family information
-    await kv.set(newFont.id, {
+    const updatedFontData = {
       ...newFont,
       family: familyName, // FORCE the family name to match existing family
       familyId,
       isDefaultStyle: false,
       relatedStyles: relatedStyleIds
-    })
+    }
+    
+    await kv.set(newFont.id, updatedFontData)
+    console.log(`✅ Updated font ${newFont.id} with forced family: "${updatedFontData.family}"`)
     
     // Update all existing fonts in the family to include this new style
     for (const existingFont of existingFonts) {
@@ -318,10 +325,12 @@ class FontStorageClean {
         familyId,
         relatedStyles: updatedRelatedStyles
       })
+      console.log(`🔗 Updated existing font ${existingFont.id} with new related style`)
     }
     
     // Return the updated font with correct family name
     const updatedNewFont = await this.getFontById(newFont.id)
+    console.log(`🎯 Final result - font family: "${updatedNewFont?.family}"`)
     return updatedNewFont || newFont
   }
   
