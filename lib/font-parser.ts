@@ -630,7 +630,11 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       designerInfo: Object.values(designerInfo).some(v => v) ? designerInfo : undefined,
       description: description || undefined,
       // User-customizable style tags (separate from technical availableStyles)
-      styleTags: [] as string[]
+      styleTags: [] as string[],
+      // Collection classification - smart default based on category
+      collection: (category === 'Display' || category === 'Script' || category === 'Decorative') ? 'Display' as const :
+                 (category === 'Symbol' || category === 'Pixel') ? 'Weirdo' as const :
+                 'Text' as const
     }
     
     // Final safety check - ensure the entire object is serializable

@@ -24,6 +24,11 @@ interface Font {
   category: string
   weight: number
   styleTags: string[]
+  collection: 'Text' | 'Display' | 'Weirdo'
+  // Additional editable metadata
+  editableCreationDate?: string
+  editableVersion?: string
+  editableLicenseType?: string
   // Extended metadata
   version?: string
   copyright?: string
@@ -31,6 +36,14 @@ interface Font {
   glyphCount?: number
   embeddingPermissions?: string
   description?: string
+  isVariable?: boolean
+  variableAxes?: Array<{
+    name: string
+    axis: string
+    min: number
+    max: number
+    default: number
+  }>
 }
 
 const LANGUAGE_OPTIONS = [
@@ -40,6 +53,18 @@ const LANGUAGE_OPTIONS = [
 
 const CATEGORY_OPTIONS = [
   'Sans Serif', 'Serif', 'Monospace', 'Display', 'Script', 'Pixel', 'Symbol', 'Decorative'
+]
+
+const COLLECTION_OPTIONS = [
+  { value: 'Text', label: 'Text', description: 'Fonts optimized for body text and reading' },
+  { value: 'Display', label: 'Display', description: 'Fonts for headlines, titles, and decorative use' },
+  { value: 'Weirdo', label: 'Weirdo', description: 'Experimental, artistic, and unconventional fonts' }
+] as const
+
+const LICENSE_TYPE_OPTIONS = [
+  'Open Source', 'SIL Open Font License', 'Apache License', 'MIT License', 
+  'GNU GPL', 'Creative Commons', 'Commercial', 'Proprietary', 'Freeware', 
+  'Shareware', 'Custom License', 'Unknown'
 ]
 
 const WEIGHT_OPTIONS = [
@@ -59,6 +84,7 @@ export default function CleanAdmin() {
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [sortBy, setSortBy] = useState<'new' | 'a-z'>('new')
+  const [filterCollection, setFilterCollection] = useState<'all' | 'Text' | 'Display' | 'Weirdo'>('all')
   const [expandedFonts, setExpandedFonts] = useState<Set<string>>(new Set())
   const [editingFont, setEditingFont] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
@@ -68,7 +94,11 @@ export default function CleanAdmin() {
     languages: [] as string[],
     category: '',
     weight: 400,
-    styleTags: [] as string[]
+    styleTags: [] as string[],
+    collection: 'Text' as 'Text' | 'Display' | 'Weirdo',
+    editableCreationDate: '',
+    editableVersion: '',
+    editableLicenseType: ''
   })
   const [newStyleTag, setNewStyleTag] = useState('')
 
@@ -158,7 +188,11 @@ export default function CleanAdmin() {
       languages: [...font.languages],
       category: font.category || 'Sans Serif',
       weight: font.weight || 400,
-      styleTags: [...(font.styleTags || [])]
+      styleTags: [...(font.styleTags || [])],
+      collection: font.collection || 'Text',
+      editableCreationDate: font.editableCreationDate || font.creationDate?.split('T')[0] || '',
+      editableVersion: font.editableVersion || font.version || '',
+      editableLicenseType: font.editableLicenseType || font.license || 'Unknown'
     })
   }
 
@@ -172,7 +206,11 @@ export default function CleanAdmin() {
       languages: [], 
       category: 'Sans Serif', 
       weight: 400, 
-      styleTags: [] 
+      styleTags: [],
+      collection: 'Text',
+      editableCreationDate: '',
+      editableVersion: '',
+      editableLicenseType: ''
     })
     setNewStyleTag('')
   }
@@ -252,14 +290,27 @@ export default function CleanAdmin() {
     return Array.from(allTags).sort()
   }
 
-  // Sort fonts
-  const sortedFonts = [...fonts].sort((a, b) => {
-    if (sortBy === 'new') {
-      return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-    } else {
-      return a.family.localeCompare(b.family)
-    }
-  })
+  // Filter and sort fonts
+  const filteredAndSortedFonts = [...fonts]
+    .filter(font => {
+      if (filterCollection === 'all') return true
+      return (font.collection || 'Text') === filterCollection
+    })
+    .sort((a, b) => {
+      if (sortBy === 'new') {
+        return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      } else {
+        return a.family.localeCompare(b.family)
+      }
+    })
+    
+  // Get collection counts
+  const collectionCounts = {
+    all: fonts.length,
+    Text: fonts.filter(f => (f.collection || 'Text') === 'Text').length,
+    Display: fonts.filter(f => f.collection === 'Display').length,
+    Weirdo: fonts.filter(f => f.collection === 'Weirdo').length
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -316,7 +367,7 @@ export default function CleanAdmin() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">
-              Font Collection ({fonts.length})
+              Font Collection ({filteredAndSortedFonts.length}/{fonts.length})
             </h2>
             <div className="flex gap-2">
               <Button
@@ -335,6 +386,28 @@ export default function CleanAdmin() {
               </Button>
             </div>
           </div>
+          
+          {/* Collection Filter */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={filterCollection === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilterCollection('all')}
+            >
+              All ({collectionCounts.all})
+            </Button>
+            {COLLECTION_OPTIONS.map(col => (
+              <Button
+                key={col.value}
+                variant={filterCollection === col.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterCollection(col.value)}
+                title={col.description}
+              >
+                {col.label} ({collectionCounts[col.value]})
+              </Button>
+            ))}
+          </div>
 
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading fonts...</div>
@@ -342,7 +415,7 @@ export default function CleanAdmin() {
             <div className="text-center py-8 text-gray-500">No fonts uploaded yet</div>
           ) : (
             <div className="space-y-1">
-              {sortedFonts.map((font) => {
+              {filteredAndSortedFonts.map((font) => {
                 const isExpanded = expandedFonts.has(font.id)
                 const isEditing = editingFont === font.id
 
@@ -435,6 +508,23 @@ export default function CleanAdmin() {
                                 className="w-full p-1 text-xs border rounded"
                               />
                             </div>
+                            <div>
+                              <label className="block text-xs font-medium mb-1">Collection</label>
+                              <div className="flex gap-1 mb-2">
+                                {COLLECTION_OPTIONS.map(col => (
+                                  <Button
+                                    key={col.value}
+                                    size="sm"
+                                    className="h-6 px-2 text-xs flex-1"
+                                    variant={editForm.collection === col.value ? "default" : "outline"}
+                                    onClick={() => setEditForm(prev => ({ ...prev, collection: col.value }))}
+                                    title={col.description}
+                                  >
+                                    {col.label}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
                                 <label className="block text-xs font-medium mb-1">Weight</label>
@@ -519,6 +609,61 @@ export default function CleanAdmin() {
                                 </div>
                               </div>
                             </div>
+                            
+                            {/* Variable Font Axes Display */}
+                            {font.isVariable && font.variableAxes && font.variableAxes.length > 0 && (
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Variable Font Axes</label>
+                                <div className="bg-gray-50 p-2 rounded text-xs space-y-1">
+                                  {font.variableAxes.map((axis, index) => (
+                                    <div key={index} className="flex justify-between items-center">
+                                      <span className="font-medium">{axis.name} ({axis.axis}):</span>
+                                      <span className="text-gray-600">
+                                        {axis.min} → {axis.max} (default: {axis.default})
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Additional Editable Fields */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Creation Date</label>
+                                <input
+                                  type="date"
+                                  value={editForm.editableCreationDate}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, editableCreationDate: e.target.value }))}
+                                  className="w-full p-1 text-xs border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1">Version</label>
+                                <input
+                                  type="text"
+                                  value={editForm.editableVersion}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, editableVersion: e.target.value }))}
+                                  placeholder="e.g. 1.0, 2.1.3"
+                                  className="w-full p-1 text-xs border rounded"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1">License Type</label>
+                                <select
+                                  value={editForm.editableLicenseType}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, editableLicenseType: e.target.value }))}
+                                  className="w-full p-1 text-xs border rounded"
+                                >
+                                  {LICENSE_TYPE_OPTIONS.map(license => (
+                                    <option key={license} value={license}>
+                                      {license}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            
                             <div className="flex gap-1">
                               <Button size="sm" className="h-6 px-2 text-xs" onClick={() => saveEdit(font.id)}>
                                 <Save className="w-3 h-3 mr-1" />
@@ -534,15 +679,32 @@ export default function CleanAdmin() {
                           /* Enhanced Display Mode */
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="space-y-1">
-                              <p><span className="font-medium">Style:</span> {font.style}</p>
+                              <p><span className="font-medium">Collection:</span> <Badge variant="secondary" className="text-xs px-1 py-0">{font.collection || 'Text'}</Badge></p>
+                              <p><span className="font-medium">Style:</span> {font.style} {font.isVariable && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}</p>
                               <p><span className="font-medium">Weight:</span> {font.weight}</p>
                               <p><span className="font-medium">Category:</span> {font.category || 'Sans Serif'}</p>
                               <p><span className="font-medium">Author:</span> {font.foundry}</p>
-                              {font.version && (
-                                <p><span className="font-medium">Version:</span> {font.version}</p>
+                              <p><span className="font-medium">Version:</span> {font.editableVersion || font.version || 'Unknown'}</p>
+                              <p><span className="font-medium">License:</span> {font.editableLicenseType || font.license || 'Unknown'}</p>
+                              {font.editableCreationDate && (
+                                <p><span className="font-medium">Created:</span> {new Date(font.editableCreationDate).toLocaleDateString()}</p>
                               )}
                               {font.glyphCount && (
                                 <p><span className="font-medium">Glyphs:</span> {font.glyphCount}</p>
+                              )}
+                              
+                              {/* Variable Font Axes in Display Mode */}
+                              {font.isVariable && font.variableAxes && font.variableAxes.length > 0 && (
+                                <div className="mt-2">
+                                  <span className="font-medium">Variable Axes:</span>
+                                  <div className="mt-1 space-y-1">
+                                    {font.variableAxes.map((axis, index) => (
+                                      <div key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                        <span className="font-medium">{axis.name}</span> ({axis.axis}): {axis.min}–{axis.max}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
                             </div>
                             <div className="space-y-1">

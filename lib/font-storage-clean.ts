@@ -20,6 +20,11 @@ export interface FontMetadata {
   foundry: string
   downloadLink?: string
   languages: string[]
+  collection: 'Text' | 'Display' | 'Weirdo'
+  // Additional editable metadata
+  editableCreationDate?: string // User can override the extracted creation date
+  editableVersion?: string // User can override the extracted version
+  editableLicenseType?: string // User can set/override license type
   
   // Storage info
   blobUrl: string
@@ -182,7 +187,8 @@ class FontStorageClean {
    * Update font metadata - now supports all editable fields
    */
   async updateFont(id: string, updates: Partial<Pick<FontMetadata, 
-    'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags'
+    'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
+    'editableCreationDate' | 'editableVersion' | 'editableLicenseType'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
