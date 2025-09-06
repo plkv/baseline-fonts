@@ -97,20 +97,49 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
 
     const format = originalName.toLowerCase().endsWith('.otf') ? 'otf' : 'ttf'
 
-    // Enhanced category detection
+    // Enhanced category detection with collection-specific categories
     const familyLower = family.toLowerCase()
-    let category = 'Sans Serif' // Default
+    let category = 'Sans' // Default for Text collection
+    let detectedCollection: 'Text' | 'Display' | 'Weirdo' = 'Text'
     
-    if (familyLower.includes('mono') || familyLower.includes('code') || familyLower.includes('console')) {
-      category = 'Monospace'
-    } else if (familyLower.includes('serif') && !familyLower.includes('sans')) {
-      category = 'Serif'
-    } else if (familyLower.includes('display') || familyLower.includes('decorative')) {
-      category = 'Display'
-    } else if (familyLower.includes('script') || familyLower.includes('handwriting')) {
-      category = 'Script'
-    } else if (familyLower.includes('pixel') || familyLower.includes('bitmap')) {
-      category = 'Pixel'
+    // Detect collection and category together
+    if (familyLower.includes('display') || familyLower.includes('decorative') || 
+        familyLower.includes('script') || familyLower.includes('handwriting') ||
+        familyLower.includes('vintage') || familyLower.includes('stencil')) {
+      detectedCollection = 'Display'
+      if (familyLower.includes('script') || familyLower.includes('handwriting')) {
+        category = familyLower.includes('handwriting') ? 'Handwritten' : 'Script'
+      } else if (familyLower.includes('vintage')) {
+        category = 'Vintage'
+      } else if (familyLower.includes('stencil')) {
+        category = 'Stencil'
+      } else if (familyLower.includes('serif') && !familyLower.includes('sans')) {
+        category = 'Serif-based'
+      } else {
+        category = 'Sans-based'
+      }
+    } else if (familyLower.includes('pixel') || familyLower.includes('bitmap') ||
+               familyLower.includes('experimental') || familyLower.includes('symbol')) {
+      detectedCollection = 'Weirdo'
+      if (familyLower.includes('pixel') || familyLower.includes('bitmap')) {
+        category = 'Bitmap'
+      } else if (familyLower.includes('symbol')) {
+        category = 'Symbol'
+      } else {
+        category = 'Experimental'
+      }
+    } else {
+      // Text collection categories
+      detectedCollection = 'Text'
+      if (familyLower.includes('mono') || familyLower.includes('code') || familyLower.includes('console')) {
+        category = 'Mono'
+      } else if (familyLower.includes('slab')) {
+        category = 'Slab'
+      } else if (familyLower.includes('serif') && !familyLower.includes('sans')) {
+        category = 'Serif'
+      } else {
+        category = 'Sans'
+      }
     }
     
     console.log(`⚖️ Font: "${family}" -> Weight: ${weight}, Category: ${category}`)
@@ -631,10 +660,8 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       description: description || undefined,
       // User-customizable style tags (separate from technical availableStyles)
       styleTags: [] as string[],
-      // Collection classification - smart default based on category
-      collection: (category === 'Display' || category === 'Script' || category === 'Decorative') ? 'Display' as const :
-                 (category === 'Symbol' || category === 'Pixel') ? 'Weirdo' as const :
-                 'Text' as const
+      // Collection classification - use detected collection
+      collection: detectedCollection
     }
     
     // Final safety check - ensure the entire object is serializable

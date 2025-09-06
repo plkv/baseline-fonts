@@ -51,9 +51,12 @@ const LANGUAGE_OPTIONS = [
   'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu'
 ]
 
-const CATEGORY_OPTIONS = [
-  'Sans Serif', 'Serif', 'Monospace', 'Display', 'Script', 'Pixel', 'Symbol', 'Decorative'
-]
+// Collection-specific categories
+const CATEGORY_OPTIONS = {
+  Text: ['Sans', 'Serif', 'Slab', 'Mono'],
+  Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
+  Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
+} as const
 
 const COLLECTION_OPTIONS = [
   { value: 'Text', label: 'Text', description: 'Fonts optimized for body text and reading' },
@@ -186,7 +189,7 @@ export default function CleanAdmin() {
       foundry: font.foundry,
       downloadLink: font.downloadLink || '',
       languages: [...font.languages],
-      category: font.category || 'Sans Serif',
+      category: font.category || getDefaultCategory(font.collection || 'Text'),
       weight: font.weight || 400,
       styleTags: [...(font.styleTags || [])],
       collection: font.collection || 'Text',
@@ -204,7 +207,7 @@ export default function CleanAdmin() {
       foundry: '', 
       downloadLink: '', 
       languages: [], 
-      category: 'Sans Serif', 
+      category: getDefaultCategory('Text'), 
       weight: 400, 
       styleTags: [],
       collection: 'Text',
@@ -254,8 +257,14 @@ export default function CleanAdmin() {
   const toggleCategory = (category: string) => {
     setEditForm(prev => ({
       ...prev,
-      category: prev.category === category ? 'Sans Serif' : category
+      category: prev.category === category ? getDefaultCategory(prev.collection) : category
     }))
+  }
+  
+  // Get default category for collection
+  const getDefaultCategory = (collection: 'Text' | 'Display' | 'Weirdo') => {
+    const defaults = { Text: 'Sans', Display: 'Sans-based', Weirdo: 'Experimental' }
+    return defaults[collection]
   }
   
   // Toggle style tag
@@ -313,6 +322,18 @@ export default function CleanAdmin() {
   }
 
   return (
+    <>
+      {/* Dynamic font loading for previews */}
+      <style jsx global>{`
+        ${fonts.map(font => `
+          @font-face {
+            font-family: "${font.family}";
+            src: url("${font.blobUrl}");
+            font-display: swap;
+          }
+        `).join('')}
+      `}</style>
+      
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
@@ -543,7 +564,7 @@ export default function CleanAdmin() {
                               <div>
                                 <label className="block text-xs font-medium mb-1">Category</label>
                                 <div className="flex flex-wrap gap-1">
-                                  {CATEGORY_OPTIONS.map(cat => (
+                                  {CATEGORY_OPTIONS[editForm.collection].map(cat => (
                                     <Button
                                       key={cat}
                                       size="sm"
@@ -682,7 +703,7 @@ export default function CleanAdmin() {
                               <p><span className="font-medium">Collection:</span> <Badge variant="secondary" className="text-xs px-1 py-0">{font.collection || 'Text'}</Badge></p>
                               <p><span className="font-medium">Style:</span> {font.style} {font.isVariable && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}</p>
                               <p><span className="font-medium">Weight:</span> {font.weight}</p>
-                              <p><span className="font-medium">Category:</span> {font.category || 'Sans Serif'}</p>
+                              <p><span className="font-medium">Category:</span> {font.category || getDefaultCategory(font.collection || 'Text')}</p>
                               <p><span className="font-medium">Author:</span> {font.foundry}</p>
                               <p><span className="font-medium">Version:</span> {font.editableVersion || font.version || 'Unknown'}</p>
                               <p><span className="font-medium">License:</span> {font.editableLicenseType || font.license || 'Unknown'}</p>
@@ -735,6 +756,26 @@ export default function CleanAdmin() {
                               {font.license && (
                                 <p><span className="font-medium">License:</span> <span className="text-gray-600 truncate">{font.license.length > 40 ? font.license.substring(0, 40) + '...' : font.license}</span></p>
                               )}
+                              
+                              {/* Font Preview */}
+                              <div className="col-span-2 mt-2">
+                                <span className="font-medium text-xs">Preview:</span>
+                                <div 
+                                  className="mt-1 p-3 bg-white border rounded text-lg leading-tight"
+                                  style={{
+                                    fontFamily: `"${font.family}", sans-serif`,
+                                    fontWeight: font.weight || 400
+                                  }}
+                                >
+                                  <div className="text-xl mb-1">{font.family}</div>
+                                  <div className="text-sm text-gray-600">
+                                    The quick brown fox jumps over the lazy dog
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -749,5 +790,6 @@ export default function CleanAdmin() {
       </div>
       <Toaster />
     </div>
+    </>
   )
 }
