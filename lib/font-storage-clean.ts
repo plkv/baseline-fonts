@@ -281,7 +281,7 @@ class FontStorageClean {
   }
   
   /**
-   * Add style to existing font family - Clean implementation without patches
+   * Add style to existing font family - Direct attachment approach
    */
   async addStyleToFamily(familyName: string, file: File): Promise<FontMetadata> {
     // Find existing fonts in this family
@@ -291,90 +291,34 @@ class FontStorageClean {
       throw new Error(`No existing family found with name: ${familyName}`)
     }
     
-    // Create unique ID and timestamp
-    const id = `font_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    const uploadedAt = new Date().toISOString()
+    // Get the first font as the "parent" font
+    const parentFont = existingFonts[0]
     
-    // Upload file to Blob
-    const blob = await blobPut(file.name, file, {
-      access: 'public',
-      addRandomSuffix: false
-    })
+    // Upload font normally but then immediately override its family info
+    const newFont = await this.uploadFont(file, true)
     
-    // Parse font metadata
-    let parsedMetadata: any = {}
-    try {
-      const { parseFontFile } = await import('./font-parser')
-      const buffer = await file.arrayBuffer()
-      parsedMetadata = await parseFontFile(buffer, file.name, file.size)
-    } catch (parseError) {
-      console.warn('Font parsing failed, using defaults:', parseError)
-    }
-    
-    // Generate or use existing family ID
-    const familyId = existingFonts[0].familyId || `family_${familyName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
-    const relatedStyleIds = existingFonts.map(f => f.id)
-    
-    // Create font metadata with FORCED family name from the start
-    const fontMetadata: FontMetadata = {
-      id,
-      filename: file.name,
-      family: familyName, // ALWAYS use the target family name
-      style: parsedMetadata.style || 'Regular',
-      weight: parsedMetadata.weight || 400,
-      format: file.name.split('.').pop()?.toLowerCase() || 'unknown',
-      fileSize: file.size,
-      uploadedAt,
-      blobUrl: blob.url,
-      
-      // Family management
-      familyId,
+    // IMMEDIATELY override the new font to attach it to the existing family
+    const attachedFont = {
+      ...newFont,
+      family: parentFont.family, // Use parent's exact family name
+      familyId: parentFont.familyId,
       isDefaultStyle: false,
-      italicStyle: parsedMetadata.italicStyle || false,
-      relatedStyles: relatedStyleIds,
-      
-      // Metadata from parser
-      foundry: parsedMetadata.foundry || 'Unknown',
-      downloadLink: undefined,
-      languages: parsedMetadata.languages || ['Latin'],
-      collection: parsedMetadata.collection || 'Text',
-      category: parsedMetadata.category || 'Sans Serif',
-      isVariable: parsedMetadata.isVariable || false,
-      availableWeights: parsedMetadata.availableWeights || [parsedMetadata.weight || 400],
-      availableStyles: parsedMetadata.availableStyles || [parsedMetadata.style || 'Regular'],
-      variableAxes: parsedMetadata.variableAxes,
-      openTypeFeatures: parsedMetadata.openTypeFeatures || ['Standard Ligatures', 'Kerning'],
-      version: parsedMetadata.version,
-      copyright: parsedMetadata.copyright,
-      license: parsedMetadata.license,
-      glyphCount: parsedMetadata.glyphCount,
-      embeddingPermissions: parsedMetadata.embeddingPermissions,
-      fontMetrics: parsedMetadata.fontMetrics,
-      panoseClassification: parsedMetadata.panoseClassification,
-      creationDate: parsedMetadata.creationDate,
-      modificationDate: parsedMetadata.modificationDate,
-      designerInfo: parsedMetadata.designerInfo,
-      description: parsedMetadata.description,
-      styleTags: parsedMetadata.styleTags || [],
+      relatedStyles: existingFonts.map(f => f.id)
     }
     
-    // Store metadata in KV
-    await kv.set(id, fontMetadata)
+    // Update the new font in KV with correct family attachment
+    await kv.set(newFont.id, attachedFont)
     
-    // Add to index
-    await this.addToIndex(id)
-    
-    // Update all existing fonts in the family to include this new style
+    // Add this new font to all existing fonts' relatedStyles
     for (const existingFont of existingFonts) {
-      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), id]
+      const updatedRelatedStyles = [...(existingFont.relatedStyles || []), newFont.id]
       await kv.set(existingFont.id, {
         ...existingFont,
-        familyId,
         relatedStyles: updatedRelatedStyles
       })
     }
     
-    return fontMetadata
+    return attachedFont
   }
   
   /**
