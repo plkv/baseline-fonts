@@ -134,7 +134,23 @@ class FontStorageClean {
           availableStyles: parsedData.availableStyles || [parsedData.style || 'Regular'],
           variableAxes: parsedData.variableAxes,
           openTypeFeatures: parsedData.openTypeFeatures || ['Standard Ligatures', 'Kerning'],
-          // Additional metadata extraction would go here
+          // Comprehensive metadata extraction
+          version: parsedData.version,
+          copyright: parsedData.copyright,
+          license: parsedData.license,
+          glyphCount: parsedData.glyphCount,
+          embeddingPermissions: parsedData.embeddingPermissions,
+          fontMetrics: parsedData.fontMetrics,
+          panoseClassification: parsedData.panoseClassification,
+          creationDate: parsedData.creationDate,
+          modificationDate: parsedData.modificationDate,
+          designerInfo: parsedData.designerInfo,
+          description: parsedData.description,
+          collection: parsedData.collection || 'Text',
+          familyId: parsedData.familyId,
+          isDefaultStyle: parsedData.isDefaultStyle,
+          italicStyle: parsedData.italicStyle,
+          styleTags: parsedData.styleTags || [],
         }
         
         console.log('✅ Font parsed successfully:', extractedMetadata.family)
@@ -194,7 +210,8 @@ class FontStorageClean {
    */
   async updateFont(id: string, updates: Partial<Pick<FontMetadata, 
     'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
-    'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId'
+    'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId' |
+    'version' | 'copyright' | 'license' | 'creationDate' | 'modificationDate' | 'description'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
@@ -333,6 +350,44 @@ class FontStorageClean {
     }
     
     return true
+  }
+  
+  /**
+   * Delete individual style from family
+   */
+  async deleteStyleFromFamily(styleId: string): Promise<boolean> {
+    const font = await this.getFontById(styleId)
+    if (!font) return false
+    
+    const familyName = font.family
+    const familyFonts = await this.getFontsByFamily(familyName)
+    
+    // Don't allow deletion if this is the only style in the family
+    if (familyFonts.length <= 1) {
+      throw new Error('Cannot delete the last style in a family. Delete the entire family instead.')
+    }
+    
+    // If this was the default style, set another style as default
+    if (font.isDefaultStyle && familyFonts.length > 1) {
+      const otherFont = familyFonts.find(f => f.id !== styleId)
+      if (otherFont) {
+        await this.setDefaultStyle(familyName, otherFont.id)
+      }
+    }
+    
+    // Remove this style from related styles of other fonts in the family
+    for (const relatedFont of familyFonts) {
+      if (relatedFont.id !== styleId && relatedFont.relatedStyles?.includes(styleId)) {
+        const updatedRelatedStyles = relatedFont.relatedStyles.filter(id => id !== styleId)
+        await kv.set(relatedFont.id, {
+          ...relatedFont,
+          relatedStyles: updatedRelatedStyles
+        })
+      }
+    }
+    
+    // Delete the style (file and metadata)
+    return await this.deleteFont(styleId)
   }
   
   /**

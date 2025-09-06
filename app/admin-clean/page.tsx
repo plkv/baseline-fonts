@@ -229,6 +229,30 @@ export default function CleanAdmin() {
     }
   }
   
+  // Delete individual style from family
+  const deleteStyle = async (styleId: string, styleName: string, familyName: string) => {
+    if (!confirm(`Delete the "${styleName}" style from ${familyName} family?`)) return
+
+    try {
+      const response = await fetch('/api/fonts-clean/delete-style', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ styleId })
+      })
+
+      if (response.ok) {
+        toast.success(`Style "${styleName}" deleted`)
+        loadFonts() // Reload to update family
+      } else {
+        const error = await response.json()
+        toast.error(error.details || 'Failed to delete style')
+      }
+    } catch (error) {
+      console.error('Delete style error:', error)
+      toast.error('Failed to delete style')
+    }
+  }
+  
   // Get family fonts for default style selection
   const getFamilyFonts = (familyName: string) => {
     return fonts.filter(font => font.family === familyName)
@@ -461,7 +485,7 @@ export default function CleanAdmin() {
         </Card>
         
         {/* Add Style to Family */}
-        <Card className="mb-8">
+        <Card className="mb-8" id="family-upload-section">
           <CardHeader>
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Upload className="w-5 h-5" />
@@ -957,10 +981,36 @@ export default function CleanAdmin() {
                                                 Set Default
                                               </Button>
                                             )}
+                                            {familyFonts.length > 1 && (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => deleteStyle(familyFont.id, familyFont.style, font.family)}
+                                                title={`Delete ${familyFont.style} style`}
+                                              >
+                                                <Trash2 className="w-3 h-3" />
+                                              </Button>
+                                            )}
                                           </div>
                                         </div>
                                       ))}
                                     </div>
+                                    {/* Add Style Button inside family styles */}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="mt-2 h-6 px-2 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                                      onClick={() => {
+                                        setSelectedFamily(font.family)
+                                        setAddingStyle(true)
+                                        // Scroll to the family upload section
+                                        document.getElementById('family-upload-section')?.scrollIntoView({ behavior: 'smooth' })
+                                      }}
+                                    >
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Add Style to Family
+                                    </Button>
                                   </div>
                                 ) : null
                               })()
