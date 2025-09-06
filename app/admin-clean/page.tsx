@@ -303,7 +303,9 @@ export default function CleanAdmin() {
       weight: font.weight || 400,
       styleTags: [...(font.styleTags || [])],
       collection: font.collection || 'Text',
-      editableCreationDate: font.editableCreationDate || font.creationDate?.split('T')[0] || '',
+      editableCreationDate: font.editableCreationDate || (font.creationDate ? 
+        font.creationDate.includes('-01-01') ? font.creationDate.split('-')[0] : font.creationDate.split('T')[0] 
+        : ''),
       editableVersion: font.editableVersion || font.version || '',
       editableLicenseType: font.editableLicenseType || font.license || 'Unknown'
     })
@@ -582,6 +584,19 @@ export default function CleanAdmin() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            quickAddStyle(font.family)
+                          }}
+                          disabled={addingStyle}
+                          title="Add style to family"
+                        >
+                          <Upload className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
@@ -763,9 +778,10 @@ export default function CleanAdmin() {
                               <div>
                                 <label className="block text-xs font-medium mb-1">Creation Date</label>
                                 <input
-                                  type="date"
+                                  type="text"
                                   value={editForm.editableCreationDate}
                                   onChange={(e) => setEditForm(prev => ({ ...prev, editableCreationDate: e.target.value }))}
+                                  placeholder="2023 or 2023-12-25"
                                   className="w-full p-1 text-xs border rounded"
                                 />
                               </div>

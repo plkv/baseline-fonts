@@ -612,6 +612,32 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       }
     }
     
+    // Enhanced date extraction from text fields (copyright, description, etc.)
+    if (!creationDate) {
+      const textFields = [
+        copyright,
+        font.names?.description?.en,
+        font.names?.trademark?.en,
+        font.names?.version?.en
+      ].filter(Boolean)
+      
+      for (const text of textFields) {
+        if (text) {
+          // Match various date formats: 2023, 2023-2024, ©2023, (c)2023, etc.
+          const dateMatches = text.match(/(?:©|\(c\)|copyright\s+)?\s*(\d{4})(?:\s*[-–—]\s*(\d{4}))?/i)
+          if (dateMatches) {
+            const year = parseInt(dateMatches[1])
+            if (year >= 1970 && year <= new Date().getFullYear()) {
+              // Create a flexible date - if only year, use January 1st
+              creationDate = `${year}-01-01T00:00:00.000Z`
+              console.log(`📅 Extracted creation year from text: ${year}`)
+              break
+            }
+          }
+        }
+      }
+    }
+    
     // Extended designer information
     designerInfo = {
       designer: font.names?.designer?.en || undefined,
