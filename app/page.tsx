@@ -678,22 +678,44 @@ export default function FontLibrary() {
                             >
                               {(() => {
                                 const options = []
-                                if (font._familyFonts) {
-                                  // Generate options based on actual available font files
+                                
+                                if (font.type === "Variable" && font._familyFonts) {
+                                  // For variable fonts, create weight x style combinations
+                                  const regularFont = font._familyFonts.find(f => !f.style?.toLowerCase().includes('italic'))
+                                  const italicFont = font._familyFonts.find(f => f.style?.toLowerCase().includes('italic'))
+                                  
+                                  // Generate weight options for each available style
+                                  if (regularFont) {
+                                    font.availableWeights.forEach(weight => {
+                                      options.push(
+                                        <option key={`${weight}-false`} value={`${weight}-false`}>
+                                          {weight} Regular
+                                        </option>
+                                      )
+                                    })
+                                  }
+                                  
+                                  if (italicFont) {
+                                    font.availableWeights.forEach(weight => {
+                                      options.push(
+                                        <option key={`${weight}-true`} value={`${weight}-true`}>
+                                          {weight} Italic
+                                        </option>
+                                      )
+                                    })
+                                  }
+                                } else if (font._familyFonts) {
+                                  // For static fonts, show actual available font files
                                   for (const familyFont of font._familyFonts) {
                                     const weight = familyFont.weight || 400
                                     const isItalic = familyFont.style?.toLowerCase().includes('italic')
                                     const styleName = familyFont.style || (isItalic ? 'Italic' : 'Regular')
                                     
-                                    // For variable fonts, show just the style name
-                                    // For static fonts with same style, show weight + style
-                                    const displayName = familyFont.isVariable 
-                                      ? styleName
-                                      : familyFont.style === 'Regular' && weight !== 400
-                                        ? `${weight} Regular`
-                                        : familyFont.style === 'Italic' && weight !== 400
-                                          ? `${weight} Italic`
-                                          : styleName
+                                    const displayName = familyFont.style === 'Regular' && weight !== 400
+                                      ? `${weight} Regular`
+                                      : familyFont.style === 'Italic' && weight !== 400
+                                        ? `${weight} Italic`
+                                        : styleName
                                     
                                     options.push(
                                       <option key={`${familyFont.id}`} value={`${weight}-${isItalic}`}>
