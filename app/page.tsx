@@ -126,19 +126,38 @@ export default function FontLibrary() {
             const representativeFont = familyFonts[0] // Use first font as representative
             
             // Analyze available weight+style combinations
-            const regularWeights = familyFonts
-              .filter(f => !f.style?.toLowerCase().includes('italic'))
-              .map(f => f.weight || 400)
-            const italicWeights = familyFonts
-              .filter(f => f.style?.toLowerCase().includes('italic'))
-              .map(f => f.weight || 400)
-            
-            // Get all available weights (both regular and italic)
-            const allWeights = [...new Set([...regularWeights, ...italicWeights])].sort((a, b) => a - b)
-            
-            // Only mark hasItalic true if there are actual italic weights available
-            const hasItalic = italicWeights.length > 0
+            const regularFonts = familyFonts.filter(f => !f.style?.toLowerCase().includes('italic'))
+            const italicFonts = familyFonts.filter(f => f.style?.toLowerCase().includes('italic'))
+            const hasItalic = italicFonts.length > 0
             const isVariable = familyFonts.some(f => f.isVariable)
+            
+            // Calculate available weights differently for variable vs static fonts
+            let availableWeights
+            if (isVariable) {
+              // For variable fonts, use weight axis range or common weight stops
+              const weightAxes = familyFonts
+                .filter(f => f.variableAxes?.some(axis => axis.axis === 'wght'))
+                .map(f => f.variableAxes?.find(axis => axis.axis === 'wght'))
+                .filter(Boolean)
+              
+              if (weightAxes.length > 0) {
+                // Use weight range from variable axis
+                const minWeight = Math.min(...weightAxes.map(axis => axis.min))
+                const maxWeight = Math.max(...weightAxes.map(axis => axis.max))
+                // Common weight stops within the range
+                availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                  .filter(w => w >= minWeight && w <= maxWeight)
+              } else {
+                // Fallback for variable fonts without clear weight axis
+                availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+              }
+            } else {
+              // For static fonts, use actual weights
+              const regularWeights = regularFonts.map(f => f.weight || 400)
+              const italicWeights = italicFonts.map(f => f.weight || 400)
+              const allWeights = [...new Set([...regularWeights, ...italicWeights])].sort((a, b) => a - b)
+              availableWeights = regularWeights.length > 0 ? [...new Set(regularWeights)].sort((a, b) => a - b) : allWeights
+            }
             
             return {
               id: index + 1,
@@ -150,7 +169,7 @@ export default function FontLibrary() {
               type: isVariable ? "Variable" : "Static",
               author: representativeFont.foundry || "Unknown",
               fontFamily: `"${familyName}", system-ui, sans-serif`,
-              availableWeights: regularWeights.length > 0 ? [...new Set(regularWeights)].sort((a, b) => a - b) : allWeights,
+              availableWeights: availableWeights,
               hasItalic: hasItalic,
               filename: representativeFont.filename,
               url: representativeFont.url || representativeFont.blobUrl,
