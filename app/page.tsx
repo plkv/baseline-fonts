@@ -40,7 +40,7 @@ const getPresetContent = (preset: string, fontName: string) => {
     case "Names":
       return fontName
     case "Key Glyphs":
-      return 'RKFJIGCQ aueoyrgsltf\n0123469 €£¥©®™…–—\n≪"(@&?;->'
+      return 'RKFJIGCQ aueoyrgsltf\n0123469 €£¥©®™…–—\n≪"(@&?;-> αβγδ ñüß çéà\nЯ中文한글العربية'
     case "Basic":
       return "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%^&*()_+-=[]{}|;':\",./<>?"
     case "Paragraph":
@@ -351,31 +351,52 @@ export default function FontLibrary() {
     return getPresetContent(selectedPreset, fontName)
   }
 
-  // Highlight missing characters with tertiary color
+  // Simple approach: Just detect fallback characters and color them grey
+  // This relies on the browser's natural fallback behavior when fonts don't support characters
+
+  // Highlight missing characters by wrapping them in spans that will use fallback fonts
   const highlightMissingCharacters = (text: string, fontId: number) => {
-    // Common characters that are often missing in fonts
-    const commonlyMissingChars = [
-      '€', '£', '¥', '₽', '₹', // Currency symbols
-      '©', '®', '™', // Trademark symbols  
-      '…', '–', '—', // Special punctuation
-      ''', ''', '"', '"', // Smart quotes
-      '°', '±', '×', '÷', // Math symbols
-      'α', 'β', 'γ', 'δ', // Greek letters
-      '♠', '♣', '♥', '♦', // Card suits
-      '★', '☆', '✓', '✗', // Symbols
-      'ñ', 'ü', 'ß', 'æ', 'ø' // Extended Latin
-    ]
+    // For now, use a simple approach: wrap common non-Latin characters 
+    // The browser will use fallback fonts for unsupported characters, so we detect those
     
-    // For now, assume fonts might be missing these characters
-    // In a full implementation, we would check the actual font file
     let highlightedText = text
     
-    commonlyMissingChars.forEach(char => {
+    // Characters that commonly need fallback fonts
+    const potentialFallbackChars = [
+      // Currency symbols
+      '€', '£', '¥', '₽', '₹', '¢', '₩', '₪', '₨', '₵',
+      // Extended Latin and diacritics  
+      'ñ', 'ü', 'ß', 'æ', 'ø', 'þ', 'ð', 'ŋ', 'ə', 'ɨ', 'ɯ',
+      'ç', 'é', 'è', 'ê', 'ë', 'à', 'á', 'â', 'ä', 'å', 'ã', 'ā',
+      'í', 'ì', 'î', 'ï', 'ī', 'ò', 'ó', 'ô', 'ö', 'õ', 'ō', 'ø',
+      'ú', 'ù', 'û', 'ü', 'ū', 'ý', 'ÿ',
+      // Symbols and punctuation
+      '©', '®', '™', '…', '–', '—', ''', ''', '"', '"',
+      '°', '±', '×', '÷', '≠', '≤', '≥', '∞', '√', '∑',
+      '♠', '♣', '♥', '♦', '★', '☆', '✓', '✗', '•', '‣',
+      // Greek letters
+      'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ',
+      'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω',
+      'Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ',
+      'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω',
+      // Cyrillic letters (common ones)
+      'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М',
+      'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+      'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м',
+      'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+      // CJK samples
+      '中', '文', '한', '글', '日', '本', '語', '漢', '字',
+      // Arabic samples
+      'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'
+    ]
+    
+    // Wrap these characters with a special class for potential fallback styling
+    potentialFallbackChars.forEach(char => {
       if (text.includes(char)) {
-        // Wrap missing character in span with tertiary color
+        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
         highlightedText = highlightedText.replace(
-          new RegExp(char, 'g'),
-          `<span style="color: var(--gray-text-tert); opacity: 0.6;">${char}</span>`
+          regex,
+          `<span class="fallback-char" style="color: var(--gray-text-tert); opacity: 0.7;" title="May use fallback font">${char}</span>`
         )
       }
     })
