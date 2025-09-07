@@ -92,9 +92,8 @@ export default function CleanAdmin() {
   const [families, setFamilies] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [merging, setMerging] = useState(false)
-  const [showMergeDialog, setShowMergeDialog] = useState(false)
-  const [duplicateFamilies, setDuplicateFamilies] = useState<any[]>([])
-  const [selectedMerges, setSelectedMerges] = useState<Set<string>>(new Set())
+  const [selectedFamilies, setSelectedFamilies] = useState<Set<string>>(new Set())
+  const [targetFamilyName, setTargetFamilyName] = useState('')
   const [loading, setLoading] = useState(true)
   const [addingStyle, setAddingStyle] = useState(false)
   const [addingStyleFor, setAddingStyleFor] = useState<string>('')
@@ -146,87 +145,77 @@ export default function CleanAdmin() {
     loadFonts()
   }, [])
 
-  // Detect duplicate families (safe preview)
-  const detectDuplicateFamilies = async () => {
-    setMerging(true)
-    try {
-      const response = await fetch('/api/fonts/merge-families', {
-        method: 'GET'
-      })
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        setDuplicateFamilies(result.duplicateFamilies)
-        if (result.duplicateFamilies.length === 0) {
-          toast.success('No duplicate families found!')
-        } else {
-          setShowMergeDialog(true)
-        }
+  // Toggle family selection for merging
+  const toggleFamilySelection = (familyName: string) => {
+    setSelectedFamilies(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(familyName)) {
+        newSet.delete(familyName)
       } else {
-        toast.error(result.message || 'Failed to detect duplicates')
+        newSet.add(familyName)
       }
-    } catch (error) {
-      console.error('Detection error:', error)
-      toast.error('Failed to detect duplicates')
-    } finally {
-      setMerging(false)
-    }
+      return newSet
+    })
   }
 
-  // Perform selected merges
-  const performSelectedMerges = async () => {
-    const mergeGroups = duplicateFamilies
-      .filter(family => selectedMerges.has(family.normalizedName))
-      .map(family => ({
-        canonicalName: family.canonicalName,
-        filenames: family.fonts.map((f: any) => f.filename)
-      }))
-
-    if (mergeGroups.length === 0) {
-      toast.error('No families selected for merge')
+  // Merge selected families into target name
+  const mergeSelectedFamilies = async () => {
+    if (selectedFamilies.size < 2) {
+      toast.error('Select at least 2 families to merge')
+      return
+    }
+    
+    if (!targetFamilyName.trim()) {
+      toast.error('Enter a target family name')
       return
     }
 
     setMerging(true)
     try {
-      const response = await fetch('/api/fonts/merge-families', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ mergeGroups })
-      })
+      // Get all fonts from selected families
+      const fontsToUpdate = fonts.filter(font => selectedFamilies.has(font.family))
       
-      const result = await response.json()
+      console.log('Merging families:', Array.from(selectedFamilies), 'into:', targetFamilyName)
+      console.log('Fonts to update:', fontsToUpdate.map(f => f.filename))
       
-      if (result.success) {
-        toast.success(`Merged ${result.totalFixed} fonts in ${mergeGroups.length} families!`)
-        setShowMergeDialog(false)
-        setSelectedMerges(new Set())
-        loadFonts() // Reload the fonts
-      } else {
-        toast.error(result.message || 'Failed to merge families')
+      // Update each font to use the target family name
+      let updatedCount = 0
+      for (const font of fontsToUpdate) {
+        try {
+          const response = await fetch('/api/fonts-clean/update', {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              fontId: font.id,
+              updates: {
+                family: targetFamilyName
+              }
+            })
+          })
+
+          if (response.ok) {
+            updatedCount++
+          } else {
+            console.error('Failed to update font:', font.filename)
+          }
+        } catch (error) {
+          console.error('Error updating font:', font.filename, error)
+        }
       }
+      
+      toast.success(`Successfully merged ${updatedCount} fonts into "${targetFamilyName}"`)
+      setSelectedFamilies(new Set())
+      setTargetFamilyName('')
+      loadFonts() // Reload the fonts
+      
     } catch (error) {
       console.error('Merge error:', error)
       toast.error('Failed to merge families')
     } finally {
       setMerging(false)
     }
-  }
-
-  // Toggle merge selection
-  const toggleMergeSelection = (normalizedName: string) => {
-    setSelectedMerges(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(normalizedName)) {
-        newSet.delete(normalizedName)
-      } else {
-        newSet.add(normalizedName)
-      }
-      return newSet
-    })
   }
 
   // Upload font
@@ -604,14 +593,25 @@ export default function CleanAdmin() {
               >
                 A-Z
               </Button>
+              
+              {selectedFamilies.size > 0 && (
+                <input
+                  type="text"
+                  value={targetFamilyName}
+                  onChange={(e) => setTargetFamilyName(e.target.value)}
+                  placeholder="Target family name (e.g. 'DatDot')"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+              
               <Button
                 variant="outline"
                 size="sm"
-                onClick={detectDuplicateFamilies}
-                disabled={merging}
+                onClick={mergeSelectedFamilies}
+                disabled={merging || selectedFamilies.size < 2 || !targetFamilyName.trim()}
                 className="text-orange-600 border-orange-300 hover:bg-orange-50"
               >
-                {merging ? 'Detecting...' : 'Fix Duplicates'}
+                {merging ? 'Merging...' : `Merge ${selectedFamilies.size} Selected`}
               </Button>
             </div>
           </div>
@@ -664,6 +664,15 @@ export default function CleanAdmin() {
                       }}
                     >
                       <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedFamilies.has(font.family)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            toggleFamilySelection(font.family)
+                          }}
+                          className="w-4 h-4"
+                        />
                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         <div>
                           <h3 className="text-sm font-medium">{font.family}</h3>
@@ -1073,80 +1082,6 @@ export default function CleanAdmin() {
         </div>
       </div>
       
-      {/* Merge Families Dialog */}
-      {showMergeDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
-              Duplicate Font Families Found ({duplicateFamilies.length})
-            </h2>
-            
-            <p className="text-gray-600 mb-4">
-              Select which family duplicates you want to merge. Each group shows different variations 
-              of the same family name that will be unified under one canonical name.
-            </p>
-            
-            <div className="space-y-4 mb-6">
-              {duplicateFamilies.map(family => (
-                <div key={family.normalizedName} className="border rounded-lg p-4">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedMerges.has(family.normalizedName)}
-                      onChange={() => toggleMergeSelection(family.normalizedName)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-green-700">
-                          Will merge into: "{family.canonicalName}"
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          ({family.fontCount} fonts)
-                        </span>
-                      </div>
-                      
-                      <div className="text-sm text-gray-600 mb-2">
-                        <strong>Current variations:</strong> {family.variations.map((v: string) => `"${v}"`).join(', ')}
-                      </div>
-                      
-                      <div className="text-xs text-gray-500">
-                        <strong>Files:</strong> {family.fonts.map((f: any) => f.filename).join(', ')}
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowMergeDialog(false)
-                  setSelectedMerges(new Set())
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => setSelectedMerges(new Set(duplicateFamilies.map(f => f.normalizedName)))}
-                variant="outline"
-                className="text-blue-600"
-              >
-                Select All
-              </Button>
-              <Button
-                onClick={performSelectedMerges}
-                disabled={merging || selectedMerges.size === 0}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {merging ? 'Merging...' : `Merge ${selectedMerges.size} Selected`}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
       
       <Toaster />
     </div>
