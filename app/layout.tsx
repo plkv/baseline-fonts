@@ -1,28 +1,31 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Space_Grotesk, Space_Mono } from "next/font/google"
 import "./globals.css"
 
 const inter = Inter({
   subsets: ["latin"],
-  display: "swap",
   variable: "--font-inter",
+  display: "swap",
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+})
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "Typedump - Font Collection & Preview",
-  description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
-  keywords: "fonts, typography, typefaces, font preview, design tools, web fonts",
-  openGraph: {
-    title: "Typedump - Font Collection & Preview",
-    description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Typedump - Font Collection & Preview",
-    description: "Discover, preview, and manage typography with Typedump - the ultimate font collection platform for designers and developers.",
-  }
+  title: "Font Library",
+  description: "A modern font showcase and typography library",
+    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -31,14 +34,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} antialiased`}
-      style={{
-        fontFeatureSettings: "'ss01' on, 'ss03' on, 'cv06' on, 'cv11' on",
-      }}
-    >
-      <body className="font-sans">{children}</body>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable} dark`}>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }

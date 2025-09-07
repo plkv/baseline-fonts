@@ -4,40 +4,93 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated color tokens to match the design brief for clean typography-focused interface */
   --background: oklch(1 0 0);
-  --foreground: oklch(0.205 0 0);
-  --card: oklch(0.97 0 0);
-  --card-foreground: oklch(0.205 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.556 0 0);
-  --secondary-foreground: oklch(1 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.646 0.222 264.376);
-  --accent-foreground: oklch(1 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
-  --input: oklch(0.97 0 0);
-  --ring: oklch(0.646 0.111 264.376 / 0.5);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.205 0 0);
-  --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.646 0.222 264.376);
-  --sidebar-accent-foreground: oklch(1 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.646 0.111 264.376 / 0.5);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Gray tokens - Light theme */
+    --gray-cont-prim: #0a0a0a;
+    --gray-cont-sec: rgba(10, 10, 10, 0.64);
+    --gray-cont-tert: rgba(10, 10, 10, 0.4);
+    --gray-cont-quart: rgba(10, 10, 10, 0.24);
+    --gray-accent-prim: #0a0a0a;
+    --gray-accent-sec: #1f1f1f;
+    --gray-fill-prim: rgba(26, 26, 26, 0.04);
+    --gray-fill-sec: rgba(26, 26, 26, 0.08);
+    --gray-brd-prim: rgba(26, 26, 26, 0.08);
+    --gray-surface-prim: #fcfcfc;
+    --gray-surface-sec: #f2f2f2;
+
+    /* Misc tokens - Light theme */
+    --misc-cont-inverse: #f7f7f7;
+    --misc-cont-sec: rgba(247, 247, 247, 0.64);
+    --misc-cont-tert: rgba(247, 247, 247, 0.24);
+
+    /* Font variables */
+    --font-inter: var(--font-inter);
+    --font-space-grotesk: var(--font-space-grotesk);
+    --font-space-mono: var(--font-space-mono);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Gray tokens - Dark theme */
+    --gray-cont-prim: #fcfcfc;
+    --gray-cont-sec: rgba(252, 252, 252, 0.64);
+    --gray-cont-tert: rgba(252, 252, 252, 0.4);
+    --gray-cont-quart: rgba(252, 252, 252, 0.24);
+    --gray-accent-prim: #fcfcfc;
+    --gray-accent-sec: #f2f2f2;
+    --gray-fill-prim: rgba(252, 252, 252, 0.04);
+    --gray-fill-sec: rgba(252, 252, 252, 0.08);
+    --gray-brd-prim: rgba(252, 252, 252, 0.08);
+    --gray-surface-prim: #0a0a0a;
+    --gray-surface-sec: #1f1f1f;
+
+    /* Misc tokens - Dark theme */
+    --misc-cont-inverse: #0a0a0a;
+    --misc-cont-sec: rgba(10, 10, 10, 0.64);
+    --misc-cont-tert: rgba(10, 10, 10, 0.24);
+
+    /* Font variables */
+    --font-inter: var(--font-inter);
+    --font-space-grotesk: var(--font-space-grotesk);
+    --font-space-mono: var(--font-space-mono);
+  }
 }
 
 .dark {
@@ -76,8 +129,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-space-grotesk);
+  --font-mono: var(--font-space-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -122,5 +176,260 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Sidebar titles */
+  .text-sidebar-title {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 14px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-prim);
+  }
+
+  /* Font name and menu */
+  .text-font-name,
+  .text-menu {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-prim);
+  }
+
+  /* Author */
+  .text-author {
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-tert);
+  }
+
+  /* Button and tag sizes with new color tokens */
+  .btn-sm {
+    display: flex;
+    padding: 6px 10px;
+    justify-content: center;
+    align-items: center;
+    height: 26px;
+    border-radius: 8px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 14px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-prim);
+    background-color: var(--gray-surface-sec);
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-sm:hover {
+    background-color: var(--gray-fill-sec);
+    color: var(--gray-cont-prim);
+  }
+
+  .btn-sm.active {
+    background-color: var(--gray-cont-prim);
+    color: var(--gray-surface-prim);
+  }
+
+  .btn-md {
+    display: flex;
+    padding: 6px 10px;
+    justify-content: center;
+    align-items: center;
+    height: 32px;
+    border-radius: 8px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-prim);
+    background-color: var(--gray-surface-sec);
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-md:hover {
+    background-color: var(--gray-fill-sec);
+    color: var(--gray-cont-prim);
+  }
+
+  .btn-md.active {
+    background-color: var(--gray-cont-prim);
+    color: var(--gray-surface-prim);
+  }
+
+  /* Ghost style for menu tabs */
+  .menu-tab {
+    display: flex;
+    padding: 6px;
+    align-items: center;
+    border-radius: 8px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-tert);
+    background-color: transparent;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .menu-tab:hover {
+    background-color: var(--gray-surface-sec);
+    color: var(--gray-cont-prim);
+  }
+
+  .menu-tab.active {
+    color: var(--gray-cont-prim);
+    background-color: transparent;
+  }
+
+  /* Single icon button style */
+  .icon-btn {
+    display: flex;
+    padding: 6px;
+    align-items: center;
+    border-radius: 8px;
+    background-color: transparent;
+    border: none;
+    color: var(--gray-cont-prim);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .icon-btn:hover {
+    background-color: var(--gray-surface-sec);
+  }
+
+  .icon-btn.active {
+    background-color: var(--gray-surface-sec);
+  }
+
+  /* Download button style with hardcoded colors for proper contrast */
+  .download-btn {
+    display: flex;
+    padding: 6px 10px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  @media (prefers-color-scheme: light) {
+    .download-btn {
+      color: #fcfcfc;
+      background-color: #0a0a0a;
+    }
+
+    .download-btn:hover {
+      background-color: rgba(10, 10, 10, 0.8);
+      color: #fcfcfc;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .download-btn {
+      color: #0a0a0a;
+      background-color: #fcfcfc;
+    }
+
+    .download-btn:hover {
+      background-color: rgba(252, 252, 252, 0.8);
+      color: #0a0a0a;
+    }
+  }
+
+  /* Updated dropdown styling */
+  .dropdown-select {
+    display: flex;
+    padding: 6px 10px;
+    align-items: center;
+    border-radius: 8px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    color: var(--gray-cont-prim);
+    background-color: var(--gray-surface-sec);
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .dropdown-select:hover {
+    background-color: var(--gray-fill-sec);
+  }
+
+  /* Scrollbar hide utility for sidebar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Segmented control styling for display mode */
+  .segmented-control {
+    display: flex;
+    padding: 2px;
+    align-items: center;
+    align-self: stretch;
+    border-radius: 8px;
+    background-color: var(--gray-surface-sec);
+  }
+
+  .segmented-control-button {
+    display: flex;
+    padding: 4px 12px;
+    justify-content: center;
+    align-items: center;
+    flex: 1 0 0;
+    border-radius: 6px;
+    font-family: "Inter Variable", sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 14px;
+    font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
+    background-color: transparent;
+    color: var(--gray-cont-tert);
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .segmented-control-button.active {
+    background-color: var(--gray-surface-prim);
+    color: var(--gray-cont-prim);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 }

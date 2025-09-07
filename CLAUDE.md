@@ -2,9 +2,10 @@
 
 ## Project Overview
 - **Project Name**: Baseline Font Catalog
-- **Repository**: https://github.com/plkv/baseline-fonts.git
-- **Current Version**: 0.026
-- **Status**: ✅ Working and deployed
+- **Repository**: https://github.com/plkv/baseline-fonts.git  
+- **Current Version**: 0.066 (catalog branch)
+- **Status**: ✅ Working with new catalog UI
+- **IMPORTANT**: Local development is not priority - only Vercel deployment matters!
 
 ## Project Structure
 ```
@@ -210,3 +211,72 @@ The critical deployment issue has been solved with a comprehensive persistent st
 - `DEPLOYMENT-SETUP.md` - Technical deployment details
 
 **Result**: Once configured, all fonts uploaded through admin panel will persist permanently across all deployments! 🎉
+
+## 🎉 CATALOG BRANCH - NEW UI INTEGRATED (2025-09-07)
+
+### Major Achievement: Beautiful Catalog UI from v0.app
+
+Successfully integrated the sophisticated catalog interface from https://github.com/plkv/typedump-front-v0 with the existing admin functionality!
+
+### What's New in Catalog Branch:
+
+**✅ New Catalog Interface:**
+- Beautiful, professional font catalog UI created with v0.app
+- Preserved exact design system, colors, and typography from v0 frontend
+- Dynamic font loading from existing API endpoints
+- Advanced font preview with real-time editing
+- Sophisticated filtering and sorting capabilities
+- Variable font axis controls and OpenType feature toggles
+
+**✅ Seamless Admin Integration:**  
+- Admin link in catalog navigation (`/admin-simple`)
+- Fonts uploaded via admin appear automatically in catalog
+- Complete preservation of existing admin functionality
+- Both interfaces share the same backend and storage
+
+**✅ Advanced Features:**
+- Text presets (Names, Key Glyphs, Basic, Paragraph, Brands)  
+- Display mode selection (Text, Display, Weirdo)
+- Font category filtering (Sans, Serif, Display, Mono, etc.)
+- Dynamic font weight and italic selection
+- Real-time text size and line height adjustment
+- Expandable font cards with OpenType controls
+- Responsive design with collapsible sidebar
+
+### Technical Implementation:
+
+**Backend Integration:**
+- Connects to existing `/api/fonts/list-v2` endpoint
+- Transforms font data to catalog UI format
+- Dynamic CSS injection for uploaded fonts
+- Preserves all metadata from font parser
+
+**Design System Preserved:**  
+- Copied `globals.css`, `layout.tsx` from v0 frontend
+- Maintained exact color scheme and typography
+- Preserved Material Symbols icons and styling
+- Kept all UI components and interactions
+
+### Branch Structure:
+- **catalog branch**: ✅ New catalog UI + existing admin (CURRENT)
+- **main branch**: ✅ Advanced admin functionality (commit 73fb580)  
+- **admin branch**: Simple admin interface
+
+### URLs:
+- **Catalog**: http://localhost:3000 (Beautiful font browsing)
+- **Admin**: http://localhost:3000/admin-simple (Font management)
+- **Full Admin**: http://localhost:3000/admin (Advanced management)
+
+### Development Status:
+- ✅ Build passes successfully 
+- ✅ Development server running
+- ✅ API integration working
+- ✅ Font loading and preview working
+- ✅ Admin functionality preserved
+- ✅ Design system intact
+
+### ⚠️ IMPORTANT PROJECT RULE:
+**Local development is NOT priority - only Vercel deployment matters!**
+- Focus on production deployment functionality
+- Local compilation/development issues are secondary
+- Vercel-specific features and environment take precedence

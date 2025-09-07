@@ -1,1663 +1,764 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef, useCallback, useEffect, useMemo } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect, useCallback } from "react"
 import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Moon, Sun, RotateCcw, Palette, Monitor, Menu } from "lucide-react"
 
-// Fonts are now loaded dynamically from uploaded fonts API only
-
-const presetTexts = {
-  keysymbols: 'RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->',
-  names: "", // Will be dynamically set based on current font
-  paragraph:
-    "The Amazon rainforest, often called the lungs of the Earth, spans over 5.5 million square kilometers across nine countries in South America. This vast ecosystem is home to an estimated 400 billion individual trees representing 16,000 species, making it the most biodiverse terrestrial ecosystem on our planet. Scientists believe that one in ten known species in the world lives in the Amazon rainforest, including over 2.5 million insect species, tens of thousands of plants, and some 2,000 birds and mammals. The forest plays a crucial role in regulating the global climate by absorbing large amounts of carbon dioxide and producing oxygen through photosynthesis.",
-  alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz",
-  brands: "Nike Adidas Apple Google Microsoft Amazon Tesla SpaceX",
-  symbols: "!@#$%^&*()_+-=[]{}|;':\",./<>?`~",
+// Font interface for our API data
+interface FontData {
+  id: number
+  name: string
+  family: string
+  style: string
+  category: string
+  styles: number
+  type: "Variable" | "Static"
+  author: string
+  fontFamily: string
+  availableWeights: number[]
+  hasItalic: boolean
+  filename: string
+  url?: string
+  variableAxes?: Array<{
+    name: string
+    axis: string
+    min: number
+    max: number
+    default: number
+  }>
+  openTypeFeatures?: string[]
 }
 
-const textPresets = {
-  "Key symbols": 'RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->',
-  Names: "",
-  Paragraph:
-    'Breaking: Local bakery owner Sarah Quinn accidentally created the world\'s spiciest croissant yesterday. "I mixed up the sugar & ghost pepper containers," she laughed. The mistake happened around 3:46 AM during prep work. Customers who tried it described reactions from tears to uncontrollable hiccups. Fire department arrived when smoke detectors went off, but it was a false alarm. The fire department\'s phone rang constantly with food bloggers asking: "Can we try some?" @SpicyFoodie tweeted about it. Sarah plans adding "Devil\'s Croissant" to her menu -> unexpected success from kitchen chaos.',
-  Brands: "McDonald's Nike Apple Google Microsoft Amazon Facebook Tesla Coca-Cola Samsung",
-  Alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz",
-}
+const textPresets = ["Names", "Key Glyphs", "Basic", "Paragraph", "Brands"]
+const fontCategories = ["Sans", "Serif", "Display", "Mono", "Pixel", "Script", "Variables"]
+const styles = ["Neutral", "Experimental", "Display", "Mono", "Pixel", "Script", "Variables"]
+const languages = ["Latin", "Cyrillic", "Georgian"]
+const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
-const presetSizes = [10, 12, 14, 16, 18, 24, 32, 48, 64, 72, 96, 120]
-
-const colorPresets = [
-  { name: "Default", value: "default", lightBg: "bg-stone-50", darkText: "text-stone-200" },
-  { name: "Blue", value: "blue", lightBg: "bg-blue-50", darkText: "text-blue-200" },
-  { name: "Green", value: "green", lightBg: "bg-green-50", darkText: "text-green-200" },
-  { name: "Purple", value: "purple", lightBg: "bg-purple-50", darkText: "text-purple-200" },
-  { name: "Pink", value: "pink", lightBg: "bg-pink-50", darkText: "text-pink-200" },
-  { name: "Orange", value: "orange", lightBg: "bg-orange-50", darkText: "text-orange-200" },
-]
-
-export default function FontCatalog() {
-  const [previewText, setPreviewText] = useState('RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->')
-  const [searchQuery, setSearchQuery] = useState("")
-  const [customText, setCustomText] = useState("RKFJIGCQ aueyrgsltf 012469 @&?;->")
-  const [textPreset, setTextPreset] = useState("keysymbols")
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
-  const [fontWeight, setFontWeight] = useState([400])
-  const [fontSize, setFontSize] = useState([72])
-  const [presetSize, setPresetSize] = useState("72")
-  const [activeOpenTypeFeatures, setActiveOpenTypeFeatures] = useState<string[]>([])
-  const [maxStyles, setMaxStyles] = useState([20])
-  const [fontType, setFontType] = useState(false)
-  const [sidebarVisible, setSidebarVisible] = useState(true)
-  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200)
-  const [isMobile, setIsMobile] = useState(false)
-  const [sidebarWidth, setSidebarWidth] = useState(320)
-  const [sortBy, setSortBy] = useState("name")
-  const [hoveredFont, setHoveredFont] = useState<string | null>(null)
-  const [themeMode, setThemeMode] = useState<"auto" | "light" | "dark">("auto")
-  const [darkMode, setDarkMode] = useState(false)
-  const [letterSpacing, setLetterSpacing] = useState([0])
-  const [lineHeight, setLineHeight] = useState([1.2])
-  const [presetLetterSpacing, setPresetLetterSpacing] = useState("0")
-  const [presetLineHeight, setPresetLineHeight] = useState("1.2")
-  const [globalSearch, setGlobalSearch] = useState("")
-  const [colorTheme, setColorTheme] = useState("default") // Declare colorTheme state
-  const [isLetterSpacingHovered, setIsLetterSpacingHovered] = useState(false)
-  const [isLineHeightHovered, setIsLineHeightHovered] = useState(false)
-  const [isFontSizeHovered, setIsFontSizeHovered] = useState(false)
-  const [logoFont, setLogoFont] = useState("")
-  const [uploadedFonts, setUploadedFonts] = useState<any[]>([])
-  const [allFonts, setAllFonts] = useState<any[]>([])
-  const [isLoadingFonts, setIsLoadingFonts] = useState(true)
-  const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({})
-
-  // Generate available styles for variable fonts
-  const generateVariableFontStyles = useCallback((font: any) => {
-    if (font.isVariable && font.variableAxes) {
-      const styles: string[] = []
-      
-      // Find weight and italic/slant axes
-      const weightAxis = font.variableAxes.find((axis: any) => 
-        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
-      )
-      const slantAxis = font.variableAxes.find((axis: any) => 
-        axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital' || 
-        axis.name.toLowerCase().includes('slant') || axis.name.toLowerCase().includes('italic')
-      )
-      
-      if (weightAxis) {
-        // Generate weight variations based on actual axis range - only create styles that make sense
-        const min = Math.round(weightAxis.min || 100)
-        const max = Math.round(weightAxis.max || 900)
-        
-        // Define standard weight points and their names
-        const standardWeights = [
-          { weight: 100, name: 'Thin' },
-          { weight: 200, name: 'ExtraLight' },
-          { weight: 300, name: 'Light' },
-          { weight: 400, name: 'Regular' },
-          { weight: 500, name: 'Medium' },
-          { weight: 600, name: 'SemiBold' },
-          { weight: 700, name: 'Bold' },
-          { weight: 800, name: 'ExtraBold' },
-          { weight: 900, name: 'Black' }
-        ]
-        
-        // Only add styles that fall within the font's actual weight range
-        standardWeights.forEach(({ weight, name }) => {
-          if (weight >= min && weight <= max) {
-            styles.push(name)
-          }
-        })
-        
-        // If no standard weights fit, create a reasonable subset
-        if (styles.length === 0) {
-          // Create 3-5 evenly distributed styles within the actual range
-          const steps = Math.min(5, Math.max(3, Math.floor((max - min) / 100)))
-          for (let i = 0; i < steps; i++) {
-            const weight = Math.round(min + (max - min) * i / (steps - 1))
-            const name = weight <= 300 ? 'Light' :
-                        weight <= 450 ? 'Regular' :
-                        weight <= 600 ? 'Medium' :
-                        weight <= 750 ? 'Bold' : 'Heavy'
-            if (!styles.includes(name)) {
-              styles.push(name)
-            }
-          }
-        }
-        
-        // If there's also a slant/italic axis, add italic versions
-        if (slantAxis) {
-          const baseStyles = [...styles]
-          baseStyles.forEach(style => {
-            styles.push(`${style} Italic`)
-          })
-        }
-      } else {
-        // No weight axis, just use the original style
-        styles.push(font.style)
-        
-        // Add italic if slant axis exists
-        if (slantAxis) {
-          styles.push(`${font.style} Italic`)
-        }
-      }
-      
-      return styles.length > 0 ? styles : [font.style]
-    }
-    
-    // For non-variable fonts, return original style
-    return [font.style]
-  }, [])
-
-  // Map style names to weight values for variable fonts
-  const getWeightForStyleName = useCallback((styleName: string): number | null => {
-    // Remove "Italic" suffix for weight mapping
-    const baseName = styleName.replace(/\s+Italic$/i, '').toLowerCase()
-    
-    const weightMap: { [key: string]: number } = {
-      'thin': 100,
-      'extralight': 200,
-      'ultra light': 200,
-      'light': 300,
-      'regular': 400,
-      'normal': 400,
-      'medium': 500,
-      'semibold': 600,
-      'semi bold': 600,
-      'demi': 600,
-      'bold': 700,
-      'extrabold': 800,
-      'extra bold': 800,
-      'ultra bold': 800,
-      'black': 900,
-      'heavy': 900
-    }
-    
-    return weightMap[baseName] || null
-  }, [])
-
-  // Group fonts by family to create family-level entries
-  const groupFontsByFamily = useCallback((fonts: any[]) => {
-    const familyMap = new Map()
-    
-    fonts.forEach(font => {
-      const familyKey = font.family
-      
-      if (!familyMap.has(familyKey)) {
-        // Create family-level entry using the first font as base
-        const initialAvailableStyles = font.isVariable 
-          ? generateVariableFontStyles(font) 
-          : [font.style]
-        
-        familyMap.set(familyKey, {
-          ...font,
-          name: font.family, // Use family name as display name
-          styles: font.isVariable ? initialAvailableStyles.length : 1,
-          availableStyles: initialAvailableStyles,
-          availableWeights: [font.weight],
-          allFonts: [font] // Keep track of all fonts in family
-        })
-      } else {
-        // Add to existing family
-        const family = familyMap.get(familyKey)
-        
-        if (font.isVariable) {
-          // For variable fonts, merge generated styles
-          const variableStyles = generateVariableFontStyles(font)
-          variableStyles.forEach(style => {
-            if (!family.availableStyles.includes(style)) {
-              family.availableStyles.push(style)
-            }
-          })
-          family.styles = family.availableStyles.length
-          family.isVariable = true
-          family.variableAxes = font.variableAxes
-        } else {
-          // For static fonts, add unique styles
-          family.styles += 1
-          if (!family.availableStyles.includes(font.style)) {
-            family.availableStyles.push(font.style)
-          }
-        }
-        
-        // Add unique weights
-        if (!family.availableWeights.includes(font.weight)) {
-          family.availableWeights.push(font.weight)
-        }
-        
-        // Combine features and languages
-        font.openTypeFeatures.forEach(feature => {
-          if (!family.openTypeFeatures.includes(feature)) {
-            family.openTypeFeatures.push(feature)
-          }
-        })
-        
-        family.allFonts.push(font)
-      }
-    })
-    
-    return Array.from(familyMap.values())
-  }, [])
-  
-  // Helper to get default style (prefer Regular over Italic)
-  const getDefaultStyle = useCallback((font: any) => {
-    if (font.styles === 1) return font.allFonts[0].style
-    
-    // Prefer Regular, then any non-italic style, then fallback to first
-    const regularFont = font.allFonts.find((f: any) => 
-      f.style.toLowerCase().includes('regular') || f.style.toLowerCase() === 'normal'
-    )
-    if (regularFont) return regularFont.style
-    
-    const nonItalicFont = font.allFonts.find((f: any) => 
-      !f.style.toLowerCase().includes('italic') && !f.style.toLowerCase().includes('oblique')
-    )
-    if (nonItalicFont) return nonItalicFont.style
-    
-    return font.allFonts[0].style
-  }, [])
-  
-  // Helper to get font for selected style
-  const getFontForStyle = useCallback((font: any, selectedStyle: string) => {
-    // For static fonts, find exact match
-    const exactMatch = font.allFonts.find((f: any) => f.style === selectedStyle)
-    if (exactMatch) return exactMatch
-    
-    // For variable fonts, return the base font with modified style information
-    const baseFont = font.allFonts[0]
-    if (baseFont && baseFont.isVariable) {
-      // Create a copy of the font with the selected style
-      return {
-        ...baseFont,
-        style: selectedStyle,
-        // Map style to weight within the font's actual range
-        weight: getWeightFromStyle(selectedStyle, font)
-      }
-    }
-    
-    return baseFont || font.allFonts[0]
-  }, [])
-  
-  // Helper to map style names to weights for variable fonts (using actual font ranges)
-  const getWeightFromStyle = useCallback((style: string, font?: any) => {
-    const styleLower = style.toLowerCase()
-    
-    // If we have font axis info, use the actual range
-    if (font?.isVariable && font?.variableAxes) {
-      const weightAxis = font.variableAxes.find((axis: any) => 
-        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
-      )
-      
-      if (weightAxis) {
-        const min = weightAxis.min || 100
-        const max = weightAxis.max || 900
-        
-        // Map style names to weights within the actual range
-        if (styleLower.includes('thin')) return Math.max(min, 100)
-        if (styleLower.includes('extralight')) return Math.max(min, 200)
-        if (styleLower.includes('light')) return Math.max(min, 300)
-        if (styleLower.includes('regular') || styleLower.includes('normal')) return Math.min(Math.max(min, 400), max)
-        if (styleLower.includes('medium')) return Math.min(Math.max(min, 500), max)
-        if (styleLower.includes('semibold')) return Math.min(Math.max(min, 600), max)
-        if (styleLower.includes('bold') && !styleLower.includes('semi') && !styleLower.includes('extra')) return Math.min(Math.max(min, 700), max)
-        if (styleLower.includes('extrabold')) return Math.min(max, 800)
-        if (styleLower.includes('black') || styleLower.includes('heavy')) return Math.min(max, 900)
-      }
-    }
-    
-    // Fallback to standard weights
-    if (styleLower.includes('thin')) return 100
-    if (styleLower.includes('extralight')) return 200
-    if (styleLower.includes('light')) return 300
-    if (styleLower.includes('regular') || styleLower === 'normal') return 400
-    if (styleLower.includes('medium')) return 500
-    if (styleLower.includes('semibold')) return 600
-    if (styleLower.includes('bold')) return 700
-    if (styleLower.includes('extrabold')) return 800
-    if (styleLower.includes('black')) return 900
-    return 400 // Default to regular weight
-  }, [])
-  
-  const [variableAxisValues, setVariableAxisValues] = useState<{ [fontName: string]: { [axis: string]: number } }>({})
-
-  const letterSpacingPresets = [-0.05, -0.025, 0, 0.025, 0.05, 0.1, 0.15, 0.2]
-  const lineHeightPresets = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0]
-
-  const sidebarRef = useRef<HTMLDivElement>(null)
-  const isResizing = useRef(false)
-
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [expandedCards, setExpandedCards] = useState<string[]>([])
-  const [selectedWeight, setSelectedWeight] = useState(400)
-  const [textAlign, setTextAlign] = useState("left")
-  const [selectedTextPreset, setSelectedTextPreset] = useState("Key symbols")
-
-  const resetSettings = () => {
-    setPreviewText('RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->')
-    setCustomText('RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->')
-    setTextPreset("keysymbols")
-    setSelectedCategories([])
-    setSelectedLanguages([])
-    setFontWeight([400])
-    setFontSize([72])
-    setPresetSize("72")
-    setActiveOpenTypeFeatures([])
-    setMaxStyles([20])
-    setFontType(false)
-    setSortBy("name")
-    setColorTheme("default")
-    setLetterSpacing([0])
-    setLineHeight([1.2])
-    setPresetLetterSpacing("0")
-    setPresetLineHeight("1.2")
-    setVariableAxisValues({})
+const getPresetContent = (preset: string, fontName: string) => {
+  switch (preset) {
+    case "Names":
+      return fontName
+    case "Key Glyphs":
+      return 'RKFJIGCQ aueoyrgsltf\n0123469 ≪"(@&?;->'
+    case "Basic":
+      return "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%^&*()_+-=[]{}|;':\",./<>?"
+    case "Paragraph":
+      return "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo."
+    case "Brands":
+      const brands = [
+        "Apple",
+        "Google",
+        "Microsoft",
+        "Meta",
+        "Tesla",
+        "Netflix",
+        "Spotify",
+        "Adobe",
+        "Nike",
+        "Adidas",
+        "Gucci",
+        "Prada",
+        "Louis Vuitton",
+        "Chanel",
+        "Hermès",
+        "Versace",
+      ]
+      return brands
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 8)
+        .join(" • ")
+    default:
+      return fontName
   }
+}
 
-  // Dynamically load font CSS for uploaded fonts
-  const loadFontCSS = useCallback((fonts: any[]) => {
-    // Remove existing uploaded font styles
-    const existingStyles = document.querySelectorAll('style[data-uploaded-font]')
-    existingStyles.forEach(style => style.remove())
+export default function FontLibrary() {
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  
+  // Font Data State  
+  const [fonts, setFonts] = useState<FontData[]>([])
+  const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [customText, setCustomText] = useState("")
+  const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
+  const [selectedPreset, setSelectedPreset] = useState("Names")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([])
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
+  const [selectedWeights, setSelectedWeights] = useState<number[]>([])
+  const [isItalic, setIsItalic] = useState(false)
+  const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean }>>(
+    {},
+  )
+  const [textSize, setTextSize] = useState([72])
+  const [lineHeight, setLineHeight] = useState([120])
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
+  const [sortBy, setSortBy] = useState("New")
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
+  const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
+  const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
 
-    // Add CSS for each uploaded font
-    fonts.forEach((font, index) => {
-      if (font.url) {
-        const style = document.createElement('style')
-        style.setAttribute('data-uploaded-font', font.name)
-        
-        // Create base family name for CSS grouping
-        const baseFamilyName = font.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-        
-        // Create unique font-family name for each individual style to prevent conflicts
-        const styleIdentifier = font.style ? font.style.replace(/[^a-zA-Z0-9]/g, '') : 'Regular'
-        const weightIdentifier = font.weight || 400
-        const uniqueFamilyName = `${baseFamilyName}-${styleIdentifier}-${weightIdentifier}`
-        
-        // Determine correct font-style from font style name
-        const fontStyle = (font.style && (font.style.toLowerCase().includes('italic') || font.style.toLowerCase().includes('oblique'))) 
-          ? 'italic' 
-          : 'normal'
-        
-        // Create CSS with unique font-face declarations to prevent conflicts
-        style.textContent = `
-          @font-face {
-            font-family: "${uniqueFamilyName}";
-            src: url("${font.url}") format("${font.format === 'otf' ? 'opentype' : 'truetype'}");
-            font-weight: ${font.weight || 400};
-            font-style: ${fontStyle};
-            font-display: swap;
-          }
-          
-          /* Primary selector using data attribute and exact font match */
-          .uploaded-font[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"] {
-            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
-          }
-          
-          /* Fallback selector using unique class name */
-          .font-${uniqueFamilyName.toLowerCase()} {
-            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
-          }
-          
-          /* Family-level selector (uses first available style as fallback) */
-          .uploaded-font[data-font-family="${font.family}"] {
-            font-family: "${uniqueFamilyName}", "${baseFamilyName}", monospace, system-ui, sans-serif !important;
-          }
-          
-          /* Text area debugging selector */
-          textarea[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"] {
-            font-family: "${uniqueFamilyName}", monospace, system-ui, sans-serif !important;
-          }
-        `
-        document.head.appendChild(style)
-        
-        console.log(`✓ Font CSS loaded: ${font.family}`)
-        console.log(`  Base Family: ${baseFamilyName}`)
-        console.log(`  Unique Name: ${uniqueFamilyName}`)
-        console.log(`  Style: ${font.style || 'Regular'} (${fontStyle})`)
-        console.log(`  Weight: ${font.weight || 400}`)
-        console.log(`  URL: ${font.url}`)
-        console.log(`  Selector: .uploaded-font[data-font-family="${font.family}"][data-font-style="${font.style || 'Regular'}"]`)
-      } else {
-        console.warn(`⚠️ Font ${font.family} has no URL, skipping CSS generation`)
-      }
-    })
-  }, [])
+  const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
 
-  // Load uploaded fonts from API
-  const loadUploadedFonts = useCallback(async () => {
+  // Load fonts from our API
+  const loadFonts = useCallback(async () => {
     try {
       setIsLoadingFonts(true)
       console.log('🔄 Loading fonts from API...')
-      const response = await fetch('/api/fonts-clean/list')
+      const response = await fetch('/api/fonts/list-v2')
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)
         if (data.success && data.fonts) {
-          setUploadedFonts(data.fonts)
-          console.log(`📝 Found ${data.fonts.length} fonts`)
-          // Load CSS for all fonts
-          loadFontCSS(data.fonts)
-          // Group fonts by family to prevent duplicates
-          const groupedFonts = groupFontsByFamily(data.fonts)
-          setAllFonts(groupedFonts)
-          console.log('✅ Fonts loaded and CSS applied')
+          // Transform API data to catalog UI format
+          const catalogFonts: FontData[] = data.fonts.map((font: any, index: number) => ({
+            id: index + 1,
+            name: font.family || font.name,
+            family: font.family || font.name,
+            style: font.style || "Regular", 
+            category: font.category || "Sans",
+            styles: font.availableStyles?.length || 1,
+            type: font.isVariable ? "Variable" : "Static",
+            author: font.foundry || "Unknown",
+            fontFamily: `"${font.family || font.name}", system-ui, sans-serif`,
+            availableWeights: font.availableWeights || [400],
+            hasItalic: font.availableStyles?.some((style: string) => 
+              style.toLowerCase().includes('italic')
+            ) || false,
+            filename: font.filename,
+            url: font.url,
+            variableAxes: font.variableAxes,
+            openTypeFeatures: font.openTypeFeatures
+          }))
+          setFonts(catalogFonts)
+          console.log(`📝 Loaded ${catalogFonts.length} fonts for catalog`)
           
-          if (data.fonts.length === 0) {
-            console.log('ℹ️ No fonts available - user needs to upload fonts via admin panel')
-          }
-        } else {
-          console.warn('⚠️ API returned unexpected format:', data)
-          // Initialize with empty array if API doesn't return expected format
-          setUploadedFonts([])
-          setAllFonts([])
+          // Load CSS for all fonts
+          loadFontCSS(catalogFonts)
         }
-      } else {
-        console.error('❌ API request failed:', response.status, response.statusText)
-        // Initialize with empty array on API failure
-        setUploadedFonts([])
-        setAllFonts([])
       }
     } catch (error) {
-      console.error('❌ Failed to load uploaded fonts:', error)
-      // Initialize with empty array on error
-      setUploadedFonts([])
-      setAllFonts([])
+      console.error('Failed to load fonts:', error)
     } finally {
       setIsLoadingFonts(false)
     }
-  }, [loadFontCSS])
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    isResizing.current = true
-    e.preventDefault()
   }, [])
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing.current) return
-    const newWidth = e.clientX
-    if (newWidth >= 280 && newWidth <= 600) {
-      setSidebarWidth(newWidth)
+  // Load font CSS dynamically
+  const loadFontCSS = useCallback((fonts: FontData[]) => {
+    // Remove existing font styles
+    const existingStyles = document.querySelectorAll('style[data-font-css]')
+    existingStyles.forEach(style => style.remove())
+
+    // Generate CSS for each font
+    const fontCSS = fonts.map(font => `
+      @font-face {
+        font-family: "${font.family}";
+        src: url("${font.url || `/fonts/${font.filename}`}");
+        font-display: swap;
+      }
+    `).join('\n')
+
+    // Inject CSS
+    if (fontCSS) {
+      const styleElement = document.createElement('style')
+      styleElement.setAttribute('data-font-css', 'true')
+      styleElement.textContent = fontCSS
+      document.head.appendChild(styleElement)
     }
   }, [])
 
-  const handleMouseUp = useCallback(() => {
-    isResizing.current = false
-  }, [])
+  const styleAlternates = ["ss01", "ss02", "ss03", "ss04", "ss05", "ss06", "ss07", "ss08"]
+  const otherOTFeatures = ["liga", "kern", "frac", "ordn", "sups", "subs", "smcp", "c2sc", "case", "zero"]
 
-  useEffect(() => {
-    document.addEventListener("mousemove", handleMouseMove)
-    document.addEventListener("mouseup", handleMouseUp)
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove)
-      document.removeEventListener("mouseup", handleMouseUp)
+  const getVariableAxes = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (font?.type !== "Variable") return []
+
+    // Mock variable axes data - in real app this would come from font metadata
+    const axes = []
+    if (font.name === "Inter Variable") {
+      axes.push({ tag: "wght", name: "Weight", min: 100, max: 900, default: 400 })
+      axes.push({ tag: "slnt", name: "Slant", min: -10, max: 0, default: 0 })
     }
-  }, [handleMouseMove, handleMouseUp])
-
-  useEffect(() => {
-    if (themeMode === "auto") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-      setDarkMode(mediaQuery.matches)
-
-      const handleChange = (e: MediaQueryListEvent) => {
-        setDarkMode(e.matches)
-      }
-
-      mediaQuery.addEventListener("change", handleChange)
-      return () => mediaQuery.removeEventListener("change", handleChange)
+    if (font.name === "Space Grotesk") {
+      axes.push({ tag: "wght", name: "Weight", min: 300, max: 700, default: 400 })
     }
-  }, [themeMode])
-
-  useEffect(() => {
-    if (allFonts.length > 0) {
-      const randomFont = allFonts[Math.floor(Math.random() * allFonts.length)]
-      setLogoFont(randomFont.name)
-    }
-  }, [allFonts])
-
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth
-      setWindowWidth(width)
-      const mobile = width < 1100
-      setIsMobile(mobile)
-
-      // Hide sidebar by default on mobile
-      if (mobile && sidebarVisible) {
-        setSidebarVisible(false)
-      }
-    }
-
-    // Set initial state
-    handleResize()
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
-  // Load uploaded fonts on component mount
-  useEffect(() => {
-    loadUploadedFonts()
-  }, [loadUploadedFonts])
-
-  // Remove auto-polling - only load fonts on mount and manual refresh
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     loadUploadedFonts()
-  //   }, 5000) // Check every 5 seconds
-  //   return () => clearInterval(interval)
-  // }, [loadUploadedFonts])
-
-  const filteredFonts = allFonts.filter((font) => {
-    const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         font.family.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory =
-      selectedCategories.length === 0 ||
-      selectedCategories.some((cat) => font.category.toLowerCase() === cat.toLowerCase())
-    const matchesStyles = font.styles <= maxStyles[0]
-    const matchesType = !fontType || font.isVariable
-    const matchesWeight = fontWeight[0] === 400 || font.availableWeights.includes(fontWeight[0])
-    const matchesLanguage =
-      selectedLanguages.length === 0 || selectedLanguages.some((lang) => font.languages.includes(lang))
-
-    return matchesSearch && matchesCategory && matchesStyles && matchesType && matchesWeight && matchesLanguage
-  })
-
-  const handleTextPresetChange = (preset: string) => {
-    setIsAnimating(true)
-    setSelectedTextPreset(preset)
-    setTextPreset(preset.toLowerCase().replace(" ", ""))
-
-    if (preset === "Paragraph") {
-      setFontSize([20])
-      setPresetSize("20")
-      setPreviewText(textPresets.Paragraph)
-    } else if (preset === "Names") {
-      // Reset to default size when switching from paragraph
-      if (selectedTextPreset === "Paragraph") {
-        setFontSize([72])
-        setPresetSize("72")
-      }
-      setPreviewText("") // Will be handled by font name display
-    } else if (preset === "Brands") {
-      // Reset to default size when switching from paragraph
-      if (selectedTextPreset === "Paragraph") {
-        setFontSize([72])
-        setPresetSize("72")
-      }
-      setPreviewText(textPresets.Brands)
-    } else if (preset === "Alphabet") {
-      // Reset to default size when switching from paragraph
-      if (selectedTextPreset === "Paragraph") {
-        setFontSize([72])
-        setPresetSize("72")
-      }
-      setPreviewText(textPresets.Alphabet)
-    } else {
-      // Key symbols or other presets
-      if (selectedTextPreset === "Paragraph") {
-        setFontSize([72])
-        setPresetSize("72")
-      }
-      setPreviewText(textPresets["Key symbols"])
-    }
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const handleFontSizeChange = (value: number[]) => {
-    setIsAnimating(true)
-    setFontSize(value)
-    setPresetSize(value[0].toString())
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const handlePresetSizeChange = (value: string) => {
-    setIsAnimating(true)
-    setPresetSize(value)
-    setFontSize([Number.parseInt(value)])
-    setTimeout(() => setIsAnimating(false), 300)
+    return axes
   }
 
   const toggleCategory = (category: string) => {
-    setIsAnimating(true)
     setSelectedCategories((prev) =>
       prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
     )
-    setTimeout(() => setIsAnimating(false), 300)
   }
 
-  const toggleLanguage = (language: string) => {
-    setIsAnimating(true)
-    setSelectedLanguages((prev) =>
-      prev.includes(language) ? prev.filter((lang) => lang !== language) : [...prev, language],
-    )
-    setTimeout(() => setIsAnimating(false), 300)
+  const toggleStyle = (style: string) => {
+    setSelectedStyles((prev) => (prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]))
   }
 
-  const handleWeightChange = (weight: number) => {
-    setIsAnimating(true)
-    setFontWeight([weight])
-    setSelectedWeight(weight) // Apply weight to font previews
-    setTimeout(() => setIsAnimating(false), 300)
+  const toggleWeight = (weight: number) => {
+    setSelectedWeights((prev) => (prev.includes(weight) ? prev.filter((w) => w !== weight) : [...prev, weight]))
   }
 
-  const handleMaxStylesChange = (value: number[]) => {
-    setIsAnimating(true)
-    setMaxStyles(value)
-    setTimeout(() => setIsAnimating(false), 300)
+  const updateFontSelection = (fontId: number, weight: number, italic: boolean) => {
+    setFontWeightSelections((prev) => ({
+      ...prev,
+      [fontId]: { weight, italic },
+    }))
   }
 
-  const handleFontTypeChange = (checked: boolean) => {
-    setIsAnimating(true)
-    setFontType(checked)
-    setTimeout(() => setIsAnimating(false), 300)
-  }
+  const getFilteredFonts = () => {
+    return fonts.filter((font) => {
+      if (selectedWeights.length === 0 && !isItalic) return true
 
-  const toggleOpenTypeFeature = (feature: string) => {
-    setActiveOpenTypeFeatures((prev) =>
-      prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature],
-    )
-  }
+      if (selectedWeights.length === 0 && isItalic) {
+        return font.hasItalic
+      }
 
-  const getFontFamily = (fontName: string) => {
-    // For uploaded fonts, we'll handle font loading via CSS classes
-    // This function is mainly used for logo fonts
-    const uploadedFont = uploadedFonts.find(font => font.name === fontName || font.family === fontName)
-    if (uploadedFont) {
-      // Return the normalized font family name that matches our CSS
-      const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-      return `"${normalizedName}", "${uploadedFont.family}", monospace, system-ui, sans-serif`
-    }
-    
-    // Fallback for any other fonts  
-    return `"${fontName}", system-ui, sans-serif`
-  }
+      if (selectedWeights.length > 0) {
+        const hasSelectedWeight = selectedWeights.some((weight) => font.availableWeights.includes(weight))
 
-  const getAvailableWeights = () => {
-    if (selectedCategories.length === 0) {
-      // Return common weights across all fonts
-      return [100, 200, 300, 400, 500, 600, 700, 800, 900]
-    }
+        if (isItalic) {
+          return hasSelectedWeight && font.hasItalic
+        }
 
-    const relevantFonts = allFonts.filter((font) =>
-      selectedCategories.some((cat) => font.category.toLowerCase().includes(cat.toLowerCase())),
-    )
+        return hasSelectedWeight
+      }
 
-    if (relevantFonts.length === 0) return [400]
-
-    // Get intersection of available weights
-    return relevantFonts.reduce(
-      (weights, font) => weights.filter((w) => font.availableWeights.includes(w)),
-      relevantFonts[0].availableWeights,
-    )
-  }
-
-  const getDisplayText = (fontName: string) => {
-    if (selectedTextPreset === "Names") {
-      return fontName
-    }
-    return previewText
-  }
-
-  const getColorThemeClasses = () => {
-    const preset = colorPresets.find((p) => p.value === colorTheme)
-    if (!preset) return { lightBg: "bg-stone-50", darkText: "text-stone-200" }
-    return { lightBg: preset.lightBg, darkText: preset.darkText }
-  }
-
-  const getThemeBackground = () => {
-    const { lightBg } = getColorThemeClasses()
-    return darkMode ? "bg-stone-950" : colorTheme === "default" ? "bg-stone-50" : lightBg
-  }
-
-  const getThemeText = () => {
-    const { darkText } = getColorThemeClasses()
-    return darkMode ? (colorTheme === "default" ? "text-stone-200" : darkText) : "text-stone-900"
-  }
-
-  const getThemeAccent = () => {
-    const { lightBg, darkText } = getColorThemeClasses()
-    if (colorTheme === "default") {
-      return darkMode ? "text-stone-400" : "text-stone-600"
-    }
-    return darkMode ? darkText : lightBg.replace("bg-", "text-").replace("-50", "-600")
-  }
-
-  const getThemeCardBg = () => {
-    const { lightBg } = getColorThemeClasses()
-    if (colorTheme === "default") {
-      return darkMode ? "bg-stone-900" : "bg-white"
-    }
-    return darkMode ? "bg-stone-900" : lightBg.replace("-50", "-25")
-  }
-
-  const getThemeBorder = () => {
-    const { lightBg } = getColorThemeClasses()
-    if (colorTheme === "default") {
-      return darkMode ? "border-stone-800" : "border-stone-200"
-    }
-    return darkMode ? "border-stone-800" : lightBg.replace("bg-", "border-").replace("-50", "-200")
-  }
-
-  const getTransparentBg = () => {
-    return darkMode ? "bg-stone-950/80 backdrop-blur-sm" : "bg-white/80 backdrop-blur-sm"
-  }
-
-  const handleThemeToggle = () => {
-    if (themeMode === "auto") {
-      setThemeMode("light")
-      setDarkMode(false)
-    } else if (themeMode === "light") {
-      setThemeMode("dark")
-      setDarkMode(true)
-    } else {
-      setThemeMode("auto")
-      // In real app, would detect system preference
-      setDarkMode(false)
-    }
-  }
-
-  const handleLetterSpacingChange = (value: number[]) => {
-    setIsAnimating(true)
-    setLetterSpacing(value)
-    setPresetLetterSpacing(value[0].toString())
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const handlePresetLetterSpacingChange = (value: string) => {
-    setIsAnimating(true)
-    setPresetLetterSpacing(value)
-    setLetterSpacing([Number.parseFloat(value) * 100])
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const handleLineHeightChange = (value: number[]) => {
-    setIsAnimating(true)
-    setLineHeight(value)
-    setPresetLineHeight((value[0] * 100).toString())
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const handlePresetLineHeightChange = (value: string) => {
-    setIsAnimating(true)
-    setPresetLineHeight(value)
-    setLineHeight([Number.parseFloat(value) / 100])
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const getDropdownStyles = () => {
-    const baseStyles = `${getTransparentBg()} ${getThemeBorder()} ${getThemeText()}`
-    return baseStyles
-  }
-
-  const getDropdownItemStyles = () => {
-    return `${getThemeText()} hover:${getThemeCardBg()} focus:${getThemeCardBg()}`
-  }
-
-  const handleSortChange = (sort: string) => {
-    setIsAnimating(true)
-    setSortBy(sort)
-    setTimeout(() => setIsAnimating(false), 300)
-  }
-
-  const availableLanguages = useMemo(() => {
-    const languages = new Set<string>()
-    allFonts.forEach((font) => {
-      (font.languageSupport || font.languages)?.forEach((lang: string) => languages.add(lang))
+      return true
     })
-    return Array.from(languages).sort()
-  }, [allFonts])
-
-  const getControlStyles = () => ({
-    base: "h-8 px-3 text-sm tracking-tighter transition-all duration-300",
-    button: `${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`,
-    badge: `cursor-pointer text-xs tracking-tighter rounded-full px-3 py-1 h-6 transition-all duration-300`,
-    input: `w-full resize-none border-none outline-none bg-transparent ${getThemeText()} tracking-[0] p-0 overflow-hidden`,
-    label: "text-sm font-medium tracking-tighter",
-  })
-
-  const getPreviewText = (fontName: string) => {
-    switch (selectedTextPreset) {
-      case "Key symbols":
-        return 'RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->'
-      case "Names":
-        return fontName
-      case "Paragraph":
-        return 'Breaking: Local bakery owner Sarah Quinn accidentally created the world\'s spiciest croissant yesterday. "I mixed up the sugar & ghost pepper containers," she laughed. The mistake happened around 3:46 AM during prep work. Customers who tried it described reactions from tears to uncontrollable hiccups. Fire department arrived when smoke detectors went off, but it was a false alarm. The fire department\'s phone rang constantly with food bloggers asking: "Can we try some?" @SpicyFoodie tweeted about it. Sarah plans adding "Devil\'s Croissant" to her menu -> unexpected success from kitchen chaos.'
-      case "Brands":
-        return "Nike Adidas Apple Google Microsoft Amazon Facebook Tesla BMW Mercedes"
-      case "Alphabet":
-        return "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*()_+-=[]{}|;':\",./<>?"
-      default:
-        return customText || 'RKFJIGCQ aueyrgsltf 0123469 «"(@&?;->'
-    }
   }
 
-  const getVariableFontStyle = (font: any) => {
-    const baseStyle: any = {}
-    
-    // Get the selected style for this font
-    const selectedStyle = selectedStyles[font.name] || getDefaultStyle(font)
-    const selectedFont = getFontForStyle(font, selectedStyle)
-    
-    // Add uploaded font family using the specific font file for the selected style
-    if (selectedFont) {
-      // Create highly unique font-family name for each font file to prevent CSS conflicts
-      const normalizedFamilyName = selectedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-      const normalizedFileName = selectedFont.filename.replace(/[^a-zA-Z0-9]/g, '')
-      const styleKey = selectedFont.style.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
-      const uniqueFontFamily = `${normalizedFamilyName}-${normalizedFileName}-${styleKey}`
-      
-      baseStyle.fontFamily = `"${uniqueFontFamily}", "${normalizedFamilyName}", monospace, system-ui, sans-serif`
-      
-      // Set font style based on the selected style - be very explicit
-      const styleLower = selectedFont.style.toLowerCase()
-      if (styleLower.includes('italic') || styleLower.includes('oblique')) {
-        baseStyle.fontStyle = 'italic'
+  const resetFilters = () => {
+    setCustomText("")
+    setDisplayMode("Text")
+    setSelectedPreset("Names")
+    setSelectedCategories([])
+    setSelectedStyles([])
+    setSelectedLanguages([])
+    setSelectedWeights([])
+    setIsItalic(false)
+    setFontWeightSelections({})
+    setTextSize([72])
+    setLineHeight([120])
+    setExpandedCards(new Set())
+    setFontOTFeatures({})
+    setFontVariableAxes({})
+  }
+
+  const getPreviewContent = (fontName: string) => {
+    if (customText.trim()) {
+      return customText
+    }
+    return getPresetContent(selectedPreset, fontName)
+  }
+
+  const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
+    const selection = window.getSelection()
+    const range = selection?.getRangeAt(0)
+    const cursorOffset = range?.startOffset || 0
+
+    setCustomText(newText)
+
+    requestAnimationFrame(() => {
+      if (element && selection) {
+        try {
+          const textNode = element.firstChild
+          if (textNode) {
+            const newRange = document.createRange()
+            const safeOffset = Math.min(cursorOffset, textNode.textContent?.length || 0)
+            newRange.setStart(textNode, safeOffset)
+            newRange.setEnd(textNode, safeOffset)
+            selection.removeAllRanges()
+            selection.addRange(newRange)
+          }
+        } catch (error) {
+          element.focus()
+        }
+      }
+    })
+  }
+
+  const toggleCardExpansion = (fontId: number) => {
+    setExpandedCards((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(fontId)) {
+        newSet.delete(fontId)
       } else {
-        // Explicitly force normal style for non-italic fonts
-        baseStyle.fontStyle = 'normal'
-        baseStyle.fontSynthesis = 'none' // Prevent browser from synthesizing italic
+        newSet.add(fontId)
       }
-      
-      // Set font weight
-      baseStyle.fontWeight = selectedFont.weight
-    } else {
-      // Fallback to first available font
-      const uploadedFont = uploadedFonts.find(f => f.family === font.family || f.name === font.name)
-      if (uploadedFont) {
-        const normalizedName = uploadedFont.family.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '')
-        baseStyle.fontFamily = `"${normalizedName}", monospace, system-ui, sans-serif`
-      }
-    }
-    
-    // Add variable font settings if applicable
-    if (font.isVariable && font.variableAxes && selectedFont) {
-      const settings = font.variableAxes
-        .map((axis) => {
-          // Use user-set values first, then derive from selected style, then use default
-          const userValue = variableAxisValues[font.name]?.[axis.axis]
-          if (userValue !== undefined) {
-            return `"${axis.axis}" ${userValue}`
-          }
-          
-          // Set axis values based on selected style for common axes
-          if (axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')) {
-            return `"${axis.axis}" ${selectedFont.weight}`
-          }
-          
-          if ((axis.axis.toLowerCase() === 'slnt' || axis.axis.toLowerCase() === 'ital') && 
-              (selectedFont.style.toLowerCase().includes('italic') || selectedFont.style.toLowerCase().includes('oblique'))) {
-            // For slant axis, use a typical italic slant value
-            const slantValue = axis.axis.toLowerCase() === 'slnt' ? -15 : 1
-            return `"${axis.axis}" ${slantValue}`
-          }
-          
-          return `"${axis.axis}" ${axis.default}`
-        })
-        .join(", ")
-      baseStyle.fontVariationSettings = settings
-    }
-
-    // Add OpenType feature settings
-    const fontFeatures = activeOpenTypeFeatures
-      .filter(f => f.startsWith(`${font.name}-`))
-      .map(f => f.replace(`${font.name}-`, ''))
-    
-    if (fontFeatures.length > 0) {
-      // Map feature names back to CSS tags
-      const featureTagMap: { [key: string]: string } = {
-        'Standard Ligatures': 'liga',
-        'Discretionary Ligatures': 'dlig',
-        'Contextual Ligatures': 'clig',
-        'Historical Ligatures': 'hlig',
-        'Kerning': 'kern',
-        'Small Capitals': 'smcp',
-        'Small Capitals From Capitals': 'c2sc',
-        'Case-Sensitive Forms': 'case',
-        'Capital Spacing': 'cpsp',
-        'Swash': 'swsh',
-        'Contextual Swash': 'cswh',
-        'Stylistic Alternates': 'salt',
-        'Stylistic Set 1': 'ss01',
-        'Stylistic Set 2': 'ss02',
-        'Stylistic Set 3': 'ss03',
-        'Stylistic Set 4': 'ss04',
-        'Stylistic Set 5': 'ss05',
-        'Oldstyle Figures': 'onum',
-        'Proportional Figures': 'pnum',
-        'Tabular Figures': 'tnum',
-        'Lining Figures': 'lnum',
-        'Slashed Zero': 'zero',
-        'Fractions': 'frac',
-        'Superscript': 'sups',
-        'Subscript': 'subs',
-        'Ordinals': 'ordn'
-      }
-      
-      const featureSettings = fontFeatures
-        .map(feature => featureTagMap[feature])
-        .filter(tag => tag)
-        .map(tag => `"${tag}" 1`)
-        .join(', ')
-      
-      if (featureSettings) {
-        baseStyle.fontFeatureSettings = featureSettings
-      }
-    }
-
-    return baseStyle
+      return newSet
+    })
   }
 
-  const sortedFonts = useMemo(() => {
-    const sorted = [...filteredFonts]
-    switch (sortBy) {
-      case "new":
-        // Simulate new fonts by reversing order
-        return sorted.reverse()
-      case "styles":
-        return sorted.sort((a, b) => b.styles - a.styles)
-      case "a-z":
-        return sorted.sort((a, b) => a.name.localeCompare(b.name))
-      default:
-        return sorted
+  const toggleOTFeature = (fontId: number, feature: string) => {
+    setFontOTFeatures((prev) => ({
+      ...prev,
+      [fontId]: {
+        ...prev[fontId],
+        [feature]: !prev[fontId]?.[feature],
+      },
+    }))
+  }
+
+  const updateVariableAxis = (fontId: number, axis: string, value: number) => {
+    setFontVariableAxes((prev) => ({
+      ...prev,
+      [fontId]: {
+        ...prev[fontId],
+        [axis]: value,
+      },
+    }))
+  }
+
+  const getEffectiveStyle = (fontId: number) => {
+    const fontSelection = fontWeightSelections[fontId] || { weight: 400, italic: false }
+    const variableAxes = fontVariableAxes[fontId] || {}
+    const otFeatures = fontOTFeatures[fontId] || {}
+
+    // If sidebar has weight/italic selections, use those for preview
+    if (selectedWeights.length > 0 || isItalic) {
+      return {
+        weight: selectedWeights.length > 0 ? selectedWeights[0] : variableAxes.wght || fontSelection.weight,
+        italic: isItalic || fontSelection.italic,
+        variableAxes,
+        otFeatures,
+      }
     }
-  }, [filteredFonts, sortBy])
+
+    // Otherwise use individual font selection
+    return {
+      weight: variableAxes.wght || fontSelection.weight,
+      italic: fontSelection.italic,
+      variableAxes,
+      otFeatures,
+    }
+  }
+
+  const getFontFeatureSettings = (otFeatures: Record<string, boolean>) => {
+    const activeFeatures = Object.entries(otFeatures)
+      .filter(([_, active]) => active)
+      .map(([feature, _]) => `"${feature}" 1`)
+
+    if (activeFeatures.length === 0) return undefined
+    return activeFeatures.join(", ")
+  }
+
+  const getFontVariationSettings = (variableAxes: Record<string, number>) => {
+    const axisSettings = Object.entries(variableAxes).map(([axis, value]) => `"${axis}" ${value}`)
+
+    if (axisSettings.length === 0) return undefined
+    return axisSettings.join(", ")
+  }
+
+  // Load fonts on mount
+  useEffect(() => {
+    loadFonts()
+  }, [loadFonts])
 
   return (
-    <div
-      className={`min-h-screen transition-colors duration-300 ${getThemeBackground()} ${getThemeText()}`}
-      style={{ fontFeatureSettings: "'ss01' on, 'ss03' on, 'cv06' on, 'cv11' on" }}
-    >
-      <div className="tracking-[0] text-sm min-h-screen">
-        <header
-          className={`transition-all duration-500 ${darkMode ? "bg-stone-950/90 backdrop-blur-sm border-stone-800" : `${getThemeCardBg()}/90 backdrop-blur-sm ${getThemeBorder()}`} border-b`}
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
+      {sidebarOpen && (
+        <aside
+          className="w-[280px] flex-shrink-0 flex flex-col h-full"
+          style={{ backgroundColor: "var(--gray-surface-prim)", borderRight: "1px solid var(--gray-brd-prim)" }}
         >
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <nav className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`}
-                >
-                  Fonts
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`text-sm tracking-tighter h-8 px-3 transition-all duration-300 ${darkMode ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"}`}
-                >
-                  About
-                </Button>
-                <span className={`text-xs px-2 tracking-tighter transition-all duration-300 ${darkMode ? "text-stone-500" : "text-stone-400"}`}>
-                  v.0.027
-                </span>
-              </nav>
-
-              <div className="flex-1 flex justify-center">
-                <h1
-                  className={`text-2xl font-bold tracking-tighter transition-colors duration-300 ${getThemeText()}`}
-                  style={{ fontFamily: getFontFamily(logoFont) }}
-                >
-                  Typedump
-                </h1>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 px-2 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`}
-                    >
-                      <Palette
-                        className={`w-4 h-4 transition-colors duration-300 ${darkMode ? getColorThemeClasses().darkText : getThemeAccent()}`}
-                      />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className={`transition-all duration-300 ${getTransparentBg()} ${getThemeBorder()}`}
-                  >
-                    {colorPresets.map((preset) => (
-                      <DropdownMenuItem
-                        key={preset.value}
-                        onClick={() => setColorTheme(preset.value)}
-                        className={`flex items-center gap-2 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800/50" : `${getThemeText()} hover:bg-stone-100/50`}`}
-                      >
-                        <div
-                          className={`w-4 h-4 rounded-full border transition-all duration-300 ${
-                            colorTheme === preset.value
-                              ? `border-2 ${darkMode ? "border-stone-100" : "border-stone-900"}`
-                              : `border ${darkMode ? "border-stone-600" : "border-stone-300"}`
-                          } ${
-                            preset.value === "default"
-                              ? darkMode
-                                ? "bg-stone-700"
-                                : "bg-stone-300"
-                              : darkMode
-                                ? preset.darkText.replace("text-", "bg-").replace("-200", "-800")
-                                : preset.lightBg
-                          }`}
-                        />
-                        {preset.name}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleThemeToggle}
-                  className={`h-8 px-2 transition-all duration-300 ${darkMode ? "text-stone-50 hover:bg-stone-800" : `${getThemeText()} hover:${getThemeCardBg()}`}`}
-                >
-                  {themeMode === "auto" ? (
-                    <Monitor className="w-4 h-4" />
-                  ) : themeMode === "dark" ? (
-                    <Sun className="w-4 h-4" />
-                  ) : (
-                    <Moon className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex">
-          {isMobile && sidebarVisible && (
-            <div
-              className="fixed inset-0 bg-black/50 z-40 animate-in fade-in duration-300"
-              onClick={() => setSidebarVisible(false)}
-            />
-          )}
-
-          <aside
-            ref={sidebarRef}
-            className={`${
-              isMobile
-                ? `fixed left-0 top-0 z-50 h-screen overflow-y-auto transition-all duration-300 ease-in-out ${
-                    sidebarVisible
-                      ? "transform translate-x-0 opacity-100"
-                      : "transform -translate-x-full opacity-0 pointer-events-none"
-                  }`
-                : `sticky top-0 h-screen overflow-y-auto transition-all duration-500 ease-in-out ${
-                    sidebarVisible
-                      ? "transform translate-x-0 opacity-100"
-                      : "transform -translate-x-full opacity-0 pointer-events-none"
-                  }`
-            } ${darkMode ? "bg-stone-950/95 backdrop-blur-md border-stone-800" : `${getThemeCardBg()}/95 backdrop-blur-md ${getThemeBorder()}`} ${
-              isMobile ? "border-r shadow-2xl" : "border-r"
-            } p-6 pb-12 relative`}
-            style={{
-              width: sidebarVisible ? sidebarWidth : 0,
-              ...(isMobile && { width: sidebarVisible ? 320 : 0 }),
-            }}
+          <div
+            className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
+            style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
           >
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2
-                  className={`text-lg font-semibold cursor-pointer tracking-tighter transition-colors duration-300 ${getThemeText()}`}
-                >
-                  Filters
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={resetSettings}
-                    className={`h-8 px-2 transition-all duration-300 ${darkMode ? "text-stone-400 hover:text-stone-50 hover:bg-stone-800" : "text-stone-500 hover:text-stone-900 hover:bg-stone-100"}`}
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                side_navigation
+              </span>
+            </button>
+            <button onClick={resetFilters} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                refresh
+              </span>
+            </button>
+          </div>
 
-              <div className="space-y-2">
-                <Label className={`text-sm font-medium tracking-tighter ${getThemeText()}`}>Custom text</Label>
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <div className="p-6 space-y-8">
+              <div>
                 <textarea
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
-                  placeholder="Type your custom text..."
-                  className={`w-full resize-none border border-stone-200 dark:border-stone-700 rounded-md p-3 text-sm tracking-tighter transition-all duration-300 ${getTransparentBg()} ${getThemeText()} placeholder:text-stone-500 min-h-[72px] focus:border-stone-300 dark:focus:border-stone-600`}
+                  placeholder="Enter custom text for font preview..."
+                  className="w-full min-h-[72px] p-3 rounded-md resize-none text-font-name focus:outline-none focus:ring-2 dropdown-select"
                   rows={3}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className={getControlStyles().label}>Text presets</Label>
+              <div>
+                <h3 className="text-sidebar-title mb-3">Text presets</h3>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: "Key symbols", label: "Key symbols" },
-                    { id: "Names", label: "Names" },
-                    { id: "Paragraph", label: "Paragraph" },
-                    { id: "Brands", label: "Brands" },
-                    { id: "Alphabet", label: "Alphabet" },
-                  ].map((preset) => (
-                    <Badge
-                      key={preset.id}
-                      variant={selectedTextPreset === preset.id ? "default" : "outline"}
-                      className={`${getControlStyles().badge} ${
-                        selectedTextPreset === preset.id
-                          ? `${darkMode ? "bg-stone-50 text-stone-900" : "bg-stone-900 text-stone-50"}`
-                          : `${darkMode ? "bg-stone-950 border-stone-700 text-stone-50 hover:bg-stone-800" : `${getThemeCardBg()} ${getThemeBorder()} ${getThemeText()} hover:bg-stone-100`}`
-                      }`}
-                      onClick={() => handleTextPresetChange(preset.id)}
+                  {textPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setSelectedPreset(preset)
+                        setCustomText(getPresetContent(preset, fonts[0].name))
+                      }}
+                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
                     >
-                      {preset.label}
-                    </Badge>
+                      {preset}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className={getControlStyles().label}>Font categories</Label>
+              <div>
+                <div className="segmented-control">
+                  {(["Text", "Display", "Weirdo"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setDisplayMode(mode)}
+                      className={`segmented-control-button ${displayMode === mode ? "active" : ""}`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Font categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {["Sans", "Serif", "Display", "Mono", "Pixel", "Script"].map((category) => (
-                    <Badge
+                  {fontCategories.map((category) => (
+                    <button
                       key={category}
-                      variant={selectedCategories.includes(category) ? "default" : "outline"}
-                      className={`${getControlStyles().badge} ${
-                        selectedCategories.includes(category)
-                          ? `${darkMode ? "bg-stone-50 text-stone-900" : "bg-stone-900 text-stone-50"}`
-                          : `${darkMode ? "bg-stone-950 border-stone-700 text-stone-50 hover:bg-stone-800" : `${getThemeCardBg()} ${getThemeBorder()} ${getThemeText()} hover:bg-stone-100`}`
-                      }`}
                       onClick={() => toggleCategory(category)}
+                      className={`btn-sm ${selectedCategories.includes(category) ? "active" : ""}`}
                     >
                       {category}
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className={getControlStyles().label}>Language support</Label>
+              <div>
+                <h3 className="text-sidebar-title mb-3">Appearance</h3>
                 <div className="flex flex-wrap gap-2">
-                  {availableLanguages.map((language) => (
-                    <Badge
+                  {styles.map((style) => (
+                    <button
+                      key={style}
+                      onClick={() => toggleStyle(style)}
+                      className={`btn-sm ${selectedStyles.includes(style) ? "active" : ""}`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Language support</h3>
+                <div className="flex flex-wrap gap-2">
+                  {languages.map((language) => (
+                    <button
                       key={language}
-                      variant={selectedLanguages.includes(language) ? "default" : "outline"}
-                      className={`${getControlStyles().badge} ${
-                        selectedLanguages.includes(language)
-                          ? `${darkMode ? "bg-stone-50 text-stone-900" : "bg-stone-900 text-stone-50"}`
-                          : `${darkMode ? "bg-stone-950 border-stone-700 text-stone-50 hover:bg-stone-800" : `${getThemeCardBg()} ${getThemeBorder()} ${getThemeText()} hover:bg-stone-100`}`
-                      }`}
-                      onClick={() => toggleLanguage(language)}
+                      onClick={() =>
+                        setSelectedLanguages((prev) =>
+                          prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language],
+                        )
+                      }
+                      className={`btn-sm ${selectedLanguages.includes(language) ? "active" : ""}`}
                     >
                       {language}
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className={getControlStyles().label}>Text size</Label>
-                <div className="relative flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    {isFontSizeHovered && (
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-stone-900 text-white px-2 py-1 rounded text-xs z-50">
-                        {fontSize[0]}px
-                      </div>
-                    )}
-                    <Slider
-                      value={fontSize}
-                      onValueChange={handleFontSizeChange}
-                      min={10}
-                      max={120}
-                      step={1}
-                      className="w-full"
-                      onMouseEnter={() => setIsFontSizeHovered(true)}
-                      onMouseLeave={() => setIsFontSizeHovered(false)}
-                    />
-                  </div>
-                  <Select value={presetSize} onValueChange={handlePresetSizeChange}>
-                    <SelectTrigger className={`w-20 h-8 min-w-[80px] ${getDropdownStyles()}`}>
-                      <SelectValue>{fontSize[0]}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className={`${getDropdownStyles()} min-w-[80px]`}>
-                      {presetSizes.map((size) => (
-                        <SelectItem key={size} value={size.toString()} className={getDropdownItemStyles()}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Text size</h3>
+                  <Slider
+                    value={textSize}
+                    onValueChange={setTextSize}
+                    max={200}
+                    min={50}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {textSize[0]}px
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium tracking-tighter">Letter spacing</Label>
-                <div className="relative flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    {isLetterSpacingHovered && (
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-stone-900 text-white px-2 py-1 rounded text-xs z-50">
-                        {letterSpacing[0]}%
-                      </div>
-                    )}
-                    <Slider
-                      value={letterSpacing}
-                      onValueChange={handleLetterSpacingChange}
-                      min={-10}
-                      max={30}
-                      step={0.5}
-                      className="w-full"
-                      onMouseEnter={() => setIsLetterSpacingHovered(true)}
-                      onMouseLeave={() => setIsLetterSpacingHovered(false)}
-                    />
-                  </div>
-                  <Select value={presetLetterSpacing} onValueChange={handlePresetLetterSpacingChange}>
-                    <SelectTrigger className={`w-20 h-8 min-w-[80px] ${getDropdownStyles()}`}>
-                      <SelectValue>{letterSpacing[0]}%</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className={`${getDropdownStyles()} min-w-[80px]`}>
-                      {letterSpacingPresets.map((spacing) => (
-                        <SelectItem
-                          key={spacing}
-                          value={(spacing * 100).toString()}
-                          className={getDropdownItemStyles()}
-                        >
-                          {spacing * 100}%
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Line height</h3>
+                  <Slider
+                    value={lineHeight}
+                    onValueChange={setLineHeight}
+                    max={200}
+                    min={80}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {lineHeight[0]}%
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium tracking-tighter">Line height</Label>
-                <div className="relative flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    {isLineHeightHovered && (
-                      <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-stone-900 text-white px-2 py-1 rounded text-xs z-50">
-                        {lineHeight[0] * 100}%
-                      </div>
-                    )}
-                    <Slider
-                      value={lineHeight}
-                      onValueChange={handleLineHeightChange}
-                      min={0.8}
-                      max={3.0}
-                      step={0.1}
-                      className="w-full"
-                      onMouseEnter={() => setIsLineHeightHovered(true)}
-                      onMouseLeave={() => setIsLineHeightHovered(false)}
-                    />
-                  </div>
-                  <Select value={presetLineHeight} onValueChange={handlePresetLineHeightChange}>
-                    <SelectTrigger className={`w-20 h-8 min-w-[80px] ${getDropdownStyles()}`}>
-                      <SelectValue>{lineHeight[0] * 100}%</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className={`${getDropdownStyles()} min-w-[80px]`}>
-                      {lineHeightPresets.map((height) => (
-                        <SelectItem key={height} value={(height * 100).toString()} className={getDropdownItemStyles()}>
-                          {height * 100}%
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sidebar-title">Style</h3>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium tracking-tighter">Weight</Label>
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-1">
-                    {getAvailableWeights().map((weight) => (
-                      <button
-                        key={weight}
-                        onClick={() => handleWeightChange(weight)}
-                        className={`px-3 py-1 text-xs border tracking-tighter transition-colors rounded-full h-6 min-w-[48px] ${
-                          fontWeight[0] === weight
-                            ? `${darkMode ? "bg-stone-50 text-stone-900 border-stone-50" : "bg-stone-900 text-stone-50 border-stone-900"}`
-                            : `${darkMode ? "bg-stone-950/80 text-stone-50 border-stone-700 hover:bg-stone-800" : `${getThemeCardBg()} ${getThemeText()} ${getThemeBorder()} hover:bg-stone-100`}`
-                        }`}
-                      >
-                        {weight}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {weights.map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => toggleWeight(weight)}
+                      className={`btn-sm ${selectedWeights.includes(weight) ? "active" : ""}`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                  <button onClick={() => setIsItalic(!isItalic)} className={`btn-sm ${isItalic ? "active" : ""}`}>
+                    Italic
+                  </button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-styles" className={`text-sm font-medium tracking-tighter ${getThemeText()}`}>
-                  Up to {maxStyles[0]} styles
-                </Label>
-                <Slider
-                  value={maxStyles}
-                  onValueChange={handleMaxStylesChange}
-                  max={20}
-                  min={1}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="font-type" className={`text-sm font-medium tracking-tighter ${getThemeText()}`}>
-                  Variable font only
-                </Label>
-                <Switch
-                  id="font-type"
-                  checked={fontType}
-                  onCheckedChange={handleFontTypeChange}
-                  className={`data-[state=checked]:bg-stone-900 data-[state=unchecked]:bg-stone-200 ${
-                    darkMode
-                      ? "data-[state=checked]:bg-stone-200 data-[state=unchecked]:bg-stone-700"
-                      : "data-[state=checked]:bg-stone-900 data-[state=unchecked]:bg-stone-200"
-                  }`}
-                />
               </div>
             </div>
-            <div
-              className={`absolute top-0 right-0 w-1 h-full cursor-col-resize bg-transparent ${darkMode ? "hover:bg-stone-700" : "hover:bg-stone-300"} transition-colors`}
-              onMouseDown={handleMouseDown}
-            />
-          </aside>
-          <main
-            className={`flex-1 px-6 py-8 transition-all duration-500 ${getThemeBackground()} ${
-              isMobile ? "w-full" : ""
-            }`}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                {!sidebarVisible && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSidebarVisible(true)}
-                    className={`flex items-center gap-2 h-8 px-3 transition-all duration-300 ${
-                      darkMode
-                        ? "text-stone-400 hover:text-stone-50 hover:bg-stone-800"
-                        : "text-stone-500 hover:text-stone-900 hover:bg-stone-100"
-                    }`}
-                  >
-                    <Menu className="w-4 h-4" />
-                    <span className="text-sm tracking-tighter">Filters</span>
-                  </Button>
+          </div>
+        </aside>
+      )}
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <header
+          className="sticky top-0 z-10 px-6 py-4 flex-shrink-0"
+          style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-[32px] h-[32px] flex items-center justify-center">
+                {!sidebarOpen && (
+                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                      side_navigation
+                    </span>
+                  </button>
                 )}
-                <div
-                  className={`text-sm tracking-tighter transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}
-                >
-                  {sortedFonts.length} fonts
-                </div>
               </div>
-              <div className="flex items-center gap-1">
-                {["new", "styles", "a-z"].map((sort) => (
-                  <Button
-                    key={sort}
-                    variant={sortBy === sort ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handleSortChange(sort)}
-                    className={`h-7 px-2 text-xs tracking-[0] transition-all duration-200 ${
-                      sortBy === sort
-                        ? `${darkMode ? `${getColorThemeClasses().darkText} bg-stone-900` : `${getThemeText()} ${getColorThemeClasses().lightBg}`}`
-                        : `${getThemeText()} hover:${getThemeCardBg()}`
-                    }`}
-                  >
-                    {sort === "styles" ? "# styles" : sort}
-                  </Button>
-                ))}
-              </div>
+              <h1 className="text-font-name font-black font-sans">typedump</h1>
             </div>
+            <div className="flex items-center gap-4">
+              <nav className="flex flex-row gap-2">
+                <button className="menu-tab active">Library</button>
+                <button className="menu-tab">About</button>
+                <a href="/admin-simple" className="menu-tab">Admin</a>
+              </nav>
+            </div>
+          </div>
+        </header>
 
-            <div className="space-y-6">
-              {isLoadingFonts ? (
-                <div className={`text-center py-12 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}>
-                  <p className="text-lg tracking-tighter">Loading fonts...</p>
-                </div>
-              ) : allFonts.length === 0 ? (
-                <div
-                  className={`text-center py-16 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}
-                >
-                  <p className="text-xl tracking-tighter mb-2">No fonts uploaded yet</p>
-                  <p className="text-sm mt-2 tracking-tighter mb-4">Upload your first font to get started</p>
-                  <a 
-                    href="/admin" 
-                    className={`inline-block px-4 py-2 rounded-md text-sm font-medium tracking-tighter transition-colors ${
-                      darkMode 
-                        ? "bg-stone-700 text-stone-200 hover:bg-stone-600" 
-                        : "bg-stone-200 text-stone-700 hover:bg-stone-300"
-                    }`}
-                  >
-                    Go to Admin Panel
+        <main className="flex-1 overflow-y-auto">
+          <div
+            className="sticky top-0 z-10 px-6 py-3 flex justify-between items-center"
+            style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
+          >
+            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="dropdown-select">
+              <option>New</option>
+              <option># Styles</option>
+              <option>A–Z</option>
+            </select>
+          </div>
+
+          <div className="">
+            {isLoadingFonts ? (
+              <div className="p-6 text-center">
+                <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
+              </div>
+            ) : fonts.length === 0 ? (
+              <div className="p-6 text-center">
+                <div style={{ color: "var(--gray-cont-tert)" }}>
+                  No fonts uploaded yet. 
+                  <a href="/admin-simple" className="text-blue-500 hover:underline ml-1">
+                    Upload your first font
                   </a>
                 </div>
-              ) : sortedFonts.length === 0 ? (
+              </div>
+            ) : (
+              getFilteredFonts().map((font) => {
+              const fontSelection = fontWeightSelections[font.id] || { weight: 400, italic: false }
+              const effectiveStyle = getEffectiveStyle(font.id)
+              return (
                 <div
-                  className={`text-center py-12 transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-500"}`}
+                  key={font.id}
+                  className="transition-colors"
+                  style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}
                 >
-                  <p className="text-lg tracking-tighter">No fonts match your current filters</p>
-                  <p className="text-sm mt-2 tracking-tighter">Try adjusting your search criteria</p>
-                </div>
-              ) : (
-                sortedFonts.map((font) => {
-                  const isExpanded = expandedCards.includes(font.name)
-                  return (
-                    <div key={font.name} className="mb-8 transition-all duration-300">
-                      <div className="transition-all duration-300 p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <h3 className={`font-semibold text-lg tracking-tighter ${getThemeText()}`}>{font.family}</h3>
-                            {font.availableStyles.length > 1 && (
-                              <Select
-                                value={selectedStyles[font.name] || getDefaultStyle(font)}
-                                onValueChange={(value) => {
-                                  setSelectedStyles(prev => ({ ...prev, [font.name]: value }))
-                                  
-                                  // Update variable axis values for weight based on the chosen style
-                                  if (font.isVariable && font.variableAxes) {
-                                    const weightForStyle = getWeightForStyleName(value)
-                                    if (weightForStyle) {
-                                      // Find weight axis
-                                      const weightAxis = font.variableAxes.find((axis: any) => 
-                                        axis.axis.toLowerCase() === 'wght' || axis.name.toLowerCase().includes('weight')
-                                      )
-                                      
-                                      if (weightAxis) {
-                                        // Update variable axis values to set the weight axis
-                                        setVariableAxisValues(prev => ({
-                                          ...prev,
-                                          [font.name]: {
-                                            ...prev[font.name],
-                                            [weightAxis.axis]: weightForStyle
-                                          }
-                                        }))
-                                      }
-                                      
-                                      // Also update selectedWeight for global weight controls
-                                      setSelectedWeight(weightForStyle)
-                                    }
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className={`w-32 h-7 text-xs ${
-                                  darkMode 
-                                    ? "bg-stone-800 border-stone-700 text-stone-200" 
-                                    : "bg-white border-stone-300 text-stone-700"
-                                }`}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className={
-                                  darkMode 
-                                    ? "bg-stone-800 border-stone-700" 
-                                    : "bg-white border-stone-300"
-                                }>
-                                  {font.availableStyles.map((style) => (
-                                    <SelectItem 
-                                      key={style} 
-                                      value={style}
-                                      className={`text-xs ${
-                                        darkMode 
-                                          ? "text-stone-200 hover:bg-stone-700" 
-                                          : "text-stone-700 hover:bg-stone-100"
-                                      }`}
-                                    >
-                                      {style}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                            <span className={`text-sm tracking-tighter ${getThemeAccent()}`}>
-                              by {font.foundry || "Unknown"}
+                  <div className="p-6">
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2 flex-row gap-2">
+                          <div
+                            className="flex items-center px-2 py-1.5 rounded-md"
+                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                          >
+                            <h2 className="text-font-name">{font.name}</h2>
+                          </div>
+                          <div className="relative">
+                            <select
+                              value={`${fontSelection.weight}-${fontSelection.italic}`}
+                              onChange={(e) => {
+                                const [weight, italic] = e.target.value.split("-")
+                                updateFontSelection(font.id, Number.parseInt(weight), italic === "true")
+                              }}
+                              className="dropdown-select text-sidebar-title pr-8 appearance-none"
+                            >
+                              {font.availableWeights
+                                .flatMap((weight) => [
+                                  <option key={`${weight}-false`} value={`${weight}-false`}>
+                                    {weight} Regular
+                                  </option>,
+                                  font.hasItalic && (
+                                    <option key={`${weight}-true`} value={`${weight}-true`}>
+                                      {weight} Italic
+                                    </option>
+                                  ),
+                                ])
+                                .filter(Boolean)}
+                            </select>
+                            <span
+                              className="material-symbols-outlined absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
+                              style={{ fontWeight: 300, fontSize: "20px", color: "var(--gray-cont-tert)" }}
+                            >
+                              expand_more
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm tracking-tighter ${getThemeAccent()}`}>{font.styles} styles</span>
-                            {font.isVariable && (
-                              <Badge
-                                variant="secondary"
-                                className={`text-xs px-2 py-0.5 tracking-tighter ${
-                                  darkMode ? "bg-stone-800 text-stone-200" : "bg-stone-200 text-stone-700"
-                                }`}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-author">
+                            {font.type}, {font.styles} style{font.styles > 1 ? "s" : ""}
+                          </span>
+                          <span className="text-author">by {font.author}</span>
+                        </div>
+                      </div>
+                      <button
+                        className="download-btn"
+                        style={{
+                          color: "#fcfcfc",
+                          backgroundColor: "#0a0a0a",
+                        }}
+                      >
+                        Download
+                      </button>
+                    </div>
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning={true}
+                      onInput={(e) => {
+                        const element = e.currentTarget
+                        const newText = element.textContent || ""
+                        handlePreviewEdit(element, newText)
+                      }}
+                      onClick={() => toggleCardExpansion(font.id)}
+                      ref={(el) => setEditingElementRef(el)}
+                      className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none"
+                      style={{
+                        fontSize: `${selectedPreset === "Paragraph" ? 20 : textSize[0]}px`,
+                        lineHeight: `${lineHeight[0]}%`,
+                        fontFamily: font.fontFamily,
+                        fontWeight: effectiveStyle.weight,
+                        fontStyle: effectiveStyle.italic ? "italic" : "normal",
+                        color: "var(--gray-cont-prim)",
+                        fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
+                        fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
+                      }}
+                    >
+                      {getPreviewContent(font.name)}
+                    </div>
+
+                    {expandedCards.has(font.id) && (
+                      <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
+                        {/* Style Alternates */}
+                        <div>
+                          <div className="flex flex-wrap gap-2">
+                            {styleAlternates.map((feature) => (
+                              <button
+                                key={feature}
+                                onClick={() => toggleOTFeature(font.id, feature)}
+                                className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
                               >
-                                Variable
-                              </Badge>
-                            )}
-                            {font.downloadLink && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(font.downloadLink, '_blank')}
-                                className={`h-7 px-2 text-xs tracking-tighter transition-all duration-300 ${
-                                  darkMode
-                                    ? "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
-                                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-100"
-                                }`}
-                              >
-                                Download
-                              </Button>
-                            )}
+                                {feature}
+                              </button>
+                            ))}
                           </div>
                         </div>
 
-                        <div className="py-4">
-                          <textarea
-                            value={getPreviewText(font.name)}
-                            onChange={(e) => {
-                              if (selectedTextPreset !== "Names") {
-                                setPreviewText(e.target.value)
-                                setCustomText(e.target.value)
-                              }
-                            }}
-                            readOnly={selectedTextPreset === "Names"}
-                            onClick={() => {
-                              if (!isExpanded) {
-                                setExpandedCards((prev) => [...prev, font.name])
-                              }
-                            }}
-                            className={`w-full resize-none border-0 bg-transparent p-4 focus:outline-none focus:ring-0 tracking-[0em] transition-all duration-300 ${getThemeText()} overflow-hidden uploaded-font`}
-                            data-font-family={font.family}
-                            data-font-style={font.style || 'Regular'}
-                            style={{
-                              fontSize: `${fontSize[0]}px`,
-                              fontWeight: selectedWeight,
-                              textAlign: textAlign,
-                              letterSpacing: `${letterSpacing[0] / 100}em`,
-                              lineHeight: lineHeight[0],
-                              minHeight: "64px",
-                              height: "auto",
-                              ...getVariableFontStyle(font),
-                            }}
-                            ref={(el) => {
-                              if (el) {
-                                el.style.height = "auto"
-                                el.style.height = Math.max(64, el.scrollHeight) + "px"
-                              }
-                            }}
-                          />
+                        {/* Other OpenType Features */}
+                        <div>
+                          <div className="flex flex-wrap gap-2">
+                            {otherOTFeatures.map((feature) => (
+                              <button
+                                key={feature}
+                                onClick={() => toggleOTFeature(font.id, feature)}
+                                className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
+                              >
+                                {feature}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        {isExpanded && (
-                          <div className="space-y-4 pt-4 animate-in fade-in duration-300">
-                            {font.isVariable && font.variableAxes && (
-                              <div className="space-y-3">
-                                <div className="flex flex-wrap gap-4">
-                                  {font.variableAxes.map((axis) => (
-                                    <div key={axis.axis} className="flex items-center gap-2">
-                                      <span className={`text-xs ${getThemeText()} min-w-[40px]`}>{axis.name}</span>
-                                      <Slider
-                                        value={[variableAxisValues[font.name]?.[axis.axis] || axis.default]}
-                                        onValueChange={(value) => {
-                                          setVariableAxisValues((prev) => ({
-                                            ...prev,
-                                            [font.name]: {
-                                              ...prev[font.name],
-                                              [axis.axis]: value[0],
-                                            },
-                                          }))
-                                        }}
-                                        min={axis.min}
-                                        max={axis.max}
-                                        step={axis.axis === "wght" ? 1 : 0.1}
-                                        className="w-24"
-                                      />
-                                      <span className={`text-xs ${getThemeAccent()} min-w-[30px] text-right`}>
-                                        {variableAxisValues[font.name]?.[axis.axis] || axis.default}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {font.openTypeFeatures.length > 0 && (
-                              <div className="space-y-3">
-                                <div className="flex flex-wrap gap-1">
-                                  {font.openTypeFeatures.map((feature) => (
-                                    <button
-                                      key={feature}
-                                      onClick={() => {
-                                        const fontFeatureKey = `${font.name}-${feature}`
-                                        setActiveOpenTypeFeatures((prev) =>
-                                          prev.includes(fontFeatureKey)
-                                            ? prev.filter((f) => f !== fontFeatureKey)
-                                            : [...prev, fontFeatureKey],
-                                        )
-                                      }}
-                                      className={`text-xs px-2 py-1 rounded-full transition-opacity duration-200 ${
-                                        activeOpenTypeFeatures.includes(`${font.name}-${feature}`)
-                                          ? `${darkMode ? "bg-stone-200 text-stone-900" : "bg-stone-900 text-stone-50"}`
-                                          : `${darkMode ? "bg-stone-800 text-stone-200 hover:bg-stone-700" : "bg-stone-200 text-stone-700 hover:bg-stone-300"}`
-                                      }`}
+                        {/* Variable Font Axes */}
+                        {font.type === "Variable" && getVariableAxes(font.id).length > 0 && (
+                          <div>
+                            <div className="flex flex-col md:flex-row md:gap-4 gap-3 max-w-[280px]">
+                              {getVariableAxes(font.id).map((axis) => (
+                                <div key={axis.tag} className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sidebar-title flex-shrink-0">{axis.name}</span>
+                                    <Slider
+                                      value={[fontVariableAxes[font.id]?.[axis.tag] || axis.default]}
+                                      onValueChange={(value) => updateVariableAxis(font.id, axis.tag, value[0])}
+                                      min={axis.min}
+                                      max={axis.max}
+                                      step={axis.tag === "wght" ? 1 : 0.1}
+                                      className="flex-1"
+                                    />
+                                    <span
+                                      className="text-sidebar-title flex-shrink-0"
+                                      style={{ color: "var(--gray-cont-tert)" }}
                                     >
-                                      {feature}
-                                    </button>
-                                  ))}
+                                      {fontVariableAxes[font.id]?.[axis.tag] || axis.default}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </main>
-        </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+            )}
+          </div>
+        </main>
 
         <footer
-          className={`border-t transition-colors duration-300 ${darkMode ? "bg-stone-950/90 backdrop-blur-sm border-stone-800" : `${getThemeCardBg()}/90 backdrop-blur-sm ${getThemeBorder()}`}`}
+          className="sticky bottom-0 z-10 px-6 py-4 text-center flex-shrink-0"
+          style={{ backgroundColor: "var(--gray-surface-prim)", borderTop: "1px solid var(--gray-brd-prim)" }}
         >
-          <div className="max-w-7xl mx-auto px-6 py-6">
-            <div
-              className={`text-center text-sm transition-colors duration-300 ${darkMode ? "text-stone-400" : "text-stone-600"}`}
-            >
-              © Typedump, 2025 / Made by Magic x Logic
-            </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+              © Baseline, 2025
+            </span>
+            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+              Made by Magic x Logic
+            </span>
           </div>
         </footer>
       </div>
