@@ -123,7 +123,13 @@ export default function FontLibrary() {
 
           // Transform grouped families to catalog UI format
           const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
-            const representativeFont = familyFonts[0] // Use first font as representative
+            // Choose the best representative font: 
+            // 1. Font marked as default style
+            // 2. Non-italic font (regular/normal)
+            // 3. First font as fallback
+            const representativeFont = familyFonts.find(f => f.isDefaultStyle) ||
+              familyFonts.find(f => !f.style?.toLowerCase().includes('italic') && !f.style?.toLowerCase().includes('oblique')) ||
+              familyFonts[0]
             
             // Analyze available weight+style combinations
             const regularFonts = familyFonts.filter(f => !f.style?.toLowerCase().includes('italic'))
@@ -201,14 +207,36 @@ export default function FontLibrary() {
     const existingStyles = document.querySelectorAll('style[data-font-css]')
     existingStyles.forEach(style => style.remove())
 
-    // Generate CSS for each font
-    const fontCSS = fonts.map(font => `
-      @font-face {
-        font-family: "${font.family}";
-        src: url("${font.url || `/fonts/${font.filename}`}");
-        font-display: swap;
+    // Generate CSS for each font - handle multiple files per family
+    const fontCSS = fonts.map(font => {
+      if (font._familyFonts && font._familyFonts.length > 1) {
+        // For families with multiple files, create @font-face for each file
+        return font._familyFonts.map((fontFile: any) => {
+          const isItalic = fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique')
+          const fontWeight = fontFile.weight || 400
+          
+          return `
+            @font-face {
+              font-family: "${font.family}";
+              src: url("${fontFile.url || fontFile.blobUrl || `/fonts/${fontFile.filename}`}");
+              font-weight: ${fontWeight};
+              font-style: ${isItalic ? 'italic' : 'normal'};
+              font-display: swap;
+            }`
+        }).join('\n')
+      } else {
+        // Single font file
+        const isItalic = font.style?.includes('italic') || font.style?.includes('oblique')
+        return `
+          @font-face {
+            font-family: "${font.family}";
+            src: url("${font.url || `/fonts/${font.filename}`}");
+            font-weight: ${font.availableWeights?.[0] || 400};
+            font-style: ${isItalic ? 'italic' : 'normal'};
+            font-display: swap;
+          }`
       }
-    `).join('\n')
+    }).join('\n')
 
     // Inject CSS
     if (fontCSS) {
@@ -703,9 +731,13 @@ export default function FontLibrary() {
                                 const options = []
                                 
                                 if (font.type === "Variable" && font._familyFonts) {
-                                  // For variable fonts, show all named instances from availableStyles
-                                  const representativeFont = font._familyFonts[0]
-                                  const availableStyles = representativeFont?.availableStyles || []
+                                  // For variable fonts, combine all available styles from all fonts in the family
+                                  const allAvailableStyles = new Set<string>()
+                                  font._familyFonts.forEach((fontFile: any) => {
+                                    const styles = fontFile?.availableStyles || []
+                                    styles.forEach((style: string) => allAvailableStyles.add(style))
+                                  })
+                                  const availableStyles = Array.from(allAvailableStyles).sort()
                                   
                                   if (availableStyles.length > 0) {
                                     // Use the named instances from font metadata
