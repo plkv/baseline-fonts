@@ -91,6 +91,7 @@ export default function CleanAdmin() {
   const [fonts, setFonts] = useState<Font[]>([])
   const [families, setFamilies] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [merging, setMerging] = useState(false)
   const [loading, setLoading] = useState(true)
   const [addingStyle, setAddingStyle] = useState(false)
   const [addingStyleFor, setAddingStyleFor] = useState<string>('')
@@ -141,6 +142,34 @@ export default function CleanAdmin() {
   useEffect(() => {
     loadFonts()
   }, [])
+
+  // Merge duplicate families
+  const mergeFamilies = async () => {
+    if (!confirm('This will merge fonts with similar family names into single families. Continue?')) {
+      return
+    }
+    
+    setMerging(true)
+    try {
+      const response = await fetch('/api/fonts/merge-families', {
+        method: 'POST'
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        toast.success(`Merged families successfully! Fixed ${result.stats.fontsFixed} fonts.`)
+        loadFonts() // Reload the fonts
+      } else {
+        toast.error(result.message || 'Failed to merge families')
+      }
+    } catch (error) {
+      console.error('Merge error:', error)
+      toast.error('Failed to merge families')
+    } finally {
+      setMerging(false)
+    }
+  }
 
   // Upload font
   const handleUpload = async (files: FileList) => {
@@ -516,6 +545,15 @@ export default function CleanAdmin() {
                 onClick={() => setSortBy('a-z')}
               >
                 A-Z
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={mergeFamilies}
+                disabled={merging}
+                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                {merging ? 'Merging...' : 'Merge Families'}
               </Button>
             </div>
           </div>
