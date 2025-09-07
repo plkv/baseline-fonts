@@ -110,28 +110,43 @@ export default function FontLibrary() {
         const data = await response.json()
         console.log('📋 API Response:', data)
         if (data.success && data.fonts) {
-          // Transform API data to catalog UI format
-          const catalogFonts: FontData[] = data.fonts.map((font: any, index: number) => ({
-            id: index + 1,
-            name: font.family || font.name,
-            family: font.family || font.name,
-            style: font.style || "Regular", 
-            category: font.category || "Sans",
-            styles: font.availableStyles?.length || 1,
-            type: font.isVariable ? "Variable" : "Static",
-            author: font.foundry || "Unknown",
-            fontFamily: `"${font.family || font.name}", system-ui, sans-serif`,
-            availableWeights: font.availableWeights || [400],
-            hasItalic: font.availableStyles?.some((style: string) => 
-              style.toLowerCase().includes('italic')
-            ) || false,
-            filename: font.filename,
-            url: font.url,
-            variableAxes: font.variableAxes,
-            openTypeFeatures: font.openTypeFeatures
-          }))
+          // Group fonts by family name to avoid duplicates
+          const fontsByFamily = new Map<string, any[]>()
+          data.fonts.forEach((font: any) => {
+            const familyName = font.family || font.name
+            if (!fontsByFamily.has(familyName)) {
+              fontsByFamily.set(familyName, [])
+            }
+            fontsByFamily.get(familyName)!.push(font)
+          })
+
+          // Transform grouped families to catalog UI format
+          const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
+            const representativeFont = familyFonts[0] // Use first font as representative
+            const allWeights = [...new Set(familyFonts.map(f => f.weight || 400))].sort((a, b) => a - b)
+            const hasItalic = familyFonts.some(f => f.style?.toLowerCase().includes('italic'))
+            const isVariable = familyFonts.some(f => f.isVariable)
+            
+            return {
+              id: index + 1,
+              name: familyName,
+              family: familyName,
+              style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
+              category: representativeFont.category || "Sans",
+              styles: familyFonts.length,
+              type: isVariable ? "Variable" : "Static",
+              author: representativeFont.foundry || "Unknown",
+              fontFamily: `"${familyName}", system-ui, sans-serif`,
+              availableWeights: allWeights,
+              hasItalic: hasItalic,
+              filename: representativeFont.filename,
+              url: representativeFont.url || representativeFont.blobUrl,
+              variableAxes: representativeFont.variableAxes,
+              openTypeFeatures: representativeFont.openTypeFeatures
+            }
+          })
           setFonts(catalogFonts)
-          console.log(`📝 Loaded ${catalogFonts.length} fonts for catalog`)
+          console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
