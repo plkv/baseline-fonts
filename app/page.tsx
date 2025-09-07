@@ -449,7 +449,12 @@ export default function FontLibrary() {
                       key={preset}
                       onClick={() => {
                         setSelectedPreset(preset)
-                        setCustomText(getPresetContent(preset, fonts[0].name))
+                        // For "Names" preset, clear customText so each font shows its individual name
+                        if (preset === "Names") {
+                          setCustomText("")
+                        } else {
+                          setCustomText(getPresetContent(preset, fonts[0].name))
+                        }
                       }}
                       className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
                     >
@@ -705,17 +710,14 @@ export default function FontLibrary() {
                                     })
                                   }
                                 } else if (font._familyFonts) {
-                                  // For static fonts, show actual available font files
+                                  // For static fonts, show actual style names from metadata
                                   for (const familyFont of font._familyFonts) {
                                     const weight = familyFont.weight || 400
                                     const isItalic = familyFont.style?.toLowerCase().includes('italic')
                                     const styleName = familyFont.style || (isItalic ? 'Italic' : 'Regular')
                                     
-                                    const displayName = familyFont.style === 'Regular' && weight !== 400
-                                      ? `${weight} Regular`
-                                      : familyFont.style === 'Italic' && weight !== 400
-                                        ? `${weight} Italic`
-                                        : styleName
+                                    // Use the actual style name from the font metadata
+                                    const displayName = styleName
                                     
                                     options.push(
                                       <option key={`${familyFont.id}`} value={`${weight}-${isItalic}`}>
@@ -758,15 +760,27 @@ export default function FontLibrary() {
                           <span className="text-author">by {font.author}</span>
                         </div>
                       </div>
-                      <button
-                        className="download-btn"
-                        style={{
-                          color: "#fcfcfc",
-                          backgroundColor: "#0a0a0a",
-                        }}
-                      >
-                        Download
-                      </button>
+                      {(() => {
+                        // Check if any font in the family has a download link
+                        const hasDownloadLink = font._familyFonts?.some(f => f.downloadLink) || font.url
+                        const downloadLink = font._familyFonts?.find(f => f.downloadLink)?.downloadLink || font.url
+                        
+                        if (hasDownloadLink) {
+                          return (
+                            <button
+                              className="download-btn"
+                              style={{
+                                color: "#fcfcfc",
+                                backgroundColor: "#0a0a0a",
+                              }}
+                              onClick={() => window.open(downloadLink, '_blank')}
+                            >
+                              Download
+                            </button>
+                          )
+                        }
+                        return null // Hide button if no download link
+                      })()}
                     </div>
                     <div
                       contentEditable
