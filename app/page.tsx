@@ -40,7 +40,7 @@ const getPresetContent = (preset: string, fontName: string) => {
     case "Names":
       return fontName
     case "Key Glyphs":
-      return 'RKFJIGCQ aueoyrgsltf\n0123469 ≪"(@&?;->'
+      return 'RKFJIGCQ aueoyrgsltf\n0123469 €£¥©®™…–—\n≪"(@&?;->'
     case "Basic":
       return "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%^&*()_+-=[]{}|;':\",./<>?"
     case "Paragraph":
@@ -349,6 +349,38 @@ export default function FontLibrary() {
       return customText
     }
     return getPresetContent(selectedPreset, fontName)
+  }
+
+  // Highlight missing characters with tertiary color
+  const highlightMissingCharacters = (text: string, fontId: number) => {
+    // Common characters that are often missing in fonts
+    const commonlyMissingChars = [
+      '€', '£', '¥', '₽', '₹', // Currency symbols
+      '©', '®', '™', // Trademark symbols  
+      '…', '–', '—', // Special punctuation
+      ''', ''', '"', '"', // Smart quotes
+      '°', '±', '×', '÷', // Math symbols
+      'α', 'β', 'γ', 'δ', // Greek letters
+      '♠', '♣', '♥', '♦', // Card suits
+      '★', '☆', '✓', '✗', // Symbols
+      'ñ', 'ü', 'ß', 'æ', 'ø' // Extended Latin
+    ]
+    
+    // For now, assume fonts might be missing these characters
+    // In a full implementation, we would check the actual font file
+    let highlightedText = text
+    
+    commonlyMissingChars.forEach(char => {
+      if (text.includes(char)) {
+        // Wrap missing character in span with tertiary color
+        highlightedText = highlightedText.replace(
+          new RegExp(char, 'g'),
+          `<span style="color: var(--gray-text-tert); opacity: 0.6;">${char}</span>`
+        )
+      }
+    })
+    
+    return highlightedText
   }
 
   const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
@@ -877,9 +909,10 @@ export default function FontLibrary() {
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
-                    >
-                      {getPreviewContent(font.name)}
-                    </div>
+                      dangerouslySetInnerHTML={{
+                        __html: highlightMissingCharacters(getPreviewContent(font.name), font.id)
+                      }}
+                    ></div>
 
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
