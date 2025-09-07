@@ -260,7 +260,7 @@ export default function FontLibrary() {
   }
 
   const getFilteredFonts = () => {
-    return fonts.filter((font) => {
+    const filtered = fonts.filter((font) => {
       if (selectedWeights.length === 0 && !isItalic) return true
 
       if (selectedWeights.length === 0 && isItalic) {
@@ -278,6 +278,22 @@ export default function FontLibrary() {
       }
 
       return true
+    })
+
+    // Apply sorting based on sortBy state
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "A–Z":
+          return a.name.localeCompare(b.name)
+        case "# Styles":
+          return b.styles - a.styles // Descending order (most styles first)
+        case "New":
+        default:
+          // Sort by upload date (newest first) - use family representative font's upload date
+          const aDate = a._familyFonts?.[0]?.uploadedAt ? new Date(a._familyFonts[0].uploadedAt).getTime() : 0
+          const bDate = b._familyFonts?.[0]?.uploadedAt ? new Date(b._familyFonts[0].uploadedAt).getTime() : 0
+          return bDate - aDate
+      }
     })
   }
 
