@@ -702,19 +702,44 @@ export default function FontLibrary() {
                   </button>
                 )}
               </div>
-              <h1 className="text-font-name font-black font-sans">typedump</h1>
+              <h1 className="text-font-name font-black font-sans cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.href = '/'}>typedump</h1>
             </div>
             <div className="flex items-center gap-4">
               <nav className="flex flex-row gap-2">
                 <button className="menu-tab active">Library</button>
                 <button className="menu-tab">About</button>
-                <a href="/admin-simple" className="menu-tab">Admin</a>
               </nav>
+              <a 
+                href="mailto:make@logictomagic.com"
+                className="icon-btn"
+                title="Send feedback"
+              >
+                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                  flag_2
+                </span>
+              </a>
             </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">
+          {/* Footer moved above content with 50vh height and bottom align */}
+          <div 
+            className="flex items-end justify-center px-6"
+            style={{ height: "50vh" }}
+          >
+            <div className="text-center py-8">
+              <div className="flex justify-center items-center gap-8">
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                  © Baseline, 2025
+                </span>
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                  Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div
             className="sticky top-0 z-10 px-6 py-3 flex justify-between items-center"
             style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
@@ -1005,19 +1030,6 @@ export default function FontLibrary() {
           </div>
         </main>
 
-        <footer
-          className="sticky bottom-0 z-10 px-6 py-4 text-center flex-shrink-0"
-          style={{ backgroundColor: "var(--gray-surface-prim)", borderTop: "1px solid var(--gray-brd-prim)" }}
-        >
-          <div className="flex justify-between items-center">
-            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-              © Baseline, 2025
-            </span>
-            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-              Made by Magic x Logic
-            </span>
-          </div>
-        </footer>
       </div>
     </div>
   )
