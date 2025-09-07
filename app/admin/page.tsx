@@ -489,6 +489,55 @@ export default function CleanAdmin() {
     return Array.from(allTags).sort()
   }
 
+  // Get count of fonts using each style tag
+  const getStyleTagUsage = () => {
+    const tagCounts = new Map<string, number>()
+    fonts.forEach(font => {
+      if (font.styleTags) {
+        font.styleTags.forEach(tag => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
+        })
+      }
+    })
+    return tagCounts
+  }
+
+  // Remove style tag from all fonts that use it
+  const removeStyleTagFromAll = async (tagToRemove: string) => {
+    if (!confirm(`Are you sure you want to remove the style tag "${tagToRemove}" from all fonts?`)) {
+      return
+    }
+
+    const fontsUsingTag = fonts.filter(font => font.styleTags?.includes(tagToRemove))
+    
+    for (const font of fontsUsingTag) {
+      const updatedStyleTags = font.styleTags.filter(tag => tag !== tagToRemove)
+      
+      try {
+        const response = await fetch('/api/fonts-clean/update', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            id: font.id, 
+            updates: { styleTags: updatedStyleTags }
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update font ${font.id}`)
+        }
+      } catch (error) {
+        console.error(`Error removing tag from font ${font.id}:`, error)
+        toast.error(`Failed to remove tag from ${font.family}`)
+        return
+      }
+    }
+    
+    // Reload fonts to reflect changes
+    loadFonts()
+    toast.success(`Removed style tag "${tagToRemove}" from ${fontsUsingTag.length} fonts`)
+  }
+
   // Group fonts by family name
   const groupFontsByFamily = (fonts: Font[]) => {
     const familyMap = new Map<string, Font[]>()
@@ -598,6 +647,53 @@ export default function CleanAdmin() {
                 {uploading ? 'Uploading...' : 'Choose Files'}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Tag Management Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <span>🏷️</span>
+              Tag Management
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Manage style tags across all fonts. Remove unused tags or bulk edit.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {getAllStyleTags().length > 0 ? (
+              <div className="space-y-4">
+                <div className="text-sm font-medium mb-2">
+                  Style Tags ({getAllStyleTags().length} unique tags)
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {getAllStyleTags().map(tag => {
+                    const usage = getStyleTagUsage()
+                    const count = usage.get(tag) || 0
+                    return (
+                      <div key={tag} className="flex items-center gap-1 bg-gray-100 rounded-md px-2 py-1 text-sm">
+                        <span className="font-medium">{tag}</span>
+                        <span className="text-muted-foreground">({count})</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeStyleTagFromAll(tag)}
+                          className="h-4 w-4 p-0 text-red-500 hover:bg-red-50 ml-1"
+                          title={`Remove "${tag}" from all ${count} fonts`}
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No style tags found. Tags are created when editing font metadata.
+              </p>
+            )}
           </CardContent>
         </Card>
 
