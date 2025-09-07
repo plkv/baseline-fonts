@@ -898,11 +898,11 @@ export default function CleanAdmin() {
                             </div>
                             
                             {/* Variable Font Axes Display */}
-                            {font.isVariable && font.variableAxes && font.variableAxes.length > 0 && (
+                            {firstFont.isVariable && firstFont.variableAxes && firstFont.variableAxes.length > 0 && (
                               <div>
                                 <label className="block text-xs font-medium mb-1">Variable Font Axes</label>
                                 <div className="bg-gray-50 p-2 rounded text-xs space-y-1">
-                                  {font.variableAxes.map((axis, index) => (
+                                  {firstFont.variableAxes.map((axis, index) => (
                                     <div key={index} className="flex justify-between items-center">
                                       <span className="font-medium">{axis.name} ({axis.axis}):</span>
                                       <span className="text-gray-600">
@@ -953,7 +953,7 @@ export default function CleanAdmin() {
                             </div>
                             
                             <div className="flex gap-1">
-                              <Button size="sm" className="h-6 px-2 text-xs" onClick={() => saveEdit(font.id)}>
+                              <Button size="sm" className="h-6 px-2 text-xs" onClick={() => saveEdit(firstFont.id)}>
                                 <Save className="w-3 h-3 mr-1" />
                                 Save
                               </Button>
@@ -967,31 +967,28 @@ export default function CleanAdmin() {
                           /* Enhanced Display Mode */
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="space-y-1">
-                              <p><span className="font-medium">Collection:</span> <Badge variant="secondary" className="text-xs px-1 py-0">{font.collection || 'Text'}</Badge></p>
+                              <p><span className="font-medium">Collection:</span> <Badge variant="secondary" className="text-xs px-1 py-0">{representativeFont.collection || 'Text'}</Badge></p>
                               <p>
-                                <span className="font-medium">Style:</span> {font.style} 
-                                {font.isVariable && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}
-                                {font.italicStyle && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Italic</Badge>}
-                                {font.isDefaultStyle && <Badge variant="default" className="text-xs px-1 py-0 ml-1">Default</Badge>}
+                                <span className="font-medium">Styles:</span> {family.fonts.length} style{family.fonts.length !== 1 ? 's' : ''} 
+                                {family.fonts.some(f => f.isVariable) && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}
                               </p>
-                              <p><span className="font-medium">Weight:</span> {font.weight}</p>
-                              <p><span className="font-medium">Category:</span> {font.category || getDefaultCategory(font.collection || 'Text')}</p>
-                              <p><span className="font-medium">Author:</span> {font.foundry}</p>
-                              <p><span className="font-medium">Version:</span> {font.editableVersion || font.version || 'Unknown'}</p>
-                              <p><span className="font-medium">License:</span> {font.editableLicenseType || font.license || 'Unknown'}</p>
-                              {font.editableCreationDate && (
-                                <p><span className="font-medium">Created:</span> {new Date(font.editableCreationDate).toLocaleDateString()}</p>
+                              <p><span className="font-medium">Category:</span> {representativeFont.category || getDefaultCategory(representativeFont.collection || 'Text')}</p>
+                              <p><span className="font-medium">Author:</span> {representativeFont.foundry}</p>
+                              <p><span className="font-medium">Version:</span> {representativeFont.editableVersion || representativeFont.version || 'Unknown'}</p>
+                              <p><span className="font-medium">License:</span> {representativeFont.editableLicenseType || representativeFont.license || 'Unknown'}</p>
+                              {representativeFont.editableCreationDate && (
+                                <p><span className="font-medium">Created:</span> {new Date(representativeFont.editableCreationDate).toLocaleDateString()}</p>
                               )}
-                              {font.glyphCount && (
-                                <p><span className="font-medium">Glyphs:</span> {font.glyphCount}</p>
+                              {representativeFont.glyphCount && (
+                                <p><span className="font-medium">Glyphs:</span> {representativeFont.glyphCount}</p>
                               )}
                               
                               {/* Variable Font Axes in Display Mode */}
-                              {font.isVariable && font.variableAxes && font.variableAxes.length > 0 && (
+                              {representativeFont.isVariable && representativeFont.variableAxes && representativeFont.variableAxes.length > 0 && (
                                 <div className="mt-2">
                                   <span className="font-medium">Variable Axes:</span>
                                   <div className="mt-1 space-y-1">
-                                    {font.variableAxes.map((axis, index) => (
+                                    {representativeFont.variableAxes.map((axis, index) => (
                                       <div key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
                                         <span className="font-medium">{axis.name}</span> ({axis.axis}): {axis.min}–{axis.max}
                                       </div>
@@ -1001,90 +998,86 @@ export default function CleanAdmin() {
                               )}
                             </div>
                             <div className="space-y-1">
-                              {font.downloadLink && (
-                                <p><span className="font-medium">Link:</span> <a href={font.downloadLink} target="_blank" className="text-blue-600 hover:underline truncate block">{font.downloadLink.length > 30 ? font.downloadLink.substring(0, 30) + '...' : font.downloadLink}</a></p>
+                              {representativeFont.downloadLink && (
+                                <p><span className="font-medium">Link:</span> <a href={representativeFont.downloadLink} target="_blank" className="text-blue-600 hover:underline truncate block">{representativeFont.downloadLink.length > 30 ? representativeFont.downloadLink.substring(0, 30) + '...' : representativeFont.downloadLink}</a></p>
                               )}
                               <div>
                                 <span className="font-medium">Languages:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {font.languages.map(lang => (
+                                  {representativeFont.languages.map(lang => (
                                     <Badge key={lang} variant="secondary" className="text-xs px-1 py-0">{lang}</Badge>
                                   ))}
                                 </div>
                               </div>
-                              {font.styleTags && font.styleTags.length > 0 && (
+                              {representativeFont.styleTags && representativeFont.styleTags.length > 0 && (
                                 <div>
                                   <span className="font-medium">Style Tags:</span>
                                   <div className="flex flex-wrap gap-1 mt-1">
-                                    {font.styleTags.map(tag => (
+                                    {representativeFont.styleTags.map(tag => (
                                       <Badge key={tag} variant="outline" className="text-xs px-1 py-0">{tag}</Badge>
                                     ))}
                                   </div>
                                 </div>
                               )}
-                              {font.copyright && (
-                                <p><span className="font-medium">Copyright:</span> <span className="text-gray-600 truncate">{font.copyright.length > 40 ? font.copyright.substring(0, 40) + '...' : font.copyright}</span></p>
+                              {representativeFont.copyright && (
+                                <p><span className="font-medium">Copyright:</span> <span className="text-gray-600 truncate">{representativeFont.copyright.length > 40 ? representativeFont.copyright.substring(0, 40) + '...' : representativeFont.copyright}</span></p>
                               )}
-                              {font.license && (
-                                <p><span className="font-medium">License:</span> <span className="text-gray-600 truncate">{font.license.length > 40 ? font.license.substring(0, 40) + '...' : font.license}</span></p>
+                              {representativeFont.license && (
+                                <p><span className="font-medium">License:</span> <span className="text-gray-600 truncate">{representativeFont.license.length > 40 ? representativeFont.license.substring(0, 40) + '...' : representativeFont.license}</span></p>
                               )}
                               
                               {/* Family Styles Management */}
-                              {(() => {
-                                const familyFonts = getFamilyFonts(font.family)
-                                return familyFonts.length > 1 ? (
-                                  <div className="col-span-2 mt-2">
-                                    <span className="font-medium text-xs">Family Styles ({familyFonts.length}):</span>
-                                    <div className="mt-1 space-y-1">
-                                      {familyFonts.map((familyFont, index) => (
-                                        <div key={index} className="flex items-center justify-between text-xs bg-gray-100 px-2 py-1 rounded">
-                                          <span>
-                                            <span className="font-medium">{familyFont.style}</span> ({familyFont.weight})
-                                            {familyFont.italicStyle && <span className="text-gray-500 ml-1">Italic</span>}
-                                          </span>
-                                          <div className="flex items-center gap-1">
-                                            {familyFont.isDefaultStyle ? (
-                                              <Badge variant="default" className="text-xs px-1 py-0">Default</Badge>
-                                            ) : (
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-5 px-2 text-xs"
-                                                onClick={() => setDefaultStyle(font.family, familyFont.id)}
-                                              >
-                                                Set Default
-                                              </Button>
-                                            )}
-                                            {familyFonts.length > 1 && (
-                                              <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                onClick={() => deleteStyle(familyFont.id, familyFont.style, font.family)}
-                                                title={`Delete ${familyFont.style} style`}
-                                              >
-                                                <Trash2 className="w-3 h-3" />
-                                              </Button>
-                                            )}
-                                          </div>
+                              {family.fonts.length > 1 && (
+                                <div className="col-span-2 mt-2">
+                                  <span className="font-medium text-xs">Family Styles ({family.fonts.length}):</span>
+                                  <div className="mt-1 space-y-1">
+                                    {family.fonts.map((familyFont, index) => (
+                                      <div key={index} className="flex items-center justify-between text-xs bg-gray-100 px-2 py-1 rounded">
+                                        <span>
+                                          <span className="font-medium">{familyFont.style}</span> ({familyFont.weight})
+                                          {familyFont.italicStyle && <span className="text-gray-500 ml-1">Italic</span>}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                          {familyFont.isDefaultStyle ? (
+                                            <Badge variant="default" className="text-xs px-1 py-0">Default</Badge>
+                                          ) : (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-5 px-2 text-xs"
+                                              onClick={() => setDefaultStyle(family.familyName, familyFont.id)}
+                                            >
+                                              Set Default
+                                            </Button>
+                                          )}
+                                          {family.fonts.length > 1 && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                              onClick={() => deleteStyle(familyFont.id, familyFont.style, family.familyName)}
+                                              title={`Delete ${familyFont.style} style`}
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                          )}
                                         </div>
-                                      ))}
-                                    </div>
-                                    {/* Add Style Button inside family styles */}
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="mt-2 h-6 px-2 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-                                      onClick={() => quickAddStyle(font.family)}
-                                      disabled={addingStyle}
-                                    >
-                                      <Upload className="w-3 h-3 mr-1" />
-                                      {addingStyle && addingStyleFor === font.family ? 'Adding...' : 'Add Style to Family'}
-                                    </Button>
+                                      </div>
+                                    ))}
                                   </div>
-                                ) : null
-                              })()
-                              }
+                                  {/* Add Style Button inside family styles */}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-2 h-6 px-2 text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                                    onClick={() => quickAddStyle(family.familyName)}
+                                    disabled={addingStyle}
+                                  >
+                                    <Upload className="w-3 h-3 mr-1" />
+                                    {addingStyle && addingStyleFor === family.familyName ? 'Adding...' : 'Add Style to Family'}
+                                  </Button>
+                                </div>
+                              )}
                               
                               {/* Font Preview */}
                               <div className="col-span-2 mt-2">
@@ -1092,11 +1085,11 @@ export default function CleanAdmin() {
                                 <div 
                                   className="mt-1 p-3 bg-white border rounded text-lg leading-tight"
                                   style={{
-                                    fontFamily: `"${font.family}", sans-serif`,
-                                    fontWeight: font.weight || 400
+                                    fontFamily: `"${family.familyName}", sans-serif`,
+                                    fontWeight: representativeFont.weight || 400
                                   }}
                                 >
-                                  <div className="text-xl mb-1">{font.family}</div>
+                                  <div className="text-xl mb-1">{family.familyName}</div>
                                   <div className="text-sm text-gray-600">
                                     The quick brown fox jumps over the lazy dog
                                   </div>
