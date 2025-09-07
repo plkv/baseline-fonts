@@ -618,7 +618,19 @@ export default function FontLibrary() {
               </div>
             ) : (
               getFilteredFonts().map((font) => {
-              const fontSelection = fontWeightSelections[font.id] || { weight: 400, italic: false }
+              const fontSelection = fontWeightSelections[font.id] || (() => {
+                // Get default selection based on the first available font in family
+                if (font._familyFonts && font._familyFonts.length > 0) {
+                  // Prefer Regular style first, then take first available
+                  const regularFont = font._familyFonts.find(f => f.style === 'Regular' || !f.style?.toLowerCase().includes('italic'))
+                  const defaultFont = regularFont || font._familyFonts[0]
+                  return {
+                    weight: defaultFont.weight || 400,
+                    italic: defaultFont.style?.toLowerCase().includes('italic') || false
+                  }
+                }
+                return { weight: 400, italic: false }
+              })()
               const effectiveStyle = getEffectiveStyle(font.id)
               return (
                 <div
@@ -652,10 +664,21 @@ export default function FontLibrary() {
                                   for (const familyFont of font._familyFonts) {
                                     const weight = familyFont.weight || 400
                                     const isItalic = familyFont.style?.toLowerCase().includes('italic')
-                                    const styleName = isItalic ? 'Italic' : 'Regular'
+                                    const styleName = familyFont.style || (isItalic ? 'Italic' : 'Regular')
+                                    
+                                    // For variable fonts, show just the style name
+                                    // For static fonts with same style, show weight + style
+                                    const displayName = familyFont.isVariable 
+                                      ? styleName
+                                      : familyFont.style === 'Regular' && weight !== 400
+                                        ? `${weight} Regular`
+                                        : familyFont.style === 'Italic' && weight !== 400
+                                          ? `${weight} Italic`
+                                          : styleName
+                                    
                                     options.push(
-                                      <option key={`${weight}-${isItalic}`} value={`${weight}-${isItalic}`}>
-                                        {weight} {styleName}
+                                      <option key={`${familyFont.id}`} value={`${weight}-${isItalic}`}>
+                                        {displayName}
                                       </option>
                                     )
                                   }
