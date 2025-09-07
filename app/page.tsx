@@ -172,7 +172,9 @@ export default function FontLibrary() {
               name: familyName,
               family: familyName,
               style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
-              category: representativeFont.category || "Sans",
+              category: Array.isArray(representativeFont.category) 
+                ? representativeFont.category[0] || "Sans" // Use first category for UI compatibility
+                : (representativeFont.category || "Sans"),
               styles: familyFonts.length,
               type: finalType,
               author: representativeFont.foundry || "Unknown",

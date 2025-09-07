@@ -21,7 +21,7 @@ interface Font {
   downloadLink?: string
   languages: string[]
   blobUrl: string
-  category: string
+  category: string[]
   weight: number
   styleTags: string[]
   collection: 'Text' | 'Display' | 'Weirdo'
@@ -106,7 +106,7 @@ export default function CleanAdmin() {
     foundry: '',
     downloadLink: '',
     languages: [] as string[],
-    category: '',
+    category: [] as string[],
     weight: 400,
     styleTags: [] as string[],
     collection: 'Text' as 'Text' | 'Display' | 'Weirdo',
@@ -375,7 +375,7 @@ export default function CleanAdmin() {
       foundry: font.foundry,
       downloadLink: font.downloadLink || '',
       languages: [...font.languages],
-      category: font.category || getDefaultCategory(font.collection || 'Text'),
+      category: Array.isArray(font.category) ? [...font.category] : [font.category || getDefaultCategory(font.collection || 'Text')],
       weight: font.weight || 400,
       styleTags: [...(font.styleTags || [])],
       collection: font.collection || 'Text',
@@ -395,7 +395,7 @@ export default function CleanAdmin() {
       foundry: '', 
       downloadLink: '', 
       languages: [], 
-      category: getDefaultCategory('Text'), 
+      category: [getDefaultCategory('Text')], 
       weight: 400, 
       styleTags: [],
       collection: 'Text',
@@ -441,11 +441,13 @@ export default function CleanAdmin() {
     }))
   }
   
-  // Toggle category
+  // Toggle category (now supports multiple selection)
   const toggleCategory = (category: string) => {
     setEditForm(prev => ({
       ...prev,
-      category: prev.category === category ? getDefaultCategory(prev.collection) : category
+      category: prev.category.includes(category) 
+        ? prev.category.filter(c => c !== category)
+        : [...prev.category, category]
     }))
   }
   
@@ -835,7 +837,7 @@ export default function CleanAdmin() {
                                       key={cat}
                                       size="sm"
                                       className="h-5 px-1 text-xs"
-                                      variant={editForm.category === cat ? "default" : "outline"}
+                                      variant={editForm.category.includes(cat) ? "default" : "outline"}
                                       onClick={() => toggleCategory(cat)}
                                     >
                                       {cat}
@@ -972,7 +974,11 @@ export default function CleanAdmin() {
                                 <span className="font-medium">Styles:</span> {family.fonts.length} style{family.fonts.length !== 1 ? 's' : ''} 
                                 {family.fonts.some(f => f.isVariable) && <Badge variant="outline" className="text-xs px-1 py-0 ml-1">Variable</Badge>}
                               </p>
-                              <p><span className="font-medium">Category:</span> {representativeFont.category || getDefaultCategory(representativeFont.collection || 'Text')}</p>
+                              <p><span className="font-medium">Category:</span> {
+                                Array.isArray(representativeFont.category) 
+                                  ? representativeFont.category.join(', ') 
+                                  : (representativeFont.category || getDefaultCategory(representativeFont.collection || 'Text'))
+                              }</p>
                               <p><span className="font-medium">Author:</span> {representativeFont.foundry}</p>
                               <p><span className="font-medium">Version:</span> {representativeFont.editableVersion || representativeFont.version || 'Unknown'}</p>
                               <p><span className="font-medium">License:</span> {representativeFont.editableLicenseType || representativeFont.license || 'Unknown'}</p>

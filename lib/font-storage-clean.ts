@@ -36,7 +36,7 @@ export interface FontMetadata {
   blobUrl: string
   
   // Enhanced metadata from OpenType
-  category: string
+  category: string[] // Multiple categories supported (e.g., ['Sans', 'Mono'])
   isVariable: boolean
   availableWeights: number[]
   availableStyles: string[]
@@ -108,7 +108,7 @@ class FontStorageClean {
       weight: 400,
       foundry: 'Unknown',
       languages: ['Latin'],
-      category: 'Sans Serif',
+      category: ['Sans'],
       isVariable: false,
       availableWeights: [400],
       availableStyles: ['Regular'],
@@ -129,7 +129,7 @@ class FontStorageClean {
           weight: parsedData.weight,
           foundry: parsedData.foundry || 'Unknown',
           languages: parsedData.languages || ['Latin'],
-          category: parsedData.category || 'Sans Serif',
+          category: parsedData.category ? (Array.isArray(parsedData.category) ? parsedData.category : [parsedData.category]) : ['Sans'],
           isVariable: parsedData.isVariable || false,
           availableWeights: parsedData.availableWeights || [parsedData.weight || 400],
           availableStyles: parsedData.availableStyles || [parsedData.style || 'Regular'],
