@@ -241,12 +241,12 @@ export default function SimpleAdmin() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen p-8" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Font Admin</h1>
-          <p className="text-gray-600">Upload, preview, and manage your font collection</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--gray-cont-prim)" }}>Font Admin</h1>
+          <p style={{ color: "var(--gray-cont-sec)" }}>Upload, preview, and manage your font collection</p>
         </div>
 
         {/* Upload Area */}
@@ -261,13 +261,17 @@ export default function SimpleAdmin() {
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
+              className="border-2 border-dashed rounded-lg p-8 text-center transition-colors"
+              style={{ 
+                borderColor: "var(--gray-brd-prim)", 
+                ":hover": { borderColor: "var(--gray-cont-tert)" }
+              }}
             >
-              <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg font-medium text-gray-900 mb-2">
+              <Upload className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--gray-cont-tert)" }} />
+              <p className="text-lg font-medium mb-2" style={{ color: "var(--gray-cont-prim)" }}>
                 Drop font files here or click to browse
               </p>
-              <p className="text-gray-500 mb-4">
+              <p className="mb-4" style={{ color: "var(--gray-cont-sec)" }}>
                 Supports TTF, OTF, WOFF, WOFF2 (max 10MB)
               </p>
               <input
@@ -326,33 +330,34 @@ export default function SimpleAdmin() {
 
           {loading ? (
             <div className="text-center py-8">
-              <div className="text-gray-500">Loading fonts...</div>
+              <div style={{ color: "var(--gray-cont-sec)" }}>Loading fonts...</div>
             </div>
           ) : fonts.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-gray-500">No fonts uploaded yet. Upload your first font above.</div>
+              <div style={{ color: "var(--gray-cont-sec)" }}>No fonts uploaded yet. Upload your first font above.</div>
             </div>
           ) : (
             <div className="space-y-1">
               {sortedFonts.map((font) => {
                 const isExpanded = expandedFonts.has(font.filename)
                 return (
-                  <div key={font.filename} className="border border-gray-200 rounded-md overflow-hidden">
+                  <div key={font.filename} className="border rounded-md overflow-hidden" style={{ borderColor: "var(--gray-brd-prim)" }}>
                     {/* Collapsed Row - Ultra Compact */}
                     <div 
-                      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors"
+                      style={{ ":hover": { backgroundColor: "var(--gray-fill-prim)" }}}
                       onClick={() => toggleFontExpansion(font.filename)}
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {isExpanded ? (
-                          <ChevronDown className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <ChevronDown className="w-3 h-3 flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }} />
                         ) : (
-                          <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <ChevronRight className="w-3 h-3 flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }} />
                         )}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-3">
-                            <span className="font-medium text-sm text-gray-900 truncate">{font.family}</span>
-                            <span className="text-xs text-gray-500 flex-shrink-0">{formatDate(font.uploadDate)}</span>
+                            <span className="font-medium text-sm truncate" style={{ color: "var(--gray-cont-prim)" }}>{font.family}</span>
+                            <span className="text-xs flex-shrink-0" style={{ color: "var(--gray-cont-sec)" }}>{formatDate(font.uploadDate)}</span>
                           </div>
                         </div>
                       </div>
@@ -363,7 +368,8 @@ export default function SimpleAdmin() {
                             e.stopPropagation()
                             startEditing(font)
                           }}
-                          className="text-blue-500 hover:text-blue-700 p-1 flex-shrink-0"
+                          className="p-1 flex-shrink-0"
+                          style={{ color: "var(--gray-cont-sec)" }}
                         >
                           <Edit3 className="w-3 h-3" />
                         </button>
@@ -381,7 +387,7 @@ export default function SimpleAdmin() {
 
                     {/* Expanded Details - Compact */}
                     {isExpanded && (
-                      <div className="border-t bg-gray-50 px-3 py-2">
+                      <div className="border-t px-3 py-2" style={{ borderColor: "var(--gray-brd-prim)", backgroundColor: "var(--gray-surface-sec)" }}>
                         {editingFont === font.filename ? (
                           /* Edit Form */
                           <div className="space-y-3">
@@ -389,7 +395,7 @@ export default function SimpleAdmin() {
                             <div className="grid md:grid-cols-2 gap-3">
                               <div className="space-y-2">
                                 <div>
-                                  <label className="text-xs font-medium text-gray-700">Name</label>
+                                  <label className="text-xs font-medium" style={{ color: "var(--gray-cont-prim)" }}>Name</label>
                                   <input
                                     type="text"
                                     value={editForm.family}
@@ -398,7 +404,7 @@ export default function SimpleAdmin() {
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs font-medium text-gray-700">Author</label>
+                                  <label className="text-xs font-medium" style={{ color: "var(--gray-cont-prim)" }}>Author</label>
                                   <input
                                     type="text"
                                     value={editForm.foundry}
@@ -407,7 +413,7 @@ export default function SimpleAdmin() {
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs font-medium text-gray-700">Link</label>
+                                  <label className="text-xs font-medium" style={{ color: "var(--gray-cont-prim)" }}>Link</label>
                                   <input
                                     type="url"
                                     value={editForm.downloadLink}
@@ -418,18 +424,26 @@ export default function SimpleAdmin() {
                               </div>
                               
                               <div>
-                                <label className="text-xs font-medium text-gray-700 mb-1 block">Languages</label>
+                                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--gray-cont-prim)" }}>Languages</label>
                                 <div className="flex gap-1 flex-wrap">
                                   {availableLanguages.map(lang => (
                                     <button
                                       key={lang}
                                       type="button"
                                       onClick={() => toggleLanguage(lang)}
-                                      className={`text-xs px-2 py-0.5 rounded border ${
-                                        editForm.languages.includes(lang)
-                                          ? 'bg-blue-100 border-blue-300 text-blue-800'
-                                          : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
-                                      }`}
+                                      className="text-xs px-2 py-0.5 rounded border"
+                                      style={editForm.languages.includes(lang) 
+                                        ? { 
+                                            backgroundColor: "var(--gray-fill-sec)", 
+                                            borderColor: "var(--gray-brd-prim)", 
+                                            color: "var(--gray-cont-prim)" 
+                                          }
+                                        : { 
+                                            backgroundColor: "var(--gray-surface-sec)", 
+                                            borderColor: "var(--gray-brd-prim)", 
+                                            color: "var(--gray-cont-sec)" 
+                                          }
+                                      }
                                     >
                                       {lang}
                                     </button>
@@ -442,13 +456,15 @@ export default function SimpleAdmin() {
                             <div className="flex gap-2 justify-end">
                               <button
                                 onClick={cancelEditing}
-                                className="text-xs px-2 py-1 text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                                className="text-xs px-2 py-1 flex items-center gap-1"
+                                style={{ color: "var(--gray-cont-sec)" }}
                               >
                                 <X className="w-3 h-3" /> Cancel
                               </button>
                               <button
                                 onClick={() => saveEdits(font.filename)}
-                                className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+                                className="text-xs px-2 py-1 rounded flex items-center gap-1"
+                                style={{ backgroundColor: "var(--gray-accent-prim)", color: "var(--gray-surface-prim)" }}
                               >
                                 <Save className="w-3 h-3" /> Save
                               </button>
@@ -460,8 +476,11 @@ export default function SimpleAdmin() {
                             {/* Font Preview */}
                             <div>
                               <div 
-                                className="bg-white rounded p-2 text-lg border"
-                                style={{
+                                className="rounded p-2 text-lg border"
+                                style={{ 
+                                  backgroundColor: "var(--gray-surface-prim)", 
+                                  borderColor: "var(--gray-brd-prim)",
+                                  color: "var(--gray-cont-prim)",
                                   fontFamily: `"${font.family}", system-ui, sans-serif`,
                                   fontWeight: font.weight
                                 }}
@@ -477,14 +496,14 @@ export default function SimpleAdmin() {
                                 <Badge variant="outline" className="text-xs px-1 py-0">{font.category}</Badge>
                                 <Badge variant="outline" className="text-xs px-1 py-0">{Math.round(font.fileSize / 1024)}KB</Badge>
                               </div>
-                              <div className="text-xs text-gray-600 space-y-0.5">
+                              <div className="text-xs space-y-0.5" style={{ color: "var(--gray-cont-sec)" }}>
                                 <div>{font.style} {font.weight}</div>
                                 <div>{font.foundry}</div>
                                 {font.languages && font.languages.length > 0 && (
                                   <div>Languages: {font.languages.join(', ')}</div>
                                 )}
                                 {font.downloadLink && (
-                                  <div><a href={font.downloadLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Download</a></div>
+                                  <div><a href={font.downloadLink} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "var(--gray-cont-prim)" }}>Download</a></div>
                                 )}
                                 <div className="truncate">{font.filename}</div>
                               </div>
