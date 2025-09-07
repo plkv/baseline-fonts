@@ -231,12 +231,10 @@ export default function FontFamilyAccordion({
         const isEditingThisFamily = editingFamily === family.name
 
         return (
-          <div key={family.name} className={`rounded-lg border transition-all duration-200 ${
-            darkMode ? 'bg-stone-800 border-stone-700' : 'bg-white border-gray-200'
-          } ${isExpanded ? 'ring-2 ring-blue-500/20' : ''}`}>
+          <div key={family.name} className={`rounded-lg border transition-all duration-200 bg-card border-border ${isExpanded ? 'ring-2 ring-blue-500/20' : ''}`}>
             
             {/* Family Header */}
-            <div className="p-4 border-b border-stone-700">
+            <div className="p-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                   <Button
@@ -253,14 +251,12 @@ export default function FontFamilyAccordion({
                       type="text"
                       value={familyEdits.name || family.name}
                       onChange={(e) => setFamilyEdits(prev => ({ ...prev, name: e.target.value }))}
-                      className={`text-xl font-semibold bg-transparent border border-stone-600 rounded px-2 py-1 ${
-                        darkMode ? 'text-stone-50' : 'text-gray-900'
-                      }`}
+                      className="text-xl font-semibold bg-transparent border border-border rounded px-2 py-1 text-card-foreground"
                       style={getFontFamilyStyle(family)}
                     />
                   ) : (
                     <h3 
-                      className={`text-xl font-semibold ${darkMode ? 'text-stone-50' : 'text-gray-900'}`}
+                      className="text-xl font-semibold text-card-foreground"
                       style={getFontFamilyStyle(family)}
                     >
                       {family.name}
@@ -331,20 +327,20 @@ export default function FontFamilyAccordion({
               {/* Family Info */}
               <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Author/Foundry</div>
+                  <div className={`font-medium text-muted-foreground`}>Author/Foundry</div>
                   {isEditingThisFamily ? (
                     <input
                       type="text"
                       value={familyEdits.foundry || family.foundry}
                       onChange={(e) => setFamilyEdits(prev => ({ ...prev, foundry: e.target.value }))}
-                      className="bg-transparent border border-stone-600 rounded px-1 py-0.5 w-full"
+                      className="bg-transparent border border-border rounded px-1 py-0.5 w-full"
                     />
                   ) : (
                     <div>{family.foundry}</div>
                   )}
                 </div>
                 <div>
-                  <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Category</div>
+                  <div className={`font-medium text-muted-foreground`}>Category</div>
                   {isEditingThisFamily ? (
                     <Select 
                       value={familyEdits.category || family.category} 
@@ -364,18 +360,18 @@ export default function FontFamilyAccordion({
                   )}
                 </div>
                 <div>
-                  <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Total Size</div>
+                  <div className={`font-medium text-muted-foreground`}>Total Size</div>
                   <div>{formatFileSize(family.totalSize)}</div>
                 </div>
                 <div>
-                  <div className={`font-medium ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>Type</div>
+                  <div className={`font-medium text-muted-foreground`}>Type</div>
                   <div>{family.isVariable ? 'Variable' : 'Static'}</div>
                 </div>
               </div>
 
               {/* Language Support */}
               <div className="mt-3">
-                <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                <div className={`text-xs font-medium mb-1 text-muted-foreground`}>
                   Language Support
                 </div>
                 {isEditingThisFamily ? (
@@ -392,8 +388,8 @@ export default function FontFamilyAccordion({
                         }}
                         className={`text-xs px-2 py-1 rounded border transition-colors ${
                           (familyEdits.languages || family.languages).includes(lang)
-                            ? 'bg-blue-100 border-blue-300 text-blue-800'
-                            : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                            ? 'ds-bg-fill-2 ds-border ds-text-prim'
+                            : 'ds-bg-surface-2 ds-border ds-text-sec ds-hover-fill-1'
                         }`}
                       >
                         {lang}
@@ -414,7 +410,7 @@ export default function FontFamilyAccordion({
 
               {/* OpenType Features */}
               <div className="mt-3">
-                <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                <div className={`text-xs font-medium mb-1 text-muted-foreground`}>
                   OpenType Features
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -430,7 +426,7 @@ export default function FontFamilyAccordion({
               {/* Variable Axes Info */}
               {family.isVariable && family.fonts[0]?.variableAxes && (
                 <div className="mt-3">
-                  <div className={`text-xs font-medium mb-1 ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs font-medium mb-1 text-muted-foreground`}>
                     Variable Axes
                   </div>
                   <div className="flex flex-wrap gap-1">

@@ -408,9 +408,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode ? 'bg-stone-950 text-stone-50' : 'bg-gray-50 text-gray-900'
-    }`}>
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="container mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -456,27 +455,27 @@ export default function AdminPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className={`p-4 rounded-lg ${darkMode ? 'bg-stone-800 border border-stone-700' : 'bg-white border border-gray-200'}`}>
-            <div className={`text-2xl font-bold ${darkMode ? 'text-stone-50' : 'text-gray-900'}`}>
+          <div className={`p-4 rounded-lg bg-card border border-border`}>
+            <div className={`text-2xl font-bold text-card-foreground`}>
               {fonts.length}
             </div>
-            <div className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+            <div className={`text-sm text-muted-foreground`}>
               Total Fonts
             </div>
           </div>
-          <div className={`p-4 rounded-lg ${darkMode ? 'bg-stone-800 border border-stone-700' : 'bg-white border border-gray-200'}`}>
-            <div className={`text-2xl font-bold ${darkMode ? 'text-stone-50' : 'text-gray-900'}`}>
+          <div className={`p-4 rounded-lg bg-card border border-border`}>
+            <div className={`text-2xl font-bold text-card-foreground`}>
               {new Set(fonts.map(f => f.family)).size}
             </div>
-            <div className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+            <div className={`text-sm text-muted-foreground`}>
               Font Families
             </div>
           </div>
-          <div className={`p-4 rounded-lg ${darkMode ? 'bg-stone-800 border border-stone-700' : 'bg-white border border-gray-200'}`}>
-            <div className={`text-2xl font-bold ${darkMode ? 'text-stone-50' : 'text-gray-900'}`}>
+          <div className={`p-4 rounded-lg bg-card border border-border`}>
+            <div className={`text-2xl font-bold text-card-foreground`}>
               {Math.round(fonts.reduce((sum, f) => sum + f.fileSize, 0) / 1024)}
             </div>
-            <div className={`text-sm ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+            <div className={`text-sm text-muted-foreground`}>
               Total KB
             </div>
           </div>
@@ -485,13 +484,13 @@ export default function AdminPage() {
         {/* Font Families List */}
         {isLoadingFonts ? (
           <div className="text-center py-8">
-            <div className={`text-lg ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+            <div className={`text-lg text-muted-foreground`}>
               Loading fonts...
             </div>
           </div>
         ) : fontFamilies.length === 0 ? (
           <div className="text-center py-8">
-            <div className={`text-lg ${darkMode ? 'text-stone-400' : 'text-gray-500'}`}>
+            <div className={`text-lg text-muted-foreground`}>
               No fonts uploaded yet. Upload your first font to get started.
             </div>
           </div>
@@ -525,6 +524,7 @@ export default function AdminPage() {
         cancelText="Cancel"
         variant="destructive"
       />
+    </div>
     </div>
   )
 }

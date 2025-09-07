@@ -446,11 +446,11 @@ export default function CleanAdmin() {
         `).join('')}
       `}</style>
       
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Clean Font Admin</h1>
-          <p className="text-gray-600">Blob + KV Font Management System</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Clean Font Admin</h1>
+          <p className="text-muted-foreground">Blob + KV Font Management System</p>
         </div>
 
         {/* Upload Section */}
@@ -463,18 +463,18 @@ export default function CleanAdmin() {
           </CardHeader>
           <CardContent>
             <div 
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors"
+              className="border-2 border-dashed border-border rounded-lg p-8 text-center transition-colors ds-hover-border-strong"
               onDrop={(e) => {
                 e.preventDefault()
                 handleUpload(e.dataTransfer.files)
               }}
               onDragOver={(e) => e.preventDefault()}
             >
-              <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg font-medium text-gray-900 mb-2">
+              <Upload className="w-12 h-12 mx-auto ds-text-tert mb-4" />
+              <p className="text-lg font-medium ds-text-prim mb-2">
                 Drop font files here or click to browse
               </p>
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Supports TTF, OTF, WOFF, WOFF2 (max 10MB)
               </p>
               <input
@@ -488,7 +488,7 @@ export default function CleanAdmin() {
               <Button 
                 onClick={() => document.getElementById('font-upload')?.click()}
                 disabled={uploading}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {uploading ? 'Uploading...' : 'Choose Files'}
               </Button>
@@ -543,9 +543,9 @@ export default function CleanAdmin() {
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading fonts...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading fonts...</div>
           ) : fonts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No fonts uploaded yet</div>
+            <div className="text-center py-8 text-muted-foreground">No fonts uploaded yet</div>
           ) : (
             <div className="space-y-1">
               {filteredAndSortedFonts.map((font) => {
@@ -553,10 +553,10 @@ export default function CleanAdmin() {
                 const isEditing = editingFont === font.id
 
                 return (
-                  <Card key={font.id} className="transition-all border">
+                  <Card key={font.id} className="transition-all border border-border">
                     {/* Compact Header */}
                     <div 
-                      className="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50"
+                      className="flex items-center justify-between p-2 cursor-pointer ds-hover-fill-1"
                       onClick={() => {
                         const newExpanded = new Set(expandedFonts)
                         if (isExpanded) {
@@ -571,7 +571,7 @@ export default function CleanAdmin() {
                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         <div>
                           <h3 className="text-sm font-medium">{font.family}</h3>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>{new Date(font.uploadedAt).toLocaleDateString()}</span>
                             <span>•</span>
                             <span>{Math.round(font.fileSize / 1024)}KB</span>
@@ -621,7 +621,7 @@ export default function CleanAdmin() {
 
                     {/* Compact Expanded Content */}
                     {isExpanded && (
-                      <div className="border-t bg-gray-50 p-2">
+                      <div className="border-t ds-bg-surface-2 p-2 border-border">
                         {isEditing ? (
                           /* Comprehensive Edit Form */
                           <div className="space-y-2">

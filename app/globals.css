@@ -433,3 +433,59 @@
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 }
+
+/* Centralized Design System (ds-*) */
+@layer utilities {
+  /* Surfaces */
+  .ds-bg-surface {
+    background-color: var(--gray-surface-prim);
+  }
+  .ds-bg-surface-2 {
+    background-color: var(--gray-surface-sec);
+  }
+  .ds-bg-fill-1 {
+    background-color: var(--gray-fill-prim);
+  }
+  .ds-bg-fill-2 {
+    background-color: var(--gray-fill-sec);
+  }
+
+  /* Content colors */
+  .ds-text-prim {
+    color: var(--gray-cont-prim);
+  }
+  .ds-text-sec {
+    color: var(--gray-cont-sec);
+  }
+  .ds-text-tert {
+    color: var(--gray-cont-tert);
+  }
+  .ds-text-quart {
+    color: var(--gray-cont-quart);
+  }
+  .ds-text-inverse {
+    color: var(--misc-cont-inverse);
+  }
+
+  /* Borders */
+  .ds-border {
+    border-color: var(--gray-brd-prim);
+  }
+
+  /* Cards */
+  .ds-card {
+    background-color: var(--card);
+    color: var(--card-foreground);
+  }
+
+  /* Hovers */
+  .ds-hover-fill-1:hover {
+    background-color: var(--gray-fill-prim);
+  }
+  .ds-hover-fill-2:hover {
+    background-color: var(--gray-fill-sec);
+  }
+  .ds-hover-border-strong:hover {
+    border-color: var(--gray-cont-tert);
+  }
+}
