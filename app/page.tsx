@@ -397,57 +397,12 @@ export default function FontLibrary() {
     return categoryOptions[displayMode] || categoryOptions.Text
   }
 
-  // Simple approach: Just detect fallback characters and color them grey
-  // This relies on the browser's natural fallback behavior when fonts don't support characters
-
-  // Highlight missing characters by wrapping them in spans that will use fallback fonts
+  // Function to potentially highlight missing characters (currently disabled)
+  // Only highlights truly missing glyphs, not special symbols that exist in the font
   const highlightMissingCharacters = (text: string, fontId: number) => {
-    // For now, use a simple approach: wrap common non-Latin characters 
-    // The browser will use fallback fonts for unsupported characters, so we detect those
-    
-    let highlightedText = text
-    
-    // Characters that commonly need fallback fonts
-    const potentialFallbackChars = [
-      // Currency symbols
-      '€', '£', '¥', '₽', '₹', '¢', '₩', '₪', '₨', '₵',
-      // Extended Latin and diacritics  
-      'ñ', 'ü', 'ß', 'æ', 'ø', 'þ', 'ð', 'ŋ', 'ə', 'ɨ', 'ɯ',
-      'ç', 'é', 'è', 'ê', 'ë', 'à', 'á', 'â', 'ä', 'å', 'ã', 'ā',
-      'í', 'ì', 'î', 'ï', 'ī', 'ò', 'ó', 'ô', 'ö', 'õ', 'ō', 'ø',
-      'ú', 'ù', 'û', 'ü', 'ū', 'ý', 'ÿ',
-      // Symbols and punctuation
-      '©', '®', '™', '…', '–', '—', '\u2018', '\u2019', '\u201C', '\u201D',
-      '°', '±', '×', '÷', '≠', '≤', '≥', '∞', '√', '∑',
-      '♠', '♣', '♥', '♦', '★', '☆', '✓', '✗', '•', '‣',
-      // Greek letters
-      'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ',
-      'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω',
-      'Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ',
-      'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω',
-      // Cyrillic letters (common ones)
-      'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М',
-      'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
-      'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м',
-      'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
-      // CJK samples
-      '中', '文', '한', '글', '日', '本', '語', '漢', '字',
-      // Arabic samples
-      'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'
-    ]
-    
-    // Wrap these characters with a special class for potential fallback styling
-    potentialFallbackChars.forEach(char => {
-      if (text.includes(char)) {
-        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
-        highlightedText = highlightedText.replace(
-          regex,
-          `<span class="fallback-char" style="color: var(--gray-text-tert); opacity: 0.7;" title="May use fallback font">${char}</span>`
-        )
-      }
-    })
-    
-    return highlightedText
+    // Return text unchanged - special symbols should display in their natural color
+    // This prevents incorrectly graying out symbols like €£¥©®™ that may exist in the font
+    return text
   }
 
   const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
@@ -773,23 +728,6 @@ export default function FontLibrary() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          {/* Footer moved above content with 50vh height and bottom align */}
-          <div 
-            className="flex items-end justify-center px-6"
-            style={{ height: "50vh" }}
-          >
-            <div className="text-center py-8">
-              <div className="flex justify-center items-center gap-8">
-                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-                  © Baseline, 2025
-                </span>
-                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-                  Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
-                </span>
-              </div>
-            </div>
-          </div>
-
           <div
             className="sticky top-0 z-10 px-6 py-3 flex justify-between items-center"
             style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
@@ -1079,6 +1017,21 @@ export default function FontLibrary() {
             )}
           </div>
         </main>
+
+        {/* Footer properly positioned at bottom */}
+        <footer 
+          className="flex items-center justify-center px-6 py-8"
+          style={{ borderTop: "1px solid var(--gray-brd-prim)" }}
+        >
+          <div className="flex justify-center items-center gap-8">
+            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+              © Baseline, 2025
+            </span>
+            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+              Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
+            </span>
+          </div>
+        </footer>
 
       </div>
     </div>
