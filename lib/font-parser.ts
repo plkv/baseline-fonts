@@ -94,10 +94,12 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const combinedStr = `${styleStr} ${familyStr}`
     
     if (combinedStr.includes('thin') || combinedStr.includes('ultralight')) weight = 100
-    else if (combinedStr.includes('extralight') || combinedStr.includes('light')) weight = 300  
+    else if (combinedStr.includes('extralight')) weight = 200
+    else if (combinedStr.includes('light')) weight = 300  
     else if (combinedStr.includes('medium')) weight = 500
     else if (combinedStr.includes('semibold') || combinedStr.includes('semi') || combinedStr.includes('demi')) weight = 600
-    else if (combinedStr.includes('extrabold') || combinedStr.includes('bold')) weight = 700
+    else if (combinedStr.includes('extrabold')) weight = 800
+    else if (combinedStr.includes('bold')) weight = 700
     else if (combinedStr.includes('black') || combinedStr.includes('heavy')) weight = 900
     
     // Check if variable font (basic detection)
