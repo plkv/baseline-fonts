@@ -130,6 +130,7 @@ export default function FontLibrary() {
             const italicFonts = familyFonts.filter(f => f.style?.toLowerCase().includes('italic'))
             const hasItalic = italicFonts.length > 0
             const isVariable = familyFonts.some(f => f.isVariable)
+            console.log(`Family ${familyName}:`, { isVariable, fontCount: familyFonts.length, individualIsVariable: familyFonts.map(f => f.isVariable) })
             
             // Calculate available weights differently for variable vs static fonts
             let availableWeights
@@ -159,6 +160,9 @@ export default function FontLibrary() {
               availableWeights = regularWeights.length > 0 ? [...new Set(regularWeights)].sort((a, b) => a - b) : allWeights
             }
             
+            const finalType = isVariable ? "Variable" : "Static"
+            console.log(`Final type for ${familyName}:`, finalType)
+            
             return {
               id: index + 1,
               name: familyName,
@@ -166,7 +170,7 @@ export default function FontLibrary() {
               style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
               category: representativeFont.category || "Sans",
               styles: familyFonts.length,
-              type: isVariable ? "Variable" : "Static",
+              type: finalType,
               author: representativeFont.foundry || "Unknown",
               fontFamily: `"${familyName}", system-ui, sans-serif`,
               availableWeights: availableWeights,
