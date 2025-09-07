@@ -99,7 +99,7 @@ export default function CleanAdmin() {
   const [addingStyleFor, setAddingStyleFor] = useState<string>('')
   const [sortBy, setSortBy] = useState<'new' | 'a-z'>('new')
   const [filterCollection, setFilterCollection] = useState<'all' | 'Text' | 'Display' | 'Weirdo'>('all')
-  const [expandedFonts, setExpandedFonts] = useState<Set<string>>(new Set())
+  const [expandedFamilies, setExpandedFamilies] = useState<Set<string>>(new Set())
   const [editingFont, setEditingFont] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     family: '',
@@ -487,17 +487,44 @@ export default function CleanAdmin() {
     return Array.from(allTags).sort()
   }
 
-  // Filter and sort fonts
-  const filteredAndSortedFonts = [...fonts]
-    .filter(font => {
+  // Group fonts by family name
+  const groupFontsByFamily = (fonts: Font[]) => {
+    const familyMap = new Map<string, Font[]>()
+    
+    fonts.forEach(font => {
+      const familyName = font.family
+      if (!familyMap.has(familyName)) {
+        familyMap.set(familyName, [])
+      }
+      familyMap.get(familyName)!.push(font)
+    })
+    
+    // Convert to array of family groups
+    return Array.from(familyMap.entries()).map(([familyName, familyFonts]) => ({
+      familyName,
+      fonts: familyFonts.sort((a, b) => {
+        // Sort styles within family
+        if (a.weight !== b.weight) return a.weight - b.weight
+        return a.style.localeCompare(b.style)
+      }),
+      // Use the first font for family-level metadata
+      representativeFont: familyFonts[0],
+      totalSize: familyFonts.reduce((sum, f) => sum + f.fileSize, 0),
+      uploadedAt: Math.max(...familyFonts.map(f => new Date(f.uploadedAt).getTime()))
+    }))
+  }
+  
+  // Filter and sort font families
+  const filteredAndSortedFamilies = groupFontsByFamily(fonts)
+    .filter(family => {
       if (filterCollection === 'all') return true
-      return (font.collection || 'Text') === filterCollection
+      return (family.representativeFont.collection || 'Text') === filterCollection
     })
     .sort((a, b) => {
       if (sortBy === 'new') {
-        return new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+        return b.uploadedAt - a.uploadedAt
       } else {
-        return a.family.localeCompare(b.family)
+        return a.familyName.localeCompare(b.familyName)
       }
     })
     
@@ -576,7 +603,7 @@ export default function CleanAdmin() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">
-              Font Collection ({filteredAndSortedFonts.length}/{fonts.length})
+              Font Families ({filteredAndSortedFamilies.length} families, {fonts.length} total fonts)
             </h2>
             <div className="flex gap-2">
               <Button
@@ -644,44 +671,48 @@ export default function CleanAdmin() {
             <div className="text-center py-8 text-muted-foreground">No fonts uploaded yet</div>
           ) : (
             <div className="space-y-1">
-              {filteredAndSortedFonts.map((font) => {
-                const isExpanded = expandedFonts.has(font.id)
-                const isEditing = editingFont === font.id
+              {filteredAndSortedFamilies.map((family) => {
+                const isExpanded = expandedFamilies.has(family.familyName)
+                const representativeFont = family.representativeFont
+                const firstFont = family.fonts[0]
+                const isEditing = family.fonts.some(font => editingFont === font.id)
 
                 return (
-                  <Card key={font.id} className="transition-all border border-border">
+                  <Card key={family.familyName} className="transition-all border border-border">
                     {/* Compact Header */}
                     <div 
                       className="flex items-center justify-between p-2 cursor-pointer ds-hover-fill-1"
                       onClick={() => {
-                        const newExpanded = new Set(expandedFonts)
+                        const newExpanded = new Set(expandedFamilies)
                         if (isExpanded) {
-                          newExpanded.delete(font.id)
+                          newExpanded.delete(family.familyName)
                         } else {
-                          newExpanded.add(font.id)
+                          newExpanded.add(family.familyName)
                         }
-                        setExpandedFonts(newExpanded)
+                        setExpandedFamilies(newExpanded)
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={selectedFamilies.has(font.family)}
+                          checked={selectedFamilies.has(family.familyName)}
                           onChange={(e) => {
                             e.stopPropagation()
-                            toggleFamilySelection(font.family)
+                            toggleFamilySelection(family.familyName)
                           }}
                           className="w-4 h-4"
                         />
                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         <div>
-                          <h3 className="text-sm font-medium">{font.family}</h3>
+                          <h3 className="text-sm font-medium">{family.familyName}</h3>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{new Date(font.uploadedAt).toLocaleDateString()}</span>
+                            <span>{new Date(family.uploadedAt).toLocaleDateString()}</span>
                             <span>•</span>
-                            <span>{Math.round(font.fileSize / 1024)}KB</span>
+                            <span>{family.fonts.length} style{family.fonts.length !== 1 ? 's' : ''}</span>
                             <span>•</span>
-                            <span>{font.format.toUpperCase()}</span>
+                            <span>{Math.round(family.totalSize / 1024)}KB</span>
+                            <span>•</span>
+                            <span>{representativeFont.format.toUpperCase()}</span>
                           </div>
                         </div>
                       </div>
@@ -692,7 +723,7 @@ export default function CleanAdmin() {
                           className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
                           onClick={(e) => {
                             e.stopPropagation()
-                            quickAddStyle(font.family)
+                            quickAddStyle(family.familyName)
                           }}
                           disabled={addingStyle}
                           title="Add style to family"
@@ -705,8 +736,9 @@ export default function CleanAdmin() {
                           className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
-                            startEdit(font)
+                            startEdit(firstFont)
                           }}
+                          title="Edit family metadata"
                         >
                           <Edit3 className="w-3 h-3" />
                         </Button>
@@ -716,8 +748,12 @@ export default function CleanAdmin() {
                           className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
                           onClick={(e) => {
                             e.stopPropagation()
-                            deleteFont(font.id)
+                            // Delete entire family - we'll implement this
+                            if (confirm(`Delete entire "${family.familyName}" family with ${family.fonts.length} fonts?`)) {
+                              family.fonts.forEach(font => deleteFont(font.id))
+                            }
                           }}
+                          title="Delete entire family"
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
