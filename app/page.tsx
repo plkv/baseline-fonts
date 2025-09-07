@@ -683,6 +683,7 @@ export default function FontLibrary() {
                             >
                               {(() => {
                                 const options = []
+                                console.log(`Dropdown for ${font.name}:`, { type: font.type, hasFamilyFonts: !!font._familyFonts, familyFonts: font._familyFonts })
                                 
                                 if (font.type === "Variable" && font._familyFonts) {
                                   // For variable fonts, create weight x style combinations
@@ -710,6 +711,7 @@ export default function FontLibrary() {
                                     })
                                   }
                                 } else if (font._familyFonts) {
+                                  console.log(`Static font branch for ${font.name}:`, font._familyFonts)
                                   // For static fonts, show actual style names from metadata
                                   for (const familyFont of font._familyFonts) {
                                     const weight = familyFont.weight || 400
@@ -718,6 +720,7 @@ export default function FontLibrary() {
                                     
                                     // Use the actual style name from the font metadata
                                     const displayName = styleName
+                                    console.log(`Creating option for ${font.name}:`, { familyFont, styleName, displayName })
                                     
                                     options.push(
                                       <option key={`${familyFont.id}`} value={`${weight}-${isItalic}`}>
