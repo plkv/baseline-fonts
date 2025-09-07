@@ -92,7 +92,6 @@ export default function CleanAdmin() {
   const [families, setFamilies] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [merging, setMerging] = useState(false)
-  const [showMergeDialog, setShowMergeDialog] = useState(false)
   const [selectedFamilies, setSelectedFamilies] = useState<Set<string>>(new Set())
   const [targetFamilyName, setTargetFamilyName] = useState('')
   const [loading, setLoading] = useState(true)
@@ -600,14 +599,25 @@ export default function CleanAdmin() {
               >
                 A-Z
               </Button>
+              
+              {selectedFamilies.size > 0 && (
+                <input
+                  type="text"
+                  value={targetFamilyName}
+                  onChange={(e) => setTargetFamilyName(e.target.value)}
+                  placeholder="Target family name (e.g. 'DatDot')"
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+              
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowMergeDialog(true)}
-                disabled={merging}
+                onClick={mergeSelectedFamilies}
+                disabled={merging || selectedFamilies.size < 2 || !targetFamilyName.trim()}
                 className="text-orange-600 border-orange-300 hover:bg-orange-50"
               >
-                {merging ? 'Merging...' : 'Merge Families'}
+                {merging ? 'Merging...' : `Merge ${selectedFamilies.size} Selected`}
               </Button>
             </div>
           </div>
@@ -660,6 +670,15 @@ export default function CleanAdmin() {
                       }}
                     >
                       <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedFamilies.has(font.family)}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            toggleFamilySelection(font.family)
+                          }}
+                          className="w-4 h-4"
+                        />
                         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
                         <div>
                           <h3 className="text-sm font-medium">{font.family}</h3>
@@ -1069,89 +1088,6 @@ export default function CleanAdmin() {
         </div>
       </div>
       
-      {/* Merge Families Dialog */}
-      {showMergeDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
-              Merge Font Families
-            </h2>
-            
-            <p className="text-gray-600 mb-4">
-              Select which families you want to merge together, then specify the target family name.
-            </p>
-            
-            {/* Target Family Name Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
-                Target Family Name:
-              </label>
-              <input
-                type="text"
-                value={targetFamilyName}
-                onChange={(e) => setTargetFamilyName(e.target.value)}
-                placeholder="Enter the final family name (e.g., 'DatDot')"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            {/* Family Selection */}
-            <div className="space-y-2 mb-6 max-h-96 overflow-y-auto">
-              <div className="text-sm font-medium mb-2">
-                Select families to merge ({selectedFamilies.size} selected):
-              </div>
-              {families.map(familyName => {
-                const familyFonts = fonts.filter(f => f.family === familyName)
-                return (
-                  <label key={familyName} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      checked={selectedFamilies.has(familyName)}
-                      onChange={() => toggleFamilySelection(familyName)}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{familyName}</div>
-                      <div className="text-sm text-gray-500">
-                        {familyFonts.length} font{familyFonts.length !== 1 ? 's' : ''} • 
-                        {familyFonts.map(f => f.style).join(', ')}
-                      </div>
-                    </div>
-                  </label>
-                )
-              })}
-            </div>
-            
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowMergeDialog(false)
-                  setSelectedFamilies(new Set())
-                  setTargetFamilyName('')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => setSelectedFamilies(new Set(families))}
-                variant="outline"
-                className="text-blue-600"
-                disabled={families.length === 0}
-              >
-                Select All
-              </Button>
-              <Button
-                onClick={mergeSelectedFamilies}
-                disabled={merging || selectedFamilies.size < 2 || !targetFamilyName.trim()}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                {merging ? 'Merging...' : `Merge ${selectedFamilies.size} Families`}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
       
       <Toaster />
     </div>
