@@ -27,11 +27,12 @@ interface FontData {
   }>
   openTypeFeatures?: string[]
   _familyFonts?: any[] // Store original font data for style selection
+  collection: 'Text' | 'Display' | 'Weirdo'
+  styleTags: string[]
+  categories: string[]
 }
 
 const textPresets = ["Names", "Key Glyphs", "Basic", "Paragraph", "Brands"]
-const fontCategories = ["Sans", "Serif", "Display", "Mono", "Pixel", "Script", "Variables"]
-const styles = ["Neutral", "Experimental", "Display", "Mono", "Pixel", "Script", "Variables"]
 const languages = ["Latin", "Cyrillic", "Georgian"]
 const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
@@ -186,7 +187,11 @@ export default function FontLibrary() {
               variableAxes: representativeFont.variableAxes,
               openTypeFeatures: representativeFont.openTypeFeatures,
               // Store family fonts data for style selection
-              _familyFonts: familyFonts
+              _familyFonts: familyFonts,
+              // Add collection and style tags for filtering
+              collection: representativeFont.collection || 'Text',
+              styleTags: representativeFont.styleTags || [],
+              categories: Array.isArray(representativeFont.category) ? representativeFont.category : [representativeFont.category || "Sans"]
             }
           })
           setFonts(catalogFonts)
@@ -291,6 +296,28 @@ export default function FontLibrary() {
 
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
+      // Filter by collection (displayMode)
+      if (displayMode !== "Text" && font.collection !== displayMode) {
+        return false
+      }
+      
+      // Filter by selected categories
+      if (selectedCategories.length > 0) {
+        const hasMatchingCategory = selectedCategories.some(cat => 
+          font.categories.includes(cat)
+        )
+        if (!hasMatchingCategory) return false
+      }
+      
+      // Filter by selected style tags (appearance)
+      if (selectedStyles.length > 0) {
+        const hasMatchingStyle = selectedStyles.some(style => 
+          font.styleTags.includes(style)
+        )
+        if (!hasMatchingStyle) return false
+      }
+      
+      // Filter by weights and italic (existing logic)
       if (selectedWeights.length === 0 && !isItalic) return true
 
       if (selectedWeights.length === 0 && isItalic) {
@@ -349,6 +376,25 @@ export default function FontLibrary() {
       return customText
     }
     return getPresetContent(selectedPreset, fontName)
+  }
+
+  // Get all available style tags from loaded fonts
+  const getAvailableStyleTags = () => {
+    const allTags = new Set<string>()
+    fonts.forEach(font => {
+      font.styleTags.forEach(tag => allTags.add(tag))
+    })
+    return Array.from(allTags).sort()
+  }
+
+  // Get dynamic categories based on selected collection
+  const getCollectionCategories = () => {
+    const categoryOptions = {
+      Text: ['Sans', 'Serif', 'Slab', 'Mono'],
+      Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
+      Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
+    }
+    return categoryOptions[displayMode] || categoryOptions.Text
   }
 
   // Simple approach: Just detect fallback characters and color them grey
@@ -582,7 +628,7 @@ export default function FontLibrary() {
               <div>
                 <h3 className="text-sidebar-title mb-3">Font categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {fontCategories.map((category) => (
+                  {getCollectionCategories().map((category) => (
                     <button
                       key={category}
                       onClick={() => toggleCategory(category)}
@@ -597,7 +643,7 @@ export default function FontLibrary() {
               <div>
                 <h3 className="text-sidebar-title mb-3">Appearance</h3>
                 <div className="flex flex-wrap gap-2">
-                  {styles.map((style) => (
+                  {getAvailableStyleTags().length > 0 ? getAvailableStyleTags().map((style) => (
                     <button
                       key={style}
                       onClick={() => toggleStyle(style)}
@@ -605,7 +651,11 @@ export default function FontLibrary() {
                     >
                       {style}
                     </button>
-                  ))}
+                  )) : (
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                      No style tags available
+                    </span>
+                  )}
                 </div>
               </div>
 
