@@ -39,7 +39,7 @@ interface FontData {
 }
 
 const textPresets = ["Names", "Key Glyphs", "Basic", "Paragraph", "Brands"]
-const languages = ["Latin", "Cyrillic", "Georgian"]
+// Languages will be dynamically generated from current collection
 const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
 const getPresetContent = (preset: string, fontName: string) => {
@@ -489,6 +489,30 @@ export default function FontLibrary() {
     return [...orderedCategories, ...remainingCategories]
   }
 
+  const getCollectionLanguages = () => {
+    // Get all languages from fonts in the current collection
+    const actualLanguages = new Set<string>()
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode && font.languages) {
+        font.languages.forEach(language => actualLanguages.add(language))
+      }
+    })
+    
+    // Define preferred order for common languages
+    const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
+    
+    // Return languages in preferred order, but only those that actually exist
+    const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
+    
+    // Add any remaining languages that exist but aren't in the preferred order
+    const remainingLanguages = Array.from(actualLanguages)
+      .filter(lang => !languageOrder.includes(lang))
+      .sort()
+    
+    return [...orderedLanguages, ...remainingLanguages]
+  }
+
   // Helper function to convert weight number to style name
   const getStyleNameFromWeight = (weight: number, isItalic: boolean): string => {
     let styleName = 'Regular'
@@ -514,6 +538,7 @@ export default function FontLibrary() {
     // Get what categories and styles would be available in the new collection
     const newCollectionCategories = new Set<string>()
     const newCollectionStyles = new Set<string>()
+    const newCollectionLanguages = new Set<string>()
     
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
@@ -522,6 +547,9 @@ export default function FontLibrary() {
           font.categories.forEach(category => newCollectionCategories.add(category))
         }
         font.styleTags.forEach(tag => newCollectionStyles.add(tag))
+        if (font.languages) {
+          font.languages.forEach(language => newCollectionLanguages.add(language))
+        }
       }
     })
     
@@ -535,6 +563,12 @@ export default function FontLibrary() {
     const validSelectedStyles = selectedStyles.filter(style => newCollectionStyles.has(style))
     if (validSelectedStyles.length !== selectedStyles.length) {
       setSelectedStyles(validSelectedStyles)
+    }
+
+    // Remove selected languages that don't exist in new collection
+    const validSelectedLanguages = selectedLanguages.filter(lang => newCollectionLanguages.has(lang))
+    if (validSelectedLanguages.length !== selectedLanguages.length) {
+      setSelectedLanguages(validSelectedLanguages)
     }
   }
 
@@ -904,7 +938,7 @@ export default function FontLibrary() {
               <div>
                 <h3 className="text-sidebar-title mb-3">Language support</h3>
                 <div className="flex flex-wrap gap-2">
-                  {languages.map((language) => (
+                  {getCollectionLanguages().map((language) => (
                     <button
                       key={language}
                       onClick={() =>
@@ -1097,7 +1131,10 @@ export default function FontLibrary() {
                                 console.log(`Dropdown change for font ${font.id} (${font.name}): ${weight}-${italic}`);
                                 updateFontSelection(font.id, Number.parseInt(weight), italic === "true")
                               }}
-                              className="dropdown-select text-sidebar-title pr-8 appearance-none"
+                              disabled={font._availableStyles && font._availableStyles.length <= 1}
+                              className={`dropdown-select text-sidebar-title pr-8 appearance-none ${
+                                font._availableStyles && font._availableStyles.length <= 1 ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                             >
                               {font._availableStyles?.map((style, index) => (
                                 <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}-${style.isItalic}`}>
