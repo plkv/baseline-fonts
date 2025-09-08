@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
       { family: 'N27', targetCollection: 'Display' as const },
       // DatDot should be Display (has display characteristics)
       { family: 'DatDot', targetCollection: 'Display' as const },
+      // RT Obligat has distinctive design, better as Display
+      { family: 'RT Obligat', targetCollection: 'Display' as const },
     ]
     
     const results: any[] = []
@@ -30,8 +32,12 @@ export async function POST(request: NextRequest) {
       
       // Update all fonts in family to target collection
       const updates: any[] = []
+      console.log(`Found ${familyFonts.length} fonts for family ${correction.family}`)
+      
       for (const font of familyFonts) {
+        console.log(`  Font ${font.style}: current collection = ${font.collection}`)
         if (font.collection !== correction.targetCollection) {
+          console.log(`  Updating ${font.style} from ${font.collection} to ${correction.targetCollection}`)
           const success = await fontStorageClean.updateFont(font.id, {
             collection: correction.targetCollection
           })
@@ -49,6 +55,8 @@ export async function POST(request: NextRequest) {
           } else {
             console.log(`  ❌ Failed to update ${font.style}`)
           }
+        } else {
+          console.log(`  ${font.style} already in correct collection: ${font.collection}`)
         }
       }
       
