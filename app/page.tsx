@@ -327,6 +327,7 @@ export default function FontLibrary() {
   }
 
   const updateFontSelection = (fontId: number, weight: number, italic: boolean) => {
+    console.log(`Updating font selection for ${fontId}: weight=${weight}, italic=${italic}`);
     setFontWeightSelections((prev) => ({
       ...prev,
       [fontId]: { weight, italic },
@@ -683,21 +684,25 @@ export default function FontLibrary() {
 
     // If sidebar has weight/italic selections, use those for preview
     if (selectedWeights.length > 0 || isItalic) {
-      return {
+      const result = {
         weight: selectedWeights.length > 0 ? selectedWeights[0] : variableAxes.wght || fontSelection.weight,
         italic: isItalic || fontSelection.italic,
         variableAxes,
         otFeatures,
       }
+      console.log(`Effective style (global) for font ${fontId}:`, result);
+      return result;
     }
 
     // Otherwise use individual font selection
-    return {
+    const result = {
       weight: variableAxes.wght || fontSelection.weight,
       italic: fontSelection.italic,
       variableAxes,
       otFeatures,
     }
+    console.log(`Effective style (individual) for font ${fontId}:`, result);
+    return result;
   }
 
   const getFontFeatureSettings = (otFeatures: Record<string, boolean>) => {
@@ -751,12 +756,14 @@ export default function FontLibrary() {
               return font._familyFonts.map((fontFile: any) => {
                 const weightRange = fontFile.variableAxes?.find((axis: any) => axis.axis === 'wght');
                 const weightValue = weightRange ? `${weightRange.min} ${weightRange.max}` : '100 900';
+                const isItalic = fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique');
+                console.log(`Variable CSS for ${familyName} ${fontFile.style}: weight=${weightValue}, italic=${isItalic}, file=${fontFile.blobUrl || fontFile.url}`);
                 return `
                 @font-face {
                   font-family: "${familyName}";
                   src: url("${fontFile.blobUrl || fontFile.url}");
                   font-weight: ${weightValue};
-                  font-style: ${fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
+                  font-style: ${isItalic ? 'italic' : 'normal'};
                   font-display: swap;
                 }
               `}).join('')
@@ -1087,6 +1094,7 @@ export default function FontLibrary() {
                               value={`${fontSelection.weight}-${fontSelection.italic}`}
                               onChange={(e) => {
                                 const [weight, italic] = e.target.value.split("-")
+                                console.log(`Dropdown change for font ${font.id} (${font.name}): ${weight}-${italic}`);
                                 updateFontSelection(font.id, Number.parseInt(weight), italic === "true")
                               }}
                               className="dropdown-select text-sidebar-title pr-8 appearance-none"
