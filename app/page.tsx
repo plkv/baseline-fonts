@@ -1394,28 +1394,27 @@ export default function FontLibrary() {
               )
             })
             )}
+            
+            {/* Footer at end of catalog */}
+            <footer 
+              className="flex items-center justify-center px-6 py-8 mt-12"
+              style={{ 
+                borderTop: "1px solid var(--gray-brd-prim)" 
+              }}
+            >
+              <div className="flex justify-center items-center gap-8">
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                  © Baseline, 2025
+                </span>
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                  Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
+                </span>
+              </div>
+            </footer>
           </div>
         </main>
 
       </div>
-      
-      {/* Sticky footer at bottom of viewport */}
-      <footer 
-        className="fixed bottom-0 left-0 right-0 flex items-center justify-center px-6 py-4 z-10"
-        style={{ 
-          backgroundColor: "var(--gray-surface-prim)", 
-          borderTop: "1px solid var(--gray-brd-prim)" 
-        }}
-      >
-        <div className="flex justify-center items-center gap-8">
-          <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-            © Baseline, 2025
-          </span>
-          <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-            Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
-          </span>
-        </div>
-      </footer>
     </div>
   )
 }

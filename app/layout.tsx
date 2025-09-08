@@ -23,9 +23,43 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Font Library",
-  description: "A modern font showcase and typography library",
-    generator: 'v0.app'
+  title: "Baseline Fonts",
+  description: "A curated collection of high-quality typefaces for modern design",
+  generator: 'v0.app',
+  openGraph: {
+    title: "Baseline Fonts",
+    description: "A curated collection of high-quality typefaces for modern design",
+    url: "https://baseline-fonts.vercel.app",
+    siteName: "Baseline Fonts",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Baseline Fonts - Typography Collection",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Baseline Fonts",
+    description: "A curated collection of high-quality typefaces for modern design",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: [
+      {
+        url: "/favicon-light.png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/favicon-dark.png", 
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 }
 
 export default function RootLayout({
