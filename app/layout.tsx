@@ -23,20 +23,20 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Baseline Fonts",
-  description: "A curated collection of high-quality typefaces for modern design",
+  title: "typedump",
+  description: "Preselected free font collections curated by pro community",
   generator: 'v0.app',
   openGraph: {
-    title: "Baseline Fonts",
-    description: "A curated collection of high-quality typefaces for modern design",
+    title: "typedump",
+    description: "Preselected free font collections curated by pro community",
     url: "https://baseline-fonts.vercel.app",
-    siteName: "Baseline Fonts",
+    siteName: "typedump",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Baseline Fonts - Typography Collection",
+        alt: "typedump - Preselected free font collections",
       },
     ],
     locale: "en_US",
@@ -44,8 +44,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Baseline Fonts",
-    description: "A curated collection of high-quality typefaces for modern design",
+    title: "typedump",
+    description: "Preselected free font collections curated by pro community",
     images: ["/og-image.png"],
   },
   icons: {

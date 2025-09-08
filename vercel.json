@@ -7,6 +7,6 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_VERSION": "0.081"
+    "NEXT_PUBLIC_VERSION": "0.082"
   }
 }
