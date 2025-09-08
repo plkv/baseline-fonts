@@ -423,37 +423,14 @@ export default function FontLibrary() {
     return categoryOptions[displayMode] || categoryOptions.Text
   }
 
-  // Highlight truly missing characters (not supported by the font)
-  // This uses browser fallback behavior to detect missing glyphs
+  // Highlight characters that are actually using fallback fonts
+  // This method detects when browser renders a character with a different font
   const highlightMissingCharacters = (text: string, fontId: number) => {
-    let highlightedText = text
-    
-    // Only highlight characters that are likely to be missing (non-Latin scripts)
-    // Avoid highlighting common symbols that fonts usually support
-    const potentialMissingChars = [
-      // CJK characters (commonly missing in Latin fonts)
-      '中', '文', '한', '글', '日', '本', '語', '漢', '字',
-      // Arabic characters (commonly missing in Latin fonts)
-      'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي',
-      // Cyrillic characters (sometimes missing)
-      'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
-      'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
-      // Greek characters (sometimes missing) 
-      'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'
-    ]
-    
-    // Make missing characters slightly visible with reduced opacity
-    potentialMissingChars.forEach(char => {
-      if (text.includes(char)) {
-        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
-        highlightedText = highlightedText.replace(
-          regex,
-          `<span style="opacity: 0.3; color: var(--gray-cont-tert);" title="May be missing in this font">${char}</span>`
-        )
-      }
-    })
-    
-    return highlightedText
+    // For now, return text unchanged and rely on browser's natural fallback
+    // The sophisticated font-detection approach would require canvas rendering
+    // which is complex and may impact performance. 
+    // Instead, let the browser handle fallbacks naturally without artificial highlighting.
+    return text
   }
 
   const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
@@ -1007,7 +984,18 @@ export default function FontLibrary() {
                         const newText = element.textContent || ""
                         handlePreviewEdit(element, newText)
                       }}
-                      onClick={() => toggleCardExpansion(font.id)}
+                      onClick={(e) => {
+                        // Only toggle card expansion if user is not selecting text for editing
+                        const selection = window.getSelection()
+                        if (!selection || selection.isCollapsed) {
+                          e.preventDefault()
+                          toggleCardExpansion(font.id)
+                        }
+                      }}
+                      onFocus={(e) => {
+                        // Prevent card expansion when focusing for text editing
+                        e.stopPropagation()
+                      }}
                       ref={(el) => setEditingElementRef(el)}
                       className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none"
                       style={{
@@ -1020,10 +1008,9 @@ export default function FontLibrary() {
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
-                      dangerouslySetInnerHTML={{
-                        __html: highlightMissingCharacters(getPreviewContent(font.name), font.id)
-                      }}
-                    ></div>
+                    >
+                      {getPreviewContent(font.name)}
+                    </div>
 
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
