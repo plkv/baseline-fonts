@@ -308,8 +308,8 @@ export default function FontLibrary() {
 
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
-      // Filter by collection (displayMode)
-      if (displayMode !== "Text" && font.collection !== displayMode) {
+      // Filter by collection (displayMode) - each tab should only show fonts from that collection
+      if (font.collection !== displayMode) {
         return false
       }
       
@@ -770,7 +770,7 @@ export default function FontLibrary() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-16">
           <div
             className="sticky top-0 z-10 px-6 py-3 flex justify-between items-center"
             style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
@@ -1082,22 +1082,25 @@ export default function FontLibrary() {
           </div>
         </main>
 
-        {/* Footer properly positioned at bottom */}
-        <footer 
-          className="flex items-center justify-center px-6 py-8"
-          style={{ borderTop: "1px solid var(--gray-brd-prim)" }}
-        >
-          <div className="flex justify-center items-center gap-8">
-            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-              © Baseline, 2025
-            </span>
-            <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-              Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
-            </span>
-          </div>
-        </footer>
-
       </div>
+      
+      {/* Sticky footer at bottom of viewport */}
+      <footer 
+        className="fixed bottom-0 left-0 right-0 flex items-center justify-center px-6 py-4 z-10"
+        style={{ 
+          backgroundColor: "var(--gray-surface-prim)", 
+          borderTop: "1px solid var(--gray-brd-prim)" 
+        }}
+      >
+        <div className="flex justify-center items-center gap-8">
+          <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+            © Baseline, 2025
+          </span>
+          <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+            Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
+          </span>
+        </div>
+      </footer>
     </div>
   )
 }
