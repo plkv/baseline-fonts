@@ -26,6 +26,7 @@ export const metadata: Metadata = {
   title: "typedump",
   description: "Preselected free font collections curated by pro community",
   generator: 'v0.app',
+  metadataBase: new URL('https://baseline-fonts.vercel.app'),
   openGraph: {
     title: "typedump",
     description: "Preselected free font collections curated by pro community",
@@ -33,11 +34,11 @@ export const metadata: Metadata = {
     siteName: "typedump",
     images: [
       {
-        url: "https://baseline-fonts.vercel.app/og-image.svg",
+        url: "/og-image.webp",
         width: 1200,
         height: 630,
         alt: "typedump - Preselected free font collections",
-        type: "image/svg+xml",
+        type: "image/webp",
       },
     ],
     locale: "en_US",
@@ -47,10 +48,14 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "typedump",
     description: "Preselected free font collections curated by pro community",
-    images: ["https://baseline-fonts.vercel.app/og-image.svg"],
+    images: ["/og-image.webp"],
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon-light.png", media: "(prefers-color-scheme: light)" },
+      { url: "/favicon-dark.png", media: "(prefers-color-scheme: dark)" },
+    ],
     apple: "/apple-touch-icon.png",
   },
 }
