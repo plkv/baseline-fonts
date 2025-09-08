@@ -74,8 +74,15 @@ const getPresetContent = (preset: string, fontName: string) => {
 
 export default function FontLibrary() {
   const pathname = usePathname()
-  // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // UI State - initialize based on window size to prevent flash
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.innerWidth >= 768
+  })
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth < 768
+  })
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
   // Font Data State  
@@ -294,6 +301,23 @@ export default function FontLibrary() {
       document.head.appendChild(styleElement)
     }
   }, [])
+
+  // Handle resize events
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      // Auto-hide sidebar on mobile, auto-show on desktop
+      if (mobile && sidebarOpen) {
+        setSidebarOpen(false)
+      } else if (!mobile && !sidebarOpen) {
+        setSidebarOpen(true)
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [sidebarOpen])
 
   // Helper function to get stylistic alternates from font's OpenType features
   const getStyleAlternates = (fontId: number) => {
@@ -1003,10 +1027,17 @@ export default function FontLibrary() {
           }).join('')}
         `
       }} />
+      {sidebarOpen && isMobile && (
+        <div className="fixed inset-0 z-20" onClick={() => setSidebarOpen(false)} style={{ backgroundColor: 'rgba(0,0,0,0.3)' }} />
+      )}
       {sidebarOpen && (
         <aside
-          className="w-[280px] flex-shrink-0 flex flex-col h-full"
-          style={{ backgroundColor: "var(--gray-surface-prim)", borderRight: "1px solid var(--gray-brd-prim)" }}
+          className={`w-[280px] flex-shrink-0 flex flex-col h-full ${isMobile ? 'fixed inset-y-0 left-0 z-30 shadow-lg' : ''}`}
+          style={{ 
+            backgroundColor: "var(--gray-surface-prim)", 
+            borderRight: "1px solid var(--gray-brd-prim)",
+            ...(isMobile ? { width: 'min(90vw, 100%)' } : {})
+          }}
         >
           <div
             className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"

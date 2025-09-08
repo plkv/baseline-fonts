@@ -1,9 +1,24 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
 
 export default function AboutPage() {
   const pathname = usePathname()
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.innerWidth < 768
+  })
+  
+  // Handle resize events
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
       <div className="flex-1 flex flex-col h-full overflow-hidden">
