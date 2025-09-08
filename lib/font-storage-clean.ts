@@ -224,7 +224,8 @@ class FontStorageClean {
   async updateFont(id: string, updates: Partial<Pick<FontMetadata, 
     'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
     'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId' |
-    'version' | 'copyright' | 'license' | 'creationDate' | 'modificationDate' | 'description'
+    'version' | 'copyright' | 'license' | 'creationDate' | 'modificationDate' | 'description' | 'openTypeFeatures' |
+    'style'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
