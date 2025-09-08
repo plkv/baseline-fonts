@@ -299,7 +299,7 @@ export default function FontLibrary() {
     if (!font?._familyFonts) return []
     
     // Get all OpenType features from family fonts and filter for stylistic alternates
-    const allFeatures = new Set<string>()
+    const allFeatures = new Map<string, string>()
     font._familyFonts.forEach(familyFont => {
       if (familyFont.openTypeFeatures) {
         familyFont.openTypeFeatures.forEach((feature: string) => {
@@ -307,23 +307,30 @@ export default function FontLibrary() {
           if (feature.toLowerCase().includes('stylistic set') || 
               feature.toLowerCase().includes('stylistic alternates') ||
               /^ss\d+$/.test(feature.toLowerCase())) {
-            // Convert readable names to OpenType tags
-            if (feature.toLowerCase().includes('stylistic set 1')) allFeatures.add('ss01')
-            else if (feature.toLowerCase().includes('stylistic set 2')) allFeatures.add('ss02')
-            else if (feature.toLowerCase().includes('stylistic set 3')) allFeatures.add('ss03')
-            else if (feature.toLowerCase().includes('stylistic set 4')) allFeatures.add('ss04')
-            else if (feature.toLowerCase().includes('stylistic set 5')) allFeatures.add('ss05')
-            else if (feature.toLowerCase().includes('stylistic set 6')) allFeatures.add('ss06')
-            else if (feature.toLowerCase().includes('stylistic set 7')) allFeatures.add('ss07')
-            else if (feature.toLowerCase().includes('stylistic set 8')) allFeatures.add('ss08')
-            else if (feature.toLowerCase().includes('stylistic alternates')) allFeatures.add('salt')
-            else if (/^ss\d+$/.test(feature.toLowerCase())) allFeatures.add(feature.toLowerCase())
+            // Convert readable names to OpenType tags while preserving descriptive names
+            let tag = ''
+            let title = feature
+            
+            if (feature.toLowerCase().includes('stylistic set 1')) tag = 'ss01'
+            else if (feature.toLowerCase().includes('stylistic set 2')) tag = 'ss02'
+            else if (feature.toLowerCase().includes('stylistic set 3')) tag = 'ss03'
+            else if (feature.toLowerCase().includes('stylistic set 4')) tag = 'ss04'
+            else if (feature.toLowerCase().includes('stylistic set 5')) tag = 'ss05'
+            else if (feature.toLowerCase().includes('stylistic set 6')) tag = 'ss06'
+            else if (feature.toLowerCase().includes('stylistic set 7')) tag = 'ss07'
+            else if (feature.toLowerCase().includes('stylistic set 8')) tag = 'ss08'
+            else if (feature.toLowerCase().includes('stylistic alternates')) tag = 'salt'
+            else if (/^ss\d+$/.test(feature.toLowerCase())) tag = feature.toLowerCase()
+            
+            if (tag) {
+              allFeatures.set(tag, title)
+            }
           }
         })
       }
     })
     
-    return Array.from(allFeatures).sort()
+    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
   }
 
   // Helper function to get other OpenType features (non-stylistic)
@@ -331,43 +338,43 @@ export default function FontLibrary() {
     const font = fonts.find((f) => f.id === fontId)
     if (!font?._familyFonts) return []
     
-    // Mapping from readable feature names to OpenType tags
-    const featureMapping: Record<string, string> = {
-      'standard ligatures': 'liga',
-      'discretionary ligatures': 'dlig',
-      'contextual ligatures': 'clig',
-      'kerning': 'kern',
-      'fractions': 'frac',
-      'ordinals': 'ordn',
-      'superscript': 'sups',
-      'subscript': 'subs',
-      'small capitals': 'smcp',
-      'all small caps': 'c2sc',
-      'case-sensitive forms': 'case',
-      'slashed zero': 'zero',
-      'tabular nums': 'tnum',
-      'proportional nums': 'pnum',
-      'lining figures': 'lnum',
-      'oldstyle figures': 'onum'
+    // Mapping from readable feature names to OpenType tags with descriptive titles
+    const featureMapping: Record<string, { tag: string; title: string }> = {
+      'standard ligatures': { tag: 'liga', title: 'Standard Ligatures' },
+      'discretionary ligatures': { tag: 'dlig', title: 'Discretionary Ligatures' },
+      'contextual ligatures': { tag: 'clig', title: 'Contextual Ligatures' },
+      'kerning': { tag: 'kern', title: 'Kerning' },
+      'fractions': { tag: 'frac', title: 'Fractions' },
+      'ordinals': { tag: 'ordn', title: 'Ordinals' },
+      'superscript': { tag: 'sups', title: 'Superscript' },
+      'subscript': { tag: 'subs', title: 'Subscript' },
+      'small capitals': { tag: 'smcp', title: 'Small Capitals' },
+      'all small caps': { tag: 'c2sc', title: 'All Small Caps' },
+      'case-sensitive forms': { tag: 'case', title: 'Case-Sensitive Forms' },
+      'slashed zero': { tag: 'zero', title: 'Slashed Zero' },
+      'tabular nums': { tag: 'tnum', title: 'Tabular Numbers' },
+      'proportional nums': { tag: 'pnum', title: 'Proportional Numbers' },
+      'lining figures': { tag: 'lnum', title: 'Lining Figures' },
+      'oldstyle figures': { tag: 'onum', title: 'Oldstyle Figures' }
     }
     
-    const allFeatures = new Set<string>()
+    const allFeatures = new Map<string, string>()
     font._familyFonts.forEach(familyFont => {
       if (familyFont.openTypeFeatures) {
         familyFont.openTypeFeatures.forEach((feature: string) => {
           const lowerFeature = feature.toLowerCase()
           // Skip stylistic features (handled separately)
           if (!lowerFeature.includes('stylistic')) {
-            const otTag = featureMapping[lowerFeature]
-            if (otTag) {
-              allFeatures.add(otTag)
+            const mapping = featureMapping[lowerFeature]
+            if (mapping) {
+              allFeatures.set(mapping.tag, mapping.title)
             }
           }
         })
       }
     })
     
-    return Array.from(allFeatures).sort()
+    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
   }
 
   const getVariableAxes = (fontId: number) => {
@@ -1314,11 +1321,12 @@ export default function FontLibrary() {
                             <div className="flex flex-wrap gap-2">
                               {getStyleAlternates(font.id).map((feature) => (
                                 <button
-                                  key={feature}
-                                  onClick={() => toggleOTFeature(font.id, feature)}
-                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
+                                  key={feature.tag}
+                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
+                                  title={feature.title}
                                 >
-                                  {feature}
+                                  {feature.title}
                                 </button>
                               ))}
                             </div>
@@ -1334,11 +1342,12 @@ export default function FontLibrary() {
                             <div className="flex flex-wrap gap-2">
                               {getOtherOTFeatures(font.id).map((feature) => (
                                 <button
-                                  key={feature}
-                                  onClick={() => toggleOTFeature(font.id, feature)}
-                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
+                                  key={feature.tag}
+                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
+                                  title={feature.title}
                                 >
-                                  {feature}
+                                  {feature.title}
                                 </button>
                               ))}
                             </div>
@@ -1351,28 +1360,39 @@ export default function FontLibrary() {
                             <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
                               Variable Axes
                             </div>
-                            <div className="flex flex-col md:flex-row md:gap-4 gap-3 max-w-[280px]">
-                              {getVariableAxes(font.id).map((axis) => (
-                                <div key={axis.tag} className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sidebar-title flex-shrink-0">{axis.name}</span>
-                                    <Slider
-                                      value={[fontVariableAxes[font.id]?.[axis.tag] || axis.default]}
-                                      onValueChange={(value) => updateVariableAxis(font.id, axis.tag, value[0])}
-                                      min={axis.min}
-                                      max={axis.max}
-                                      step={axis.tag === "wght" ? 1 : 0.1}
-                                      className="flex-1"
-                                    />
-                                    <span
-                                      className="text-sidebar-title flex-shrink-0"
-                                      style={{ color: "var(--gray-cont-tert)" }}
-                                    >
-                                      {fontVariableAxes[font.id]?.[axis.tag] || axis.default}
-                                    </span>
+                            <div className="w-full max-w-[280px]">
+                              {getVariableAxes(font.id).map((axis) => {
+                                // Get initial value from current font characteristics
+                                const getInitialValue = () => {
+                                  if (axis.tag === "wght" && effectiveStyle.weight) {
+                                    // Clamp weight to axis bounds
+                                    return Math.max(axis.min, Math.min(axis.max, effectiveStyle.weight))
+                                  }
+                                  return fontVariableAxes[font.id]?.[axis.tag] || axis.default
+                                }
+                                
+                                return (
+                                  <div key={axis.tag} className="mb-3 last:mb-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sidebar-title flex-shrink-0 w-16">{axis.name}</span>
+                                      <Slider
+                                        value={[getInitialValue()]}
+                                        onValueChange={(value) => updateVariableAxis(font.id, axis.tag, value[0])}
+                                        min={axis.min}
+                                        max={axis.max}
+                                        step={axis.tag === "wght" ? 1 : 0.1}
+                                        className="flex-1"
+                                      />
+                                      <span
+                                        className="text-sidebar-title flex-shrink-0 w-12 text-right"
+                                        style={{ color: "var(--gray-cont-tert)" }}
+                                      >
+                                        {Math.round((fontVariableAxes[font.id]?.[axis.tag] || getInitialValue()) * 10) / 10}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           </div>
                         )}
