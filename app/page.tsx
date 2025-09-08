@@ -287,41 +287,65 @@ export default function FontLibrary() {
   // Helper function to get stylistic alternates from font's OpenType features
   const getStyleAlternates = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
-    if (!font?._familyFonts) return []
+    if (!font) return []
     
-    // Get all OpenType features from family fonts and filter for stylistic alternates
+    // Get all OpenType features from multiple sources
     const allFeatures = new Map<string, string>()
-    font._familyFonts.forEach(familyFont => {
-      if (familyFont.openTypeFeatures) {
-        familyFont.openTypeFeatures.forEach((feature: string) => {
-          // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
-          if (feature.toLowerCase().includes('stylistic set') || 
-              feature.toLowerCase().includes('stylistic alternates') ||
-              /^ss\d+$/.test(feature.toLowerCase())) {
-            // Convert readable names to OpenType tags while preserving descriptive names
-            let tag = ''
-            let title = feature
-            
-            if (feature.toLowerCase().includes('stylistic set 1')) tag = 'ss01'
-            else if (feature.toLowerCase().includes('stylistic set 2')) tag = 'ss02'
-            else if (feature.toLowerCase().includes('stylistic set 3')) tag = 'ss03'
-            else if (feature.toLowerCase().includes('stylistic set 4')) tag = 'ss04'
-            else if (feature.toLowerCase().includes('stylistic set 5')) tag = 'ss05'
-            else if (feature.toLowerCase().includes('stylistic set 6')) tag = 'ss06'
-            else if (feature.toLowerCase().includes('stylistic set 7')) tag = 'ss07'
-            else if (feature.toLowerCase().includes('stylistic set 8')) tag = 'ss08'
-            else if (feature.toLowerCase().includes('stylistic alternates')) tag = 'salt'
-            else if (/^ss\d+$/.test(feature.toLowerCase())) tag = feature.toLowerCase()
-            
-            if (tag) {
-              allFeatures.set(tag, title)
-            }
-          }
-        })
-      }
-    })
+    
+    // Check main font OpenType features
+    if (font.openTypeFeatures && Array.isArray(font.openTypeFeatures)) {
+      font.openTypeFeatures.forEach((feature: string) => {
+        processStyleFeature(feature, allFeatures)
+      })
+    }
+    
+    // Check family fonts if available
+    if (font._familyFonts) {
+      font._familyFonts.forEach(familyFont => {
+        if (familyFont.openTypeFeatures && Array.isArray(familyFont.openTypeFeatures)) {
+          familyFont.openTypeFeatures.forEach((feature: string) => {
+            processStyleFeature(feature, allFeatures)
+          })
+        }
+      })
+    }
     
     return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
+  }
+  
+  // Helper function to process stylistic features
+  const processStyleFeature = (feature: string, allFeatures: Map<string, string>) => {
+    // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
+    if (feature.toLowerCase().includes('stylistic set') || 
+        feature.toLowerCase().includes('stylistic alternates') ||
+        /^ss\d+$/.test(feature.toLowerCase()) ||
+        feature.match(/^ss\d+/i)) {
+      // Convert readable names to OpenType tags while preserving descriptive names
+      let tag = ''
+      let title = feature
+      
+      if (feature.toLowerCase().includes('stylistic set 1')) tag = 'ss01'
+      else if (feature.toLowerCase().includes('stylistic set 2')) tag = 'ss02'
+      else if (feature.toLowerCase().includes('stylistic set 3')) tag = 'ss03'
+      else if (feature.toLowerCase().includes('stylistic set 4')) tag = 'ss04'
+      else if (feature.toLowerCase().includes('stylistic set 5')) tag = 'ss05'
+      else if (feature.toLowerCase().includes('stylistic set 6')) tag = 'ss06'
+      else if (feature.toLowerCase().includes('stylistic set 7')) tag = 'ss07'
+      else if (feature.toLowerCase().includes('stylistic set 8')) tag = 'ss08'
+      else if (feature.toLowerCase().includes('stylistic set 9')) tag = 'ss09'
+      else if (feature.toLowerCase().includes('stylistic set 10')) tag = 'ss10'
+      else if (feature.toLowerCase().includes('stylistic alternates')) tag = 'salt'
+      else if (/^ss\d+$/i.test(feature)) tag = feature.toLowerCase()
+      else if (feature.match(/^ss\d+/i)) {
+        // Extract ss01, ss02 etc from start of feature name
+        const match = feature.match(/^(ss\d+)/i)
+        if (match) tag = match[1].toLowerCase()
+      }
+      
+      if (tag) {
+        allFeatures.set(tag, title)
+      }
+    }
   }
 
   // Helper function to get other OpenType features (non-stylistic)
@@ -444,9 +468,20 @@ export default function FontLibrary() {
       
       // Filter by selected style tags (appearance)
       if (selectedStyles.length > 0) {
-        const hasMatchingStyle = selectedStyles.some(style => 
-          font.styleTags.includes(style)
-        )
+        const hasMatchingStyle = selectedStyles.some(style => {
+          // Check styleTags if available
+          if (font.styleTags && Array.isArray(font.styleTags)) {
+            return font.styleTags.includes(style)
+          }
+          // Fallback: check against inferred tags
+          if (style === 'Display' && font.collection === 'Display') return true
+          if (style === 'Serif' && font.categories?.includes('Serif')) return true  
+          if (style === 'Sans Serif' && font.categories?.includes('Sans')) return true
+          if (style === 'Monospace' && font.categories?.includes('Mono')) return true
+          if (style === 'Script' && font.categories?.includes('Script')) return true
+          if (style === 'Decorative' && font.categories?.includes('Decorative')) return true
+          return false
+        })
         if (!hasMatchingStyle) return false
       }
       
@@ -532,7 +567,17 @@ export default function FontLibrary() {
       // Only include tags from fonts in the current collection
       const fontCollection = font.collection || 'Text'
       if (fontCollection === displayMode) {
-        font.styleTags.forEach(tag => allTags.add(tag))
+        if (font.styleTags && Array.isArray(font.styleTags)) {
+          font.styleTags.forEach(tag => allTags.add(tag))
+        } else {
+          // Fallback: infer basic appearance tags from font metadata
+          if (font.collection === 'Display') allTags.add('Display')
+          if (font.categories?.includes('Serif')) allTags.add('Serif')
+          if (font.categories?.includes('Sans')) allTags.add('Sans Serif')  
+          if (font.categories?.includes('Mono')) allTags.add('Monospace')
+          if (font.categories?.includes('Script')) allTags.add('Script')
+          if (font.categories?.includes('Decorative')) allTags.add('Decorative')
+        }
       }
     })
     return Array.from(allTags).sort()
@@ -574,8 +619,14 @@ export default function FontLibrary() {
     const actualLanguages = new Set<string>()
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode && font.languages) {
-        font.languages.forEach(language => actualLanguages.add(language))
+      if (fontCollection === displayMode) {
+        // Check if font has language data
+        if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
+          font.languages.forEach(language => actualLanguages.add(language))
+        } else {
+          // Fallback: if no language data, assume Latin for most fonts
+          actualLanguages.add('Latin')
+        }
       }
     })
     
@@ -630,7 +681,9 @@ export default function FontLibrary() {
         if (font.categories) {
           font.categories.forEach(category => newCollectionCategories.add(category))
         }
-        font.styleTags.forEach(tag => newCollectionStyles.add(tag))
+        if (font.styleTags && Array.isArray(font.styleTags)) {
+          font.styleTags.forEach(tag => newCollectionStyles.add(tag))
+        }
         if (font.languages) {
           font.languages.forEach(language => newCollectionLanguages.add(language))
         }
@@ -709,6 +762,7 @@ export default function FontLibrary() {
         }
         
         // Create highlighted HTML by wrapping fallback characters
+        // Use class-only styling to avoid CSS variable injection into text content
         let highlightedHTML = originalText
         
         for (const char of fallbackChars) {
@@ -716,12 +770,17 @@ export default function FontLibrary() {
           const regex = new RegExp(escapedChar, 'g')
           highlightedHTML = highlightedHTML.replace(
             regex,
-            `<span class="fallback-char" style="opacity: 0.4; color: var(--gray-cont-tert);">${char}</span>`
+            `<span class="fallback-char">${char}</span>`
           )
         }
         
         // Only update if content actually changed and element is not currently focused
-        if (highlightedHTML !== originalText && highlightedHTML !== element.innerHTML && document.activeElement !== element) {
+        // Also prevent updates if text already contains HTML/CSS artifacts  
+        if (highlightedHTML !== originalText && 
+            highlightedHTML !== element.innerHTML && 
+            document.activeElement !== element &&
+            !originalText.includes('var(--') && 
+            !originalText.includes(';">')) {
           element.innerHTML = highlightedHTML
         }
       })
@@ -739,28 +798,52 @@ export default function FontLibrary() {
 
   const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
     const selection = window.getSelection()
-    const range = selection?.getRangeAt(0)
-    const cursorOffset = range?.startOffset || 0
+    if (!selection || selection.rangeCount === 0) {
+      setCustomText(newText)
+      return
+    }
+    
+    const range = selection.getRangeAt(0)
+    const cursorOffset = range.startOffset
+
+    // Store the cursor position before state update
+    const preserveCursor = () => {
+      requestAnimationFrame(() => {
+        if (element && selection) {
+          try {
+            let textNode = element.firstChild
+            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+              const newRange = document.createRange()
+              const safeOffset = Math.min(cursorOffset, textNode.textContent?.length || 0)
+              newRange.setStart(textNode, safeOffset)
+              newRange.setEnd(textNode, safeOffset)
+              selection.removeAllRanges()
+              selection.addRange(newRange)
+            } else {
+              // If no text node exists, create one and position cursor
+              if (element.textContent !== newText) {
+                element.textContent = newText
+                textNode = element.firstChild
+                if (textNode) {
+                  const newRange = document.createRange()
+                  const safeOffset = Math.min(cursorOffset, newText.length)
+                  newRange.setStart(textNode, safeOffset)
+                  newRange.setEnd(textNode, safeOffset)
+                  selection.removeAllRanges()
+                  selection.addRange(newRange)
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('Cursor position restoration failed:', error)
+            element.focus()
+          }
+        }
+      })
+    }
 
     setCustomText(newText)
-
-    requestAnimationFrame(() => {
-      if (element && selection) {
-        try {
-          const textNode = element.firstChild
-          if (textNode) {
-            const newRange = document.createRange()
-            const safeOffset = Math.min(cursorOffset, textNode.textContent?.length || 0)
-            newRange.setStart(textNode, safeOffset)
-            newRange.setEnd(textNode, safeOffset)
-            selection.removeAllRanges()
-            selection.addRange(newRange)
-          }
-        } catch (error) {
-          element.focus()
-        }
-      }
-    })
+    preserveCursor()
   }
 
   const toggleCardExpansion = (fontId: number) => {
@@ -793,6 +876,17 @@ export default function FontLibrary() {
         [axis]: value,
       },
     }))
+    
+    // Sync weight axis changes with dropdown selection
+    if (axis === "wght") {
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: {
+          ...(prev[fontId] || { weight: 400, italic: false }),
+          weight: Math.round(value), // Round to nearest integer for weight
+        },
+      }))
+    }
   }
 
   const getEffectiveStyle = (fontId: number) => {
@@ -1047,7 +1141,7 @@ export default function FontLibrary() {
                     value={textSize}
                     onValueChange={setTextSize}
                     max={200}
-                    min={50}
+                    min={12}
                     step={10}
                     className="flex-1"
                   />
@@ -1063,8 +1157,8 @@ export default function FontLibrary() {
                   <Slider
                     value={lineHeight}
                     onValueChange={setLineHeight}
-                    max={200}
-                    min={80}
+                    max={160}
+                    min={90}
                     step={10}
                     className="flex-1"
                   />
@@ -1244,11 +1338,11 @@ export default function FontLibrary() {
                         </div>
                       </div>
                       {(() => {
-                        // Check if any font in the family has a download link
-                        const hasDownloadLink = font._familyFonts?.some(f => f.downloadLink) || font.url
-                        const downloadLink = font._familyFonts?.find(f => f.downloadLink)?.downloadLink || font.url
+                        // Check if any font in the family has a download link set in admin (not the blob URL)
+                        const adminDownloadLink = font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink
+                        const hasAdminDownloadLink = Boolean(adminDownloadLink)
                         
-                        if (hasDownloadLink) {
+                        if (hasAdminDownloadLink) {
                           return (
                             <button
                               className="download-btn"
@@ -1256,13 +1350,13 @@ export default function FontLibrary() {
                                 color: "#fcfcfc",
                                 backgroundColor: "#0a0a0a",
                               }}
-                              onClick={() => window.open(downloadLink, '_blank')}
+                              onClick={() => window.open(adminDownloadLink, '_blank')}
                             >
                               Download
                             </button>
                           )
                         }
-                        return null // Hide button if no download link
+                        return null // Hide button if no admin download link is set
                       })()}
                     </div>
                     <div
