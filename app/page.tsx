@@ -423,13 +423,91 @@ export default function FontLibrary() {
     return categoryOptions[displayMode] || categoryOptions.Text
   }
 
-  // Highlight characters that are actually using fallback fonts
-  // This method detects when browser renders a character with a different font
+  // Post-render font fallback detection using DOM and canvas measurement
+  useEffect(() => {
+    const detectFallbackChars = () => {
+      // Find all contentEditable preview divs
+      const previewDivs = document.querySelectorAll('div[contenteditable="true"]')
+      
+      previewDivs.forEach((div) => {
+        const element = div as HTMLElement
+        const fontFamily = element.style.fontFamily
+        if (!fontFamily) return
+
+        // Create canvas for measurement
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const fontSize = 20 // Match approximate preview size
+        const text = element.textContent || ''
+        
+        // Check each character
+        const uniqueChars = [...new Set(text.split(''))]
+        
+        // Reset any previous styling
+        element.style.background = ''
+        
+        let hasFallbacks = false
+        const fallbackChars = new Set<string>()
+        
+        for (const char of uniqueChars) {
+          // Skip basic characters
+          if (/^[a-zA-Z0-9\s\.,!?;:'"-]$/.test(char)) continue
+          
+          try {
+            // Measure with intended font
+            ctx.font = `${fontSize}px ${fontFamily}`
+            const intendedWidth = ctx.measureText(char).width
+            
+            // Measure with fallback
+            ctx.font = `${fontSize}px sans-serif`  
+            const fallbackWidth = ctx.measureText(char).width
+            
+            // If widths are very close, likely using fallback
+            if (Math.abs(intendedWidth - fallbackWidth) < 1) {
+              fallbackChars.add(char)
+              hasFallbacks = true
+            }
+          } catch (error) {
+            continue
+          }
+        }
+        
+        // Apply subtle background highlighting if fallbacks detected
+        if (hasFallbacks) {
+          // Style the characters that are using fallback fonts
+          const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+          )
+          
+          let node
+          while (node = walker.nextNode()) {
+            const textNode = node as Text
+            const text = textNode.textContent || ''
+            
+            // Check if this text node contains fallback characters
+            const hasFallbackChar = [...text].some(char => fallbackChars.has(char))
+            if (hasFallbackChar && textNode.parentElement) {
+              // Add a subtle visual indicator without breaking editing
+              textNode.parentElement.style.position = 'relative'
+              textNode.parentElement.setAttribute('data-has-fallback', 'true')
+            }
+          }
+        }
+      })
+    }
+    
+    // Run detection after fonts load and on text changes
+    const timer = setTimeout(detectFallbackChars, 100)
+    return () => clearTimeout(timer)
+  }, [fonts, customText])
+
+  // Placeholder function - now handled by useEffect
   const highlightMissingCharacters = (text: string, fontId: number) => {
-    // For now, return text unchanged and rely on browser's natural fallback
-    // The sophisticated font-detection approach would require canvas rendering
-    // which is complex and may impact performance. 
-    // Instead, let the browser handle fallbacks naturally without artificial highlighting.
     return text
   }
 
@@ -538,6 +616,22 @@ export default function FontLibrary() {
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
+      {/* Dynamic font loading and fallback detection styles */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          [data-has-fallback="true"] {
+            opacity: 0.4 !important;
+            color: var(--gray-cont-tert) !important;
+          }
+          ${fonts.map(font => `
+            @font-face {
+              font-family: "${font.fontFamily}";
+              src: url("${font.blobUrl}");
+              font-display: swap;
+            }
+          `).join('')}
+        `
+      }} />
       {sidebarOpen && (
         <aside
           className="w-[280px] flex-shrink-0 flex flex-col h-full"
