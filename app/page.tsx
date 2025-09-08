@@ -27,6 +27,12 @@ interface FontData {
   }>
   openTypeFeatures?: string[]
   _familyFonts?: any[] // Store original font data for style selection
+  _availableStyles?: Array<{
+    weight: number
+    styleName: string
+    isItalic: boolean
+    font?: any // Reference to original font for static fonts
+  }> // Structured style data for style selection
   collection: 'Text' | 'Display' | 'Weirdo'
   styleTags: string[]
   categories: string[]
@@ -139,8 +145,10 @@ export default function FontLibrary() {
             const hasItalic = italicFonts.length > 0
             const isVariable = familyFonts.some(f => f.isVariable)
             
-            // Calculate available weights differently for variable vs static fonts
+            // Calculate available weights and styles for both variable and static fonts
             let availableWeights
+            let availableStylesWithWeights = []
+            
             if (isVariable) {
               // For variable fonts, use weight axis range or common weight stops
               const weightAxes = familyFonts
@@ -159,12 +167,40 @@ export default function FontLibrary() {
                 // Fallback for variable fonts without clear weight axis
                 availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
               }
+              
+              // For variable fonts, generate style names from weights
+              availableStylesWithWeights = availableWeights.map(weight => ({
+                weight,
+                styleName: getStyleNameFromWeight(weight, false),
+                isItalic: false
+              }))
+              
+              // Add italic variants if any font in family has italic capability
+              if (hasItalic) {
+                const italicStyles = availableWeights.map(weight => ({
+                  weight,
+                  styleName: getStyleNameFromWeight(weight, true),
+                  isItalic: true
+                }))
+                availableStylesWithWeights = [...availableStylesWithWeights, ...italicStyles]
+              }
             } else {
-              // For static fonts, use actual weights
-              const regularWeights = regularFonts.map(f => f.weight || 400)
-              const italicWeights = italicFonts.map(f => f.weight || 400)
-              const allWeights = [...new Set([...regularWeights, ...italicWeights])].sort((a, b) => a - b)
-              availableWeights = regularWeights.length > 0 ? [...new Set(regularWeights)].sort((a, b) => a - b) : allWeights
+              // For static fonts, use actual font styles and weights
+              const allFontStyles = familyFonts.map(font => ({
+                weight: font.weight || 400,
+                styleName: font.style || 'Regular',
+                isItalic: font.style?.toLowerCase().includes('italic') || font.style?.toLowerCase().includes('oblique') || false,
+                font: font // Store reference to original font
+              }))
+              
+              // Sort by weight, then by italic (regular first)
+              availableStylesWithWeights = allFontStyles.sort((a, b) => {
+                if (a.weight !== b.weight) return a.weight - b.weight
+                return a.isItalic ? 1 : -1 // Regular before italic
+              })
+              
+              // Extract unique weights in correct order
+              availableWeights = [...new Set(allFontStyles.map(style => style.weight))].sort((a, b) => a - b)
             }
             
             const finalType = isVariable ? "Variable" : "Static"
@@ -189,6 +225,8 @@ export default function FontLibrary() {
               openTypeFeatures: representativeFont.openTypeFeatures,
               // Store family fonts data for style selection
               _familyFonts: familyFonts,
+              // Store structured style data for proper style selection
+              _availableStyles: availableStylesWithWeights,
               // Add collection and style tags for filtering
               collection: representativeFont.collection || 'Text',
               styleTags: representativeFont.styleTags || [],
@@ -450,6 +488,23 @@ export default function FontLibrary() {
     return [...orderedCategories, ...remainingCategories]
   }
 
+  // Helper function to convert weight number to style name
+  const getStyleNameFromWeight = (weight: number, isItalic: boolean): string => {
+    let styleName = 'Regular'
+    
+    if (weight <= 150) styleName = 'Thin'
+    else if (weight <= 250) styleName = 'ExtraLight'
+    else if (weight <= 350) styleName = 'Light'
+    else if (weight <= 450) styleName = 'Regular'
+    else if (weight <= 550) styleName = 'Medium'
+    else if (weight <= 650) styleName = 'SemiBold'
+    else if (weight <= 750) styleName = 'Bold'
+    else if (weight <= 850) styleName = 'ExtraBold'
+    else styleName = 'Black'
+    
+    return isItalic ? `${styleName} Italic` : styleName
+  }
+
   // Clean up filters when switching collections - remove invalid categories/styles
   const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
     // Temporarily set displayMode to get correct categories/styles for the new collection
@@ -675,13 +730,29 @@ export default function FontLibrary() {
             opacity: 0.4 !important;
             color: var(--gray-cont-tert) !important;
           }
-          ${fonts.map(font => `
-            @font-face {
-              font-family: "${font.fontFamily}";
-              src: url("${font.blobUrl}");
-              font-display: swap;
+          ${fonts.map(font => {
+            // For static fonts with multiple styles, generate @font-face for each style
+            if (font._familyFonts && font._familyFonts.length > 1 && font.type === "Static") {
+              return font._familyFonts.map((fontFile: any) => `
+                @font-face {
+                  font-family: "${font.fontFamily.replace(/"/g, '')}";
+                  src: url("${fontFile.blobUrl || fontFile.url}");
+                  font-weight: ${fontFile.weight || 400};
+                  font-style: ${fontFile.style?.toLowerCase().includes('italic') ? 'italic' : 'normal'};
+                  font-display: swap;
+                }
+              `).join('')
+            } else {
+              // Single font or variable font - use original approach
+              return `
+                @font-face {
+                  font-family: "${font.fontFamily.replace(/"/g, '')}";
+                  src: url("${font.url}");
+                  font-display: swap;
+                }
+              `
             }
-          `).join('')}
+          }).join('')}
         `
       }} />
       {sidebarOpen && (
@@ -959,16 +1030,21 @@ export default function FontLibrary() {
             ) : (
               getFilteredFonts().map((font) => {
               const fontSelection = fontWeightSelections[font.id] || (() => {
-                // Get default selection based on the first available font in family
-                if (font._familyFonts && font._familyFonts.length > 0) {
-                  // Prefer Regular style first, then take first available
-                  const regularFont = font._familyFonts.find(f => f.style === 'Regular' || !f.style?.toLowerCase().includes('italic'))
-                  const defaultFont = regularFont || font._familyFonts[0]
+                // Use structured style data for default selection
+                if (font._availableStyles && font._availableStyles.length > 0) {
+                  // Prefer Regular style first, then first non-italic, then first available
+                  const regularStyle = font._availableStyles.find(style => 
+                    style.styleName === 'Regular' || (style.weight === 400 && !style.isItalic)
+                  )
+                  const nonItalicStyle = font._availableStyles.find(style => !style.isItalic)
+                  const defaultStyle = regularStyle || nonItalicStyle || font._availableStyles[0]
+                  
                   return {
-                    weight: defaultFont.weight || 400,
-                    italic: defaultFont.style?.toLowerCase().includes('italic') || false
+                    weight: defaultStyle.weight,
+                    italic: defaultStyle.isItalic
                   }
                 }
+                // Fallback for compatibility
                 return { weight: 400, italic: false }
               })()
               const effectiveStyle = getEffectiveStyle(font.id)
@@ -997,95 +1073,11 @@ export default function FontLibrary() {
                               }}
                               className="dropdown-select text-sidebar-title pr-8 appearance-none"
                             >
-                              {(() => {
-                                const options = []
-                                
-                                if (font.type === "Variable" && font._familyFonts) {
-                                  // For variable fonts, combine all available styles from all fonts in the family
-                                  const allAvailableStyles = new Set<string>()
-                                  font._familyFonts.forEach((fontFile: any) => {
-                                    const styles = fontFile?.availableStyles || []
-                                    styles.forEach((style: string) => allAvailableStyles.add(style))
-                                  })
-                                  const availableStyles = Array.from(allAvailableStyles).sort()
-                                  
-                                  if (availableStyles.length > 0) {
-                                    // Use the named instances from font metadata
-                                    availableStyles.forEach((styleName, index) => {
-                                      const isItalic = styleName.toLowerCase().includes('italic') || styleName.toLowerCase().includes('oblique')
-                                      // Map style name to approximate weight for value (needed for font rendering)
-                                      const weight = styleName.toLowerCase().includes('thin') ? 100
-                                        : styleName.toLowerCase().includes('extralight') ? 200
-                                        : styleName.toLowerCase().includes('light') ? 300
-                                        : styleName.toLowerCase().includes('regular') ? 400
-                                        : styleName.toLowerCase().includes('medium') ? 500
-                                        : styleName.toLowerCase().includes('semibold') ? 600
-                                        : styleName.toLowerCase().includes('bold') ? 700
-                                        : styleName.toLowerCase().includes('extrabold') ? 800
-                                        : styleName.toLowerCase().includes('black') ? 900
-                                        : 400
-                                      
-                                      options.push(
-                                        <option key={`${styleName}-${index}`} value={`${weight}-${isItalic}`}>
-                                          {styleName}
-                                        </option>
-                                      )
-                                    })
-                                  } else {
-                                    // Fallback if no availableStyles
-                                    const regularFont = font._familyFonts.find(f => !f.style?.toLowerCase().includes('italic'))
-                                    const italicFont = font._familyFonts.find(f => f.style?.toLowerCase().includes('italic'))
-                                    
-                                    if (regularFont) {
-                                      options.push(
-                                        <option key="regular" value={`${regularFont.weight || 400}-false`}>
-                                          {regularFont.style || 'Regular'}
-                                        </option>
-                                      )
-                                    }
-                                    if (italicFont) {
-                                      options.push(
-                                        <option key="italic" value={`${italicFont.weight || 400}-true`}>
-                                          {italicFont.style || 'Italic'}
-                                        </option>
-                                      )
-                                    }
-                                  }
-                                } else if (font._familyFonts) {
-                                  // For static fonts, show actual style names from metadata
-                                  for (const familyFont of font._familyFonts) {
-                                    const weight = familyFont.weight || 400
-                                    const isItalic = familyFont.style?.toLowerCase().includes('italic')
-                                    const styleName = familyFont.style || (isItalic ? 'Italic' : 'Regular')
-                                    
-                                    // Use the actual style name from the font metadata
-                                    const displayName = styleName
-                                    
-                                    options.push(
-                                      <option key={`${familyFont.id}`} value={`${weight}-${isItalic}`}>
-                                        {displayName}
-                                      </option>
-                                    )
-                                  }
-                                } else {
-                                  // Fallback to old logic for compatibility
-                                  font.availableWeights.forEach(weight => {
-                                    options.push(
-                                      <option key={`${weight}-false`} value={`${weight}-false`}>
-                                        {weight} Regular
-                                      </option>
-                                    )
-                                    if (font.hasItalic) {
-                                      options.push(
-                                        <option key={`${weight}-true`} value={`${weight}-true`}>
-                                          {weight} Italic
-                                        </option>
-                                      )
-                                    }
-                                  })
-                                }
-                                return options
-                              })()}
+                              {font._availableStyles?.map((style, index) => (
+                                <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}-${style.isItalic}`}>
+                                  {style.styleName}
+                                </option>
+                              ))}
                             </select>
                             <span
                               className="material-symbols-outlined absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none"
