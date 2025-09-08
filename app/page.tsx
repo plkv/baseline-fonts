@@ -293,23 +293,105 @@ export default function FontLibrary() {
     }
   }, [])
 
-  const styleAlternates = ["ss01", "ss02", "ss03", "ss04", "ss05", "ss06", "ss07", "ss08"]
-  const otherOTFeatures = ["liga", "kern", "frac", "ordn", "sups", "subs", "smcp", "c2sc", "case", "zero"]
+  // Helper function to get stylistic alternates from font's OpenType features
+  const getStyleAlternates = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (!font?._familyFonts) return []
+    
+    // Get all OpenType features from family fonts and filter for stylistic alternates
+    const allFeatures = new Set<string>()
+    font._familyFonts.forEach(familyFont => {
+      if (familyFont.openTypeFeatures) {
+        familyFont.openTypeFeatures.forEach((feature: string) => {
+          // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
+          if (feature.toLowerCase().includes('stylistic set') || 
+              feature.toLowerCase().includes('stylistic alternates') ||
+              /^ss\d+$/.test(feature.toLowerCase())) {
+            // Convert readable names to OpenType tags
+            if (feature.toLowerCase().includes('stylistic set 1')) allFeatures.add('ss01')
+            else if (feature.toLowerCase().includes('stylistic set 2')) allFeatures.add('ss02')
+            else if (feature.toLowerCase().includes('stylistic set 3')) allFeatures.add('ss03')
+            else if (feature.toLowerCase().includes('stylistic set 4')) allFeatures.add('ss04')
+            else if (feature.toLowerCase().includes('stylistic set 5')) allFeatures.add('ss05')
+            else if (feature.toLowerCase().includes('stylistic set 6')) allFeatures.add('ss06')
+            else if (feature.toLowerCase().includes('stylistic set 7')) allFeatures.add('ss07')
+            else if (feature.toLowerCase().includes('stylistic set 8')) allFeatures.add('ss08')
+            else if (feature.toLowerCase().includes('stylistic alternates')) allFeatures.add('salt')
+            else if (/^ss\d+$/.test(feature.toLowerCase())) allFeatures.add(feature.toLowerCase())
+          }
+        })
+      }
+    })
+    
+    return Array.from(allFeatures).sort()
+  }
+
+  // Helper function to get other OpenType features (non-stylistic)
+  const getOtherOTFeatures = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (!font?._familyFonts) return []
+    
+    // Mapping from readable feature names to OpenType tags
+    const featureMapping: Record<string, string> = {
+      'standard ligatures': 'liga',
+      'discretionary ligatures': 'dlig',
+      'contextual ligatures': 'clig',
+      'kerning': 'kern',
+      'fractions': 'frac',
+      'ordinals': 'ordn',
+      'superscript': 'sups',
+      'subscript': 'subs',
+      'small capitals': 'smcp',
+      'all small caps': 'c2sc',
+      'case-sensitive forms': 'case',
+      'slashed zero': 'zero',
+      'tabular nums': 'tnum',
+      'proportional nums': 'pnum',
+      'lining figures': 'lnum',
+      'oldstyle figures': 'onum'
+    }
+    
+    const allFeatures = new Set<string>()
+    font._familyFonts.forEach(familyFont => {
+      if (familyFont.openTypeFeatures) {
+        familyFont.openTypeFeatures.forEach((feature: string) => {
+          const lowerFeature = feature.toLowerCase()
+          // Skip stylistic features (handled separately)
+          if (!lowerFeature.includes('stylistic')) {
+            const otTag = featureMapping[lowerFeature]
+            if (otTag) {
+              allFeatures.add(otTag)
+            }
+          }
+        })
+      }
+    })
+    
+    return Array.from(allFeatures).sort()
+  }
 
   const getVariableAxes = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
-    if (font?.type !== "Variable") return []
-
-    // Mock variable axes data - in real app this would come from font metadata
-    const axes = []
-    if (font.name === "Inter Variable") {
-      axes.push({ tag: "wght", name: "Weight", min: 100, max: 900, default: 400 })
-      axes.push({ tag: "slnt", name: "Slant", min: -10, max: 0, default: 0 })
-    }
-    if (font.name === "Space Grotesk") {
-      axes.push({ tag: "wght", name: "Weight", min: 300, max: 700, default: 400 })
-    }
-    return axes
+    if (!font?._familyFonts) return []
+    
+    // Get variable axes from font metadata
+    const allAxes = new Map()
+    font._familyFonts.forEach(familyFont => {
+      if (familyFont.variableAxes) {
+        familyFont.variableAxes.forEach((axis: any) => {
+          // Use axis tag as key to avoid duplicates
+          allAxes.set(axis.axis, {
+            tag: axis.axis,
+            name: axis.name,
+            min: axis.min,
+            max: axis.max,
+            default: axis.default
+          })
+        })
+      }
+    })
+    
+    return Array.from(allAxes.values())
   }
 
   const toggleCategory = (category: string) => {
@@ -1224,38 +1306,51 @@ export default function FontLibrary() {
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
                         {/* Style Alternates */}
-                        <div>
-                          <div className="flex flex-wrap gap-2">
-                            {styleAlternates.map((feature) => (
-                              <button
-                                key={feature}
-                                onClick={() => toggleOTFeature(font.id, feature)}
-                                className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
-                              >
-                                {feature}
-                              </button>
-                            ))}
+                        {getStyleAlternates(font.id).length > 0 && (
+                          <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              Stylistic Alternates
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {getStyleAlternates(font.id).map((feature) => (
+                                <button
+                                  key={feature}
+                                  onClick={() => toggleOTFeature(font.id, feature)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
+                                >
+                                  {feature}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Other OpenType Features */}
-                        <div>
-                          <div className="flex flex-wrap gap-2">
-                            {otherOTFeatures.map((feature) => (
-                              <button
-                                key={feature}
-                                onClick={() => toggleOTFeature(font.id, feature)}
-                                className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
-                              >
-                                {feature}
-                              </button>
-                            ))}
+                        {getOtherOTFeatures(font.id).length > 0 && (
+                          <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              OpenType Features
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {getOtherOTFeatures(font.id).map((feature) => (
+                                <button
+                                  key={feature}
+                                  onClick={() => toggleOTFeature(font.id, feature)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature] ? "active" : ""}`}
+                                >
+                                  {feature}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Variable Font Axes */}
-                        {font.type === "Variable" && getVariableAxes(font.id).length > 0 && (
+                        {getVariableAxes(font.id).length > 0 && (
                           <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              Variable Axes
+                            </div>
                             <div className="flex flex-col md:flex-row md:gap-4 gap-3 max-w-[280px]">
                               {getVariableAxes(font.id).map((axis) => (
                                 <div key={axis.tag} className="flex-1">
