@@ -159,7 +159,58 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const featureList = font.tables?.gsub?.features || []
     const supportedFeatures = new Set<string>()
     
+    // Extract custom stylistic set names from the name table
+    const customStylisticNames: { [key: string]: string } = {}
+    if (font.names) {
+      // Stylistic set names are typically stored in name IDs 256+ (ss01 = 256, ss02 = 257, etc.)
+      // Some fonts also use different ranges, so we'll check various approaches
+      
+      // Method 1: Check name IDs 256+ for stylistic sets (Adobe/standard approach)
+      for (let i = 256; i <= 275; i++) {
+        const nameRecord = font.names[i] || font.names[`${i}`]
+        if (nameRecord) {
+          const nameValue = typeof nameRecord === 'string' ? nameRecord : nameRecord.en || nameRecord[Object.keys(nameRecord)[0]]
+          if (nameValue && nameValue.trim()) {
+            const ssIndex = i - 256 + 1
+            if (ssIndex <= 20) { // ss01 to ss20
+              const ssTag = `ss${ssIndex.toString().padStart(2, '0')}`
+              customStylisticNames[ssTag] = nameValue.trim()
+              console.log(`🎨 Found custom stylistic set name: ${ssTag} = "${nameValue.trim()}"`)
+            }
+          }
+        }
+      }
+      
+      // Method 2: Also check for other common name ID ranges used by different font foundries
+      const alternativeRanges = [
+        { start: 256, prefix: 'ss' },  // Standard range
+        { start: 300, prefix: 'ss' },  // Some foundries use this
+        { start: 400, prefix: 'ss' }   // Alternative range
+      ]
+      
+      alternativeRanges.forEach(({ start, prefix }) => {
+        for (let i = start; i < start + 20; i++) {
+          const nameRecord = font.names[i] || font.names[`${i}`]
+          if (nameRecord) {
+            const nameValue = typeof nameRecord === 'string' ? nameRecord : nameRecord.en || nameRecord[Object.keys(nameRecord)[0]]
+            if (nameValue && nameValue.trim() && !nameValue.includes('Stylistic Set')) {
+              // Only use if it's not a generic name and we haven't found it yet
+              const ssIndex = (i - start) + 1
+              if (ssIndex <= 20) {
+                const ssTag = `${prefix}${ssIndex.toString().padStart(2, '0')}`
+                if (!customStylisticNames[ssTag]) {
+                  customStylisticNames[ssTag] = nameValue.trim()
+                  console.log(`🎨 Found alternative stylistic set name: ${ssTag} = "${nameValue.trim()}"`)
+                }
+              }
+            }
+          }
+        }
+      })
+    }
+    
     // Map OpenType feature tags to readable names (comprehensive list)
+    // Now we'll check for custom names first, then fall back to generic ones
     const featureNames: { [key: string]: string } = {
       'kern': 'Kerning',
       'liga': 'Standard Ligatures', 
@@ -174,26 +225,27 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       'cswh': 'Contextual Swash',
       'salt': 'Stylistic Alternates',
       'calt': 'Contextual Alternates',
-      'ss01': 'Stylistic Set 1',
-      'ss02': 'Stylistic Set 2',
-      'ss03': 'Stylistic Set 3',
-      'ss04': 'Stylistic Set 4',
-      'ss05': 'Stylistic Set 5',
-      'ss06': 'Stylistic Set 6',
-      'ss07': 'Stylistic Set 7',
-      'ss08': 'Stylistic Set 8',
-      'ss09': 'Stylistic Set 9',
-      'ss10': 'Stylistic Set 10',
-      'ss11': 'Stylistic Set 11',
-      'ss12': 'Stylistic Set 12',
-      'ss13': 'Stylistic Set 13',
-      'ss14': 'Stylistic Set 14',
-      'ss15': 'Stylistic Set 15',
-      'ss16': 'Stylistic Set 16',
-      'ss17': 'Stylistic Set 17',
-      'ss18': 'Stylistic Set 18',
-      'ss19': 'Stylistic Set 19',
-      'ss20': 'Stylistic Set 20',
+      // Stylistic sets - use custom names if available, otherwise fall back to generic
+      'ss01': customStylisticNames['ss01'] || 'Stylistic Set 1',
+      'ss02': customStylisticNames['ss02'] || 'Stylistic Set 2',
+      'ss03': customStylisticNames['ss03'] || 'Stylistic Set 3',
+      'ss04': customStylisticNames['ss04'] || 'Stylistic Set 4',
+      'ss05': customStylisticNames['ss05'] || 'Stylistic Set 5',
+      'ss06': customStylisticNames['ss06'] || 'Stylistic Set 6',
+      'ss07': customStylisticNames['ss07'] || 'Stylistic Set 7',
+      'ss08': customStylisticNames['ss08'] || 'Stylistic Set 8',
+      'ss09': customStylisticNames['ss09'] || 'Stylistic Set 9',
+      'ss10': customStylisticNames['ss10'] || 'Stylistic Set 10',
+      'ss11': customStylisticNames['ss11'] || 'Stylistic Set 11',
+      'ss12': customStylisticNames['ss12'] || 'Stylistic Set 12',
+      'ss13': customStylisticNames['ss13'] || 'Stylistic Set 13',
+      'ss14': customStylisticNames['ss14'] || 'Stylistic Set 14',
+      'ss15': customStylisticNames['ss15'] || 'Stylistic Set 15',
+      'ss16': customStylisticNames['ss16'] || 'Stylistic Set 16',
+      'ss17': customStylisticNames['ss17'] || 'Stylistic Set 17',
+      'ss18': customStylisticNames['ss18'] || 'Stylistic Set 18',
+      'ss19': customStylisticNames['ss19'] || 'Stylistic Set 19',
+      'ss20': customStylisticNames['ss20'] || 'Stylistic Set 20',
       'cv01': 'Character Variant 1',
       'cv02': 'Character Variant 2',
       'cv03': 'Character Variant 3',
