@@ -309,7 +309,9 @@ export default function FontLibrary() {
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
       // Filter by collection (displayMode) - each tab should only show fonts from that collection
-      if (font.collection !== displayMode) {
+      const fontCollection = font.collection || 'Text' // Default to 'Text' if no collection set
+      
+      if (fontCollection !== displayMode) {
         return false
       }
       
