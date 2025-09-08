@@ -406,23 +406,80 @@ export default function FontLibrary() {
     return getPresetContent(selectedPreset, fontName)
   }
 
-  // Get all available style tags from loaded fonts
+  // Get all available style tags from fonts in current collection only
   const getAvailableStyleTags = () => {
     const allTags = new Set<string>()
     fonts.forEach(font => {
-      font.styleTags.forEach(tag => allTags.add(tag))
+      // Only include tags from fonts in the current collection
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode) {
+        font.styleTags.forEach(tag => allTags.add(tag))
+      }
     })
     return Array.from(allTags).sort()
   }
 
-  // Get dynamic categories based on selected collection
+  // Get dynamic categories based on fonts actually present in current collection
   const getCollectionCategories = () => {
-    const categoryOptions = {
+    // Get all categories from fonts in the current collection
+    const actualCategories = new Set<string>()
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode && font.categories) {
+        font.categories.forEach(category => actualCategories.add(category))
+      }
+    })
+    
+    // Define the ideal order for each collection
+    const categoryOrder = {
       Text: ['Sans', 'Serif', 'Slab', 'Mono'],
       Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
       Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
     }
-    return categoryOptions[displayMode] || categoryOptions.Text
+    
+    const preferredOrder = categoryOrder[displayMode] || categoryOrder.Text
+    
+    // Return categories in preferred order, but only those that actually exist
+    const orderedCategories = preferredOrder.filter(cat => actualCategories.has(cat))
+    
+    // Add any remaining categories that exist but aren't in the preferred order
+    const remainingCategories = Array.from(actualCategories)
+      .filter(cat => !preferredOrder.includes(cat))
+      .sort()
+    
+    return [...orderedCategories, ...remainingCategories]
+  }
+
+  // Clean up filters when switching collections - remove invalid categories/styles
+  const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
+    // Temporarily set displayMode to get correct categories/styles for the new collection
+    const originalDisplayMode = displayMode
+    
+    // Get what categories and styles would be available in the new collection
+    const newCollectionCategories = new Set<string>()
+    const newCollectionStyles = new Set<string>()
+    
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === newDisplayMode) {
+        if (font.categories) {
+          font.categories.forEach(category => newCollectionCategories.add(category))
+        }
+        font.styleTags.forEach(tag => newCollectionStyles.add(tag))
+      }
+    })
+    
+    // Remove selected categories that don't exist in new collection
+    const validSelectedCategories = selectedCategories.filter(cat => newCollectionCategories.has(cat))
+    if (validSelectedCategories.length !== selectedCategories.length) {
+      setSelectedCategories(validSelectedCategories)
+    }
+    
+    // Remove selected styles that don't exist in new collection  
+    const validSelectedStyles = selectedStyles.filter(style => newCollectionStyles.has(style))
+    if (validSelectedStyles.length !== selectedStyles.length) {
+      setSelectedStyles(validSelectedStyles)
+    }
   }
 
   // Post-render font fallback detection using DOM and canvas measurement
@@ -695,6 +752,8 @@ export default function FontLibrary() {
                     <button
                       key={mode}
                       onClick={() => {
+                        // Clean filters before switching collection
+                        cleanFiltersForCollection(mode)
                         setDisplayMode(mode)
                         // Scroll to top of the list when switching modes
                         setTimeout(() => {
