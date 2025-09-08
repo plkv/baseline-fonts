@@ -95,7 +95,8 @@ export default function FontLibrary() {
   const [textSize, setTextSize] = useState([72])
   const [lineHeight, setLineHeight] = useState([120])
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [sortBy, setSortBy] = useState("New")
+  const [sortBy, setSortBy] = useState("Date")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
   const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
   const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
@@ -294,6 +295,17 @@ export default function FontLibrary() {
     }))
   }
 
+  const handleSort = (sortType: "Date" | "Alphabetical") => {
+    if (sortBy === sortType) {
+      // Toggle direction if same sort type
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      // Set new sort type with default direction
+      setSortBy(sortType)
+      setSortDirection(sortType === "Date" ? "desc" : "asc") // Date defaults to desc (New), Alphabetical to asc (A-Z)
+    }
+  }
+
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
       // Filter by collection (displayMode)
@@ -317,6 +329,14 @@ export default function FontLibrary() {
         if (!hasMatchingStyle) return false
       }
       
+      // Filter by selected languages
+      if (selectedLanguages.length > 0) {
+        const hasMatchingLanguage = selectedLanguages.some(lang => 
+          font.languages.includes(lang)
+        )
+        if (!hasMatchingLanguage) return false
+      }
+      
       // Filter by weights and italic (existing logic)
       if (selectedWeights.length === 0 && !isItalic) return true
 
@@ -337,20 +357,26 @@ export default function FontLibrary() {
       return true
     })
 
-    // Apply sorting based on sortBy state
+    // Apply sorting based on sortBy and sortDirection
     return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "A–Z":
-          return a.name.localeCompare(b.name)
-        case "# Styles":
-          return b.styles - a.styles // Descending order (most styles first)
-        case "New":
-        default:
-          // Sort by upload date (newest first) - use family representative font's upload date
-          const aDate = a._familyFonts?.[0]?.uploadedAt ? new Date(a._familyFonts[0].uploadedAt).getTime() : 0
-          const bDate = b._familyFonts?.[0]?.uploadedAt ? new Date(b._familyFonts[0].uploadedAt).getTime() : 0
-          return bDate - aDate
+      let result = 0
+      
+      if (sortBy === "Alphabetical") {
+        // Enhanced alphabetical sorting with numbers and symbols at the top
+        result = a.name.localeCompare(b.name, undefined, { 
+          numeric: true, 
+          sensitivity: 'base',
+          ignorePunctuation: false 
+        })
+      } else {
+        // Date sorting - use family representative font's upload date
+        const aDate = a._familyFonts?.[0]?.uploadedAt ? new Date(a._familyFonts[0].uploadedAt).getTime() : 0
+        const bDate = b._familyFonts?.[0]?.uploadedAt ? new Date(b._familyFonts[0].uploadedAt).getTime() : 0
+        result = aDate - bDate // Default ascending (oldest first)
       }
+      
+      // Apply direction (flip result for descending)
+      return sortDirection === "desc" ? -result : result
     })
   }
 
@@ -397,12 +423,37 @@ export default function FontLibrary() {
     return categoryOptions[displayMode] || categoryOptions.Text
   }
 
-  // Function to potentially highlight missing characters (currently disabled)
-  // Only highlights truly missing glyphs, not special symbols that exist in the font
+  // Highlight truly missing characters (not supported by the font)
+  // This uses browser fallback behavior to detect missing glyphs
   const highlightMissingCharacters = (text: string, fontId: number) => {
-    // Return text unchanged - special symbols should display in their natural color
-    // This prevents incorrectly graying out symbols like €£¥©®™ that may exist in the font
-    return text
+    let highlightedText = text
+    
+    // Only highlight characters that are likely to be missing (non-Latin scripts)
+    // Avoid highlighting common symbols that fonts usually support
+    const potentialMissingChars = [
+      // CJK characters (commonly missing in Latin fonts)
+      '中', '文', '한', '글', '日', '本', '語', '漢', '字',
+      // Arabic characters (commonly missing in Latin fonts)
+      'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي',
+      // Cyrillic characters (sometimes missing)
+      'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я',
+      'а', 'б', 'в', 'г', 'д', 'е', 'ё', 'ж', 'з', 'и', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р', 'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ', 'ъ', 'ы', 'ь', 'э', 'ю', 'я',
+      // Greek characters (sometimes missing) 
+      'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'
+    ]
+    
+    // Make missing characters slightly visible with reduced opacity
+    potentialMissingChars.forEach(char => {
+      if (text.includes(char)) {
+        const regex = new RegExp(char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+        highlightedText = highlightedText.replace(
+          regex,
+          `<span style="opacity: 0.3; color: var(--gray-cont-tert);" title="May be missing in this font">${char}</span>`
+        )
+      }
+    })
+    
+    return highlightedText
   }
 
   const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
@@ -551,6 +602,12 @@ export default function FontLibrary() {
                       key={preset}
                       onClick={() => {
                         setSelectedPreset(preset)
+                        // Set appropriate text size for preset
+                        if (preset === "Paragraph") {
+                          setTextSize([20])
+                        } else {
+                          setTextSize([72])
+                        }
                         // For "Names" preset, clear customText so each font shows its individual name
                         if (preset === "Names") {
                           setCustomText("")
@@ -571,7 +628,16 @@ export default function FontLibrary() {
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
                       key={mode}
-                      onClick={() => setDisplayMode(mode)}
+                      onClick={() => {
+                        setDisplayMode(mode)
+                        // Scroll to top of the list when switching modes
+                        setTimeout(() => {
+                          const mainElement = document.querySelector('main')
+                          if (mainElement) {
+                            mainElement.scrollTo({ top: 0, behavior: 'smooth' })
+                          }
+                        }, 100)
+                      }}
                       className={`segmented-control-button ${displayMode === mode ? "active" : ""}`}
                     >
                       {mode}
@@ -733,11 +799,22 @@ export default function FontLibrary() {
             style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
           >
             <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="dropdown-select">
-              <option>New</option>
-              <option># Styles</option>
-              <option>A–Z</option>
-            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSort("Date")}
+                className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}
+              >
+                {sortBy === "Date" && sortDirection === "desc" ? "New" : 
+                 sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
+              </button>
+              <button
+                onClick={() => handleSort("Alphabetical")}
+                className={`btn-sm ${sortBy === "Alphabetical" ? "active" : ""}`}
+              >
+                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" : 
+                 sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
+              </button>
+            </div>
           </div>
 
           <div className="">
@@ -934,7 +1011,7 @@ export default function FontLibrary() {
                       ref={(el) => setEditingElementRef(el)}
                       className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none"
                       style={{
-                        fontSize: `${selectedPreset === "Paragraph" ? 20 : textSize[0]}px`,
+                        fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
                         fontFamily: font.fontFamily,
                         fontWeight: effectiveStyle.weight,
