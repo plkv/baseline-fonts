@@ -33,10 +33,11 @@ export const metadata: Metadata = {
     siteName: "typedump",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://baseline-fonts.vercel.app/og-image.svg",
         width: 1200,
         height: 630,
         alt: "typedump - Preselected free font collections",
+        type: "image/svg+xml",
       },
     ],
     locale: "en_US",
@@ -46,19 +47,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "typedump",
     description: "Preselected free font collections curated by pro community",
-    images: ["/og-image.png"],
+    images: ["https://baseline-fonts.vercel.app/og-image.svg"],
   },
   icons: {
-    icon: [
-      {
-        url: "/favicon-light.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/favicon-dark.png", 
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
+    icon: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
   },
 }
 
