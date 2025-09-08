@@ -425,7 +425,7 @@ export default function FontLibrary() {
 
   // Post-render font fallback detection using DOM and canvas measurement
   useEffect(() => {
-    const detectFallbackChars = () => {
+    const detectAndHighlightFallbackChars = () => {
       // Find all contentEditable preview divs
       const previewDivs = document.querySelectorAll('div[contenteditable="true"]')
       
@@ -440,19 +440,14 @@ export default function FontLibrary() {
         if (!ctx) return
 
         const fontSize = 20 // Match approximate preview size
-        const text = element.textContent || ''
+        const originalText = element.textContent || ''
         
-        // Check each character
-        const uniqueChars = [...new Set(text.split(''))]
-        
-        // Reset any previous styling
-        element.style.background = ''
-        
-        let hasFallbacks = false
+        // Check each character to build fallback map
+        const uniqueChars = [...new Set(originalText.split(''))]
         const fallbackChars = new Set<string>()
         
         for (const char of uniqueChars) {
-          // Skip basic characters
+          // Skip basic Latin characters and whitespace
           if (/^[a-zA-Z0-9\s\.,!?;:'"-]$/.test(char)) continue
           
           try {
@@ -460,49 +455,70 @@ export default function FontLibrary() {
             ctx.font = `${fontSize}px ${fontFamily}`
             const intendedWidth = ctx.measureText(char).width
             
-            // Measure with fallback
+            // Measure with fallback only
             ctx.font = `${fontSize}px sans-serif`  
             const fallbackWidth = ctx.measureText(char).width
             
             // If widths are very close, likely using fallback
             if (Math.abs(intendedWidth - fallbackWidth) < 1) {
               fallbackChars.add(char)
-              hasFallbacks = true
             }
           } catch (error) {
             continue
           }
         }
         
-        // Apply subtle background highlighting if fallbacks detected
-        if (hasFallbacks) {
-          // Style the characters that are using fallback fonts
-          const walker = document.createTreeWalker(
-            element,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
+        // Only proceed if we have fallback characters
+        if (fallbackChars.size === 0) {
+          // Clean up any existing highlighting
+          element.innerHTML = originalText
+          return
+        }
+        
+        // Create highlighted HTML by wrapping fallback characters
+        let highlightedHTML = originalText
+        
+        for (const char of fallbackChars) {
+          const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(escapedChar, 'g')
+          highlightedHTML = highlightedHTML.replace(
+            regex,
+            `<span class="fallback-char" style="opacity: 0.4; color: var(--gray-cont-tert);" title="Using fallback font">${char}</span>`
           )
+        }
+        
+        // Only update if content actually changed
+        if (highlightedHTML !== originalText && highlightedHTML !== element.innerHTML) {
+          // Preserve cursor position
+          const selection = window.getSelection()
+          const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
+          const cursorOffset = range?.startOffset || 0
           
-          let node
-          while (node = walker.nextNode()) {
-            const textNode = node as Text
-            const text = textNode.textContent || ''
-            
-            // Check if this text node contains fallback characters
-            const hasFallbackChar = [...text].some(char => fallbackChars.has(char))
-            if (hasFallbackChar && textNode.parentElement) {
-              // Add a subtle visual indicator without breaking editing
-              textNode.parentElement.style.position = 'relative'
-              textNode.parentElement.setAttribute('data-has-fallback', 'true')
+          element.innerHTML = highlightedHTML
+          
+          // Restore cursor position
+          try {
+            if (range && element.firstChild) {
+              const newRange = document.createRange()
+              const textNode = element.firstChild.nodeType === Node.TEXT_NODE 
+                ? element.firstChild 
+                : element.firstChild.firstChild
+              if (textNode) {
+                newRange.setStart(textNode, Math.min(cursorOffset, textNode.textContent?.length || 0))
+                newRange.collapse(true)
+                selection?.removeAllRanges()
+                selection?.addRange(newRange)
+              }
             }
+          } catch (e) {
+            // Cursor restoration failed, but highlighting still works
           }
         }
       })
     }
     
     // Run detection after fonts load and on text changes
-    const timer = setTimeout(detectFallbackChars, 100)
+    const timer = setTimeout(detectAndHighlightFallbackChars, 100)
     return () => clearTimeout(timer)
   }, [fonts, customText])
 
@@ -616,12 +632,28 @@ export default function FontLibrary() {
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
-      {/* Dynamic font loading and fallback detection styles */}
+      {/* Dynamic font loading and fallback character styles */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          [data-has-fallback="true"] {
+          .fallback-char {
             opacity: 0.4 !important;
             color: var(--gray-cont-tert) !important;
+            position: relative;
+          }
+          .fallback-char:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            font-size: 12px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
           }
           ${fonts.map(font => `
             @font-face {
