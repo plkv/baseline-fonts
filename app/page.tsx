@@ -731,22 +731,40 @@ export default function FontLibrary() {
             color: var(--gray-cont-tert) !important;
           }
           ${fonts.map(font => {
+            const familyName = font.name; // Use clean family name without quotes
+            
             // For static fonts with multiple styles, generate @font-face for each style
             if (font._familyFonts && font._familyFonts.length > 1 && font.type === "Static") {
-              return font._familyFonts.map((fontFile: any) => `
+              return font._familyFonts.map((fontFile: any) => {
+                console.log(`CSS for ${familyName} ${fontFile.style}: weight=${fontFile.weight}, italic=${fontFile.style?.toLowerCase().includes('italic')}`);
+                return `
                 @font-face {
-                  font-family: "${font.fontFamily.replace(/"/g, '')}";
+                  font-family: "${familyName}";
                   src: url("${fontFile.blobUrl || fontFile.url}");
                   font-weight: ${fontFile.weight || 400};
-                  font-style: ${fontFile.style?.toLowerCase().includes('italic') ? 'italic' : 'normal'};
+                  font-style: ${fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
                   font-display: swap;
                 }
-              `).join('')
+              `}).join('')
+            } else if (font.type === "Variable" && font._familyFonts) {
+              // For variable fonts, generate @font-face rules for each file
+              return font._familyFonts.map((fontFile: any) => {
+                const weightRange = fontFile.variableAxes?.find((axis: any) => axis.axis === 'wght');
+                const weightValue = weightRange ? `${weightRange.min} ${weightRange.max}` : '100 900';
+                return `
+                @font-face {
+                  font-family: "${familyName}";
+                  src: url("${fontFile.blobUrl || fontFile.url}");
+                  font-weight: ${weightValue};
+                  font-style: ${fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
+                  font-display: swap;
+                }
+              `}).join('')
             } else {
-              // Single font or variable font - use original approach
+              // Single font fallback
               return `
                 @font-face {
-                  font-family: "${font.fontFamily.replace(/"/g, '')}";
+                  font-family: "${familyName}";
                   src: url("${font.url}");
                   font-display: swap;
                 }
