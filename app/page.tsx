@@ -332,7 +332,7 @@ export default function FontLibrary() {
       // Filter by selected languages
       if (selectedLanguages.length > 0) {
         const hasMatchingLanguage = selectedLanguages.some(lang => 
-          font.languages.includes(lang)
+          font.languages && font.languages.includes(lang)
         )
         if (!hasMatchingLanguage) return false
       }
@@ -483,36 +483,13 @@ export default function FontLibrary() {
           const regex = new RegExp(escapedChar, 'g')
           highlightedHTML = highlightedHTML.replace(
             regex,
-            `<span class="fallback-char" style="opacity: 0.4; color: var(--gray-cont-tert);" title="Using fallback font">${char}</span>`
+            `<span class="fallback-char" style="opacity: 0.4; color: var(--gray-cont-tert);">${char}</span>`
           )
         }
         
-        // Only update if content actually changed
-        if (highlightedHTML !== originalText && highlightedHTML !== element.innerHTML) {
-          // Preserve cursor position
-          const selection = window.getSelection()
-          const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null
-          const cursorOffset = range?.startOffset || 0
-          
+        // Only update if content actually changed and element is not currently focused
+        if (highlightedHTML !== originalText && highlightedHTML !== element.innerHTML && document.activeElement !== element) {
           element.innerHTML = highlightedHTML
-          
-          // Restore cursor position
-          try {
-            if (range && element.firstChild) {
-              const newRange = document.createRange()
-              const textNode = element.firstChild.nodeType === Node.TEXT_NODE 
-                ? element.firstChild 
-                : element.firstChild.firstChild
-              if (textNode) {
-                newRange.setStart(textNode, Math.min(cursorOffset, textNode.textContent?.length || 0))
-                newRange.collapse(true)
-                selection?.removeAllRanges()
-                selection?.addRange(newRange)
-              }
-            }
-          } catch (e) {
-            // Cursor restoration failed, but highlighting still works
-          }
         }
       })
     }
@@ -638,22 +615,6 @@ export default function FontLibrary() {
           .fallback-char {
             opacity: 0.4 !important;
             color: var(--gray-cont-tert) !important;
-            position: relative;
-          }
-          .fallback-char:hover::after {
-            content: attr(title);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 2px 6px;
-            font-size: 12px;
-            border-radius: 3px;
-            white-space: nowrap;
-            z-index: 1000;
-            pointer-events: none;
           }
           ${fonts.map(font => `
             @font-face {
