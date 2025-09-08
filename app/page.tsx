@@ -499,6 +499,8 @@ export default function FontLibrary() {
       }
     })
     
+    console.log(`Languages in ${displayMode} collection:`, Array.from(actualLanguages));
+    
     // Define preferred order for common languages
     const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
     
@@ -510,7 +512,9 @@ export default function FontLibrary() {
       .filter(lang => !languageOrder.includes(lang))
       .sort()
     
-    return [...orderedLanguages, ...remainingLanguages]
+    const result = [...orderedLanguages, ...remainingLanguages];
+    console.log(`Final language result for ${displayMode}:`, result);
+    return result;
   }
 
   // Helper function to convert weight number to style name
@@ -938,7 +942,7 @@ export default function FontLibrary() {
               <div>
                 <h3 className="text-sidebar-title mb-3">Language support</h3>
                 <div className="flex flex-wrap gap-2">
-                  {getCollectionLanguages().map((language) => (
+                  {getCollectionLanguages().length > 0 ? getCollectionLanguages().map((language) => (
                     <button
                       key={language}
                       onClick={() =>
@@ -950,7 +954,9 @@ export default function FontLibrary() {
                     >
                       {language}
                     </button>
-                  ))}
+                  )) : (
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available in {displayMode} collection</span>
+                  )}
                 </div>
               </div>
 
