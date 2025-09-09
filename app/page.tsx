@@ -87,6 +87,7 @@ export default function FontLibrary() {
   
   // Font Data State  
   const [fonts, setFonts] = useState<FontData[]>([])
+  const [allFonts, setAllFonts] = useState<any[]>([]) // Store ALL fonts for filtering
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [customText, setCustomText] = useState("")
   const [textCursorPosition, setTextCursorPosition] = useState(0)
@@ -130,6 +131,9 @@ export default function FontLibrary() {
         console.log('📋 API Response:', data)
         console.log('🔍 First font sample:', data.fonts?.[0])
         if (data.success && data.fonts) {
+          // Store ALL fonts for filtering purposes
+          setAllFonts(data.fonts)
+          
           // Group fonts by family name to avoid duplicates
           const fontsByFamily = new Map<string, any[]>()
           data.fonts.forEach((font: any) => {
@@ -600,7 +604,7 @@ export default function FontLibrary() {
   // Get all available style tags from fonts in current collection only
   const getAvailableStyleTags = () => {
     const actualTags = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== STYLE TAGS DEBUG for ${displayMode} collection ===`)
     console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
@@ -626,7 +630,7 @@ export default function FontLibrary() {
   // Get dynamic categories based on fonts actually present in current collection
   const getCollectionCategories = () => {
     const actualCategories = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== CATEGORIES DEBUG for ${displayMode} collection ===`)
     console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
@@ -660,7 +664,7 @@ export default function FontLibrary() {
 
   const getCollectionLanguages = () => {
     const actualLanguages = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== LANGUAGES DEBUG for ${displayMode} collection ===`)
     console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
@@ -709,7 +713,7 @@ export default function FontLibrary() {
     const newCollectionStyles = new Set<string>()
     const newCollectionLanguages = new Set<string>()
     
-    fonts.forEach(font => {
+    allFonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
       if (fontCollection === newDisplayMode) {
         if (font.categories) {
