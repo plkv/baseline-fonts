@@ -397,6 +397,7 @@ export default function FontLibrary() {
   // Helper function to get other OpenType features (non-stylistic)
   const getOtherOTFeatures = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
+    console.log(`🔧 getOtherOTFeatures for font ${fontId}:`, { font: font?.name, _familyFonts: font?._familyFonts?.length })
     if (!font?._familyFonts) return []
     
     // Mapping from readable feature names to OpenType tags with descriptive titles
@@ -435,11 +436,14 @@ export default function FontLibrary() {
       }
     })
     
-    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
+    const result = Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
+    console.log(`🔧 getOtherOTFeatures result for font ${fontId}:`, result)
+    return result
   }
 
   const getVariableAxes = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
+    console.log(`🔧 getVariableAxes for font ${fontId}:`, { font: font?.name, _familyFonts: font?._familyFonts?.length })
     if (!font?._familyFonts) return []
     
     // Get variable axes from font metadata
@@ -459,7 +463,9 @@ export default function FontLibrary() {
       }
     })
     
-    return Array.from(allAxes.values())
+    const result = Array.from(allAxes.values())
+    console.log(`🔧 getVariableAxes result for font ${fontId}:`, result)
+    return result
   }
 
   const toggleCategory = (category: string) => {
