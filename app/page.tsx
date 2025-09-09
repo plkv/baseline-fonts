@@ -128,7 +128,8 @@ export default function FontLibrary() {
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)
-        if (data.success && data.families) {
+        console.log('📋 Families count:', data.families?.length)
+        if (data.success && data.families && data.families.length > 0) {
           // Transform family data to catalog UI format
           const catalogFonts: FontData[] = data.families.map((family: any, index: number) => {
             const familyName = family.name
@@ -137,9 +138,14 @@ export default function FontLibrary() {
             // 1. Font marked as default style
             // 2. Non-italic font (regular/normal)
             // 3. First font as fallback
-            const representativeFont = familyFonts.find(f => f.isDefaultStyle) ||
-              familyFonts.find(f => !f.style?.toLowerCase().includes('italic') && !f.style?.toLowerCase().includes('oblique')) ||
-              familyFonts[0]
+            const representativeFont = familyFonts?.find((f: any) => f.isDefaultStyle) ||
+              familyFonts?.find((f: any) => !f.style?.toLowerCase().includes('italic') && !f.style?.toLowerCase().includes('oblique')) ||
+              familyFonts?.[0]
+            
+            if (!representativeFont) {
+              console.warn(`No representative font found for family: ${familyName}`)
+              return null
+            }
             
             // Analyze available weight+style combinations
             const regularFonts = familyFonts.filter(f => !f.style?.toLowerCase().includes('italic'))
@@ -235,13 +241,17 @@ export default function FontLibrary() {
               categories: Array.isArray(representativeFont.category) ? representativeFont.category : [representativeFont.category || "Sans"],
               languages: representativeFont.languages || []
             }
-          })
+          }).filter(Boolean) // Remove null entries
           setFonts(catalogFonts)
           console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.families.reduce((acc: number, fam: any) => acc + fam.fonts.length, 0)} total font files)`)
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
+        } else {
+          console.warn('No families data or empty families array')
         }
+      } else {
+        console.error('API response not ok:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
