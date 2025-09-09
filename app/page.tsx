@@ -128,6 +128,7 @@ export default function FontLibrary() {
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)
+        console.log('🔍 First font sample:', data.fonts?.[0])
         if (data.success && data.fonts) {
           // Group fonts by family name to avoid duplicates
           const fontsByFamily = new Map<string, any[]>()
@@ -598,178 +599,87 @@ export default function FontLibrary() {
 
   // Get all available style tags from fonts in current collection only
   const getAvailableStyleTags = () => {
-    const allTags = new Set<string>()
-    
+    const actualTags = new Set<string>()
     const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
-    console.log(`Checking style tags for ${fontsInCollection.length} fonts in ${displayMode} collection:`)
     
-    // Always add basic tags based on collection
-    if (displayMode === 'Text') {
-      allTags.add('Sans Serif')
-      allTags.add('Serif')
-      allTags.add('Monospace')
-    } else if (displayMode === 'Display') {
-      allTags.add('Display')
-      allTags.add('Decorative')
-      allTags.add('Script')
-    } else if (displayMode === 'Weirdo') {
-      allTags.add('Experimental')
-      allTags.add('Artistic')
-    }
+    console.log(`\n=== STYLE TAGS DEBUG for ${displayMode} collection ===`)
+    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
     
     fontsInCollection.forEach((font, index) => {
-      console.log(`Font ${index + 1}: ${font.name}`, {
-        styleTags: font.styleTags,
-        categories: font.categories,
-        type: font.type,
-        openTypeFeatures: font.openTypeFeatures?.slice(0, 3) // Show first 3
-      })
+      console.log(`Font ${index + 1}: "${font.name}"`)
+      console.log(`  - styleTags field:`, font.styleTags)
+      console.log(`  - type:`, font.type)
       
+      // Only use ACTUAL styleTags from database
       if (font.styleTags && Array.isArray(font.styleTags) && font.styleTags.length > 0) {
-        font.styleTags.forEach(tag => allTags.add(tag))
-      } else {
-        // Enhanced fallback: generate style tags from multiple data sources
-        const fontName = (font.name || font.family || '').toLowerCase()
-        const categories = font.categories || []
-        const openTypeFeatures = font.openTypeFeatures || []
-        
-        // Category-based tags
-        if (categories.includes('Serif')) allTags.add('Serif')
-        if (categories.includes('Sans')) allTags.add('Sans Serif')  
-        if (categories.includes('Mono')) allTags.add('Monospace')
-        if (categories.includes('Script')) allTags.add('Script')
-        if (categories.includes('Decorative')) allTags.add('Decorative')
-        if (categories.includes('Slab')) allTags.add('Slab Serif')
-        
-        // Variable font detection
-        if (font.type === 'Variable') allTags.add('Variable')
-        
-        // OpenType feature-based tags
-        if (openTypeFeatures.some(f => f.toLowerCase().includes('ligature'))) {
-          allTags.add('Ligatures')
-        }
-        if (openTypeFeatures.some(f => f.toLowerCase().includes('stylistic'))) {
-          allTags.add('Stylistic Sets')
-        }
-        if (openTypeFeatures.some(f => f.toLowerCase().includes('small cap'))) {
-          allTags.add('Small Caps')
-        }
-        
-        // Font name pattern-based tags
-        if (/condensed|narrow/i.test(fontName)) allTags.add('Condensed')
-        if (/extended|wide/i.test(fontName)) allTags.add('Extended')
-        if (/rounded|round/i.test(fontName)) allTags.add('Rounded')
-        if (/stencil/i.test(fontName)) allTags.add('Stencil')
-        if (/outline|inline/i.test(fontName)) allTags.add('Outline')
-        if (/shadow|3d/i.test(fontName)) allTags.add('Shadow')
-        if (/vintage|retro|classic/i.test(fontName)) allTags.add('Vintage')
-        if (/modern|contemporary/i.test(fontName)) allTags.add('Modern')
+        font.styleTags.forEach(tag => actualTags.add(tag))
       }
     })
     
-    console.log(`All detected style tags:`, Array.from(allTags));
-    return Array.from(allTags).sort()
+    console.log(`All detected style tags:`, Array.from(actualTags))
+    console.log(`=== END STYLE TAGS DEBUG ===\n`)
+    
+    // Return only actual tags from database, no fallbacks
+    return Array.from(actualTags).sort()
   }
 
   // Get dynamic categories based on fonts actually present in current collection
   const getCollectionCategories = () => {
-    // Get all categories from fonts in the current collection
     const actualCategories = new Set<string>()
-    fonts.forEach(font => {
-      const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode && font.categories) {
-        font.categories.forEach(category => actualCategories.add(category))
+    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    
+    console.log(`\n=== CATEGORIES DEBUG for ${displayMode} collection ===`)
+    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
+    
+    fontsInCollection.forEach((font, index) => {
+      console.log(`Font ${index + 1}: "${font.name}"`)
+      console.log(`  - category field:`, font.category)
+      console.log(`  - categories field:`, font.categories)
+      console.log(`  - collection:`, font.collection)
+      
+      // Check both 'category' and 'categories' fields
+      if (font.category) {
+        if (Array.isArray(font.category)) {
+          font.category.forEach(cat => actualCategories.add(cat))
+        } else {
+          actualCategories.add(font.category)
+        }
+      }
+      
+      if (font.categories && Array.isArray(font.categories)) {
+        font.categories.forEach(cat => actualCategories.add(cat))
       }
     })
     
-    // Define the ideal order for each collection
-    const categoryOrder = {
-      Text: ['Sans', 'Serif', 'Slab', 'Mono'],
-      Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
-      Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
-    }
+    console.log(`All detected categories:`, Array.from(actualCategories))
+    console.log(`=== END CATEGORIES DEBUG ===\n`)
     
-    const preferredOrder = categoryOrder[displayMode] || categoryOrder.Text
-    
-    // Return categories in preferred order, but only those that actually exist
-    const orderedCategories = preferredOrder.filter(cat => actualCategories.has(cat))
-    
-    // Add any remaining categories that exist but aren't in the preferred order
-    const remainingCategories = Array.from(actualCategories)
-      .filter(cat => !preferredOrder.includes(cat))
-      .sort()
-    
-    return [...orderedCategories, ...remainingCategories]
+    // Return all found categories, sorted
+    return Array.from(actualCategories).sort()
   }
 
   const getCollectionLanguages = () => {
-    // Get all languages from fonts in the current collection
     const actualLanguages = new Set<string>()
-    
-    // Always ensure Latin is available as minimum
-    actualLanguages.add('Latin')
-    
     const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
-    console.log(`Checking ${fontsInCollection.length} fonts in ${displayMode} collection:`)
+    
+    console.log(`\n=== LANGUAGES DEBUG for ${displayMode} collection ===`)
+    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
     
     fontsInCollection.forEach((font, index) => {
-      console.log(`Font ${index + 1}: ${font.name}`, {
-        languages: font.languages,
-        hasLanguages: font.languages && Array.isArray(font.languages) && font.languages.length > 0
-      })
+      console.log(`Font ${index + 1}: "${font.name}"`)
+      console.log(`  - languages field:`, font.languages)
       
-      // Check if font has language data
+      // Only use ACTUAL languages from database
       if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
         font.languages.forEach(language => actualLanguages.add(language))
-      } else {
-        // Enhanced fallback: analyze font metadata for language clues
-        const fontName = (font.name || '').toLowerCase()
-        
-        // Detect other scripts from font naming patterns  
-        if (/cyrillic|russian|ukraine|serbian/i.test(fontName)) {
-          actualLanguages.add('Cyrillic')
-        }
-        if (/greek|hellenic/i.test(fontName)) {
-          actualLanguages.add('Greek')
-        }
-        if (/arabic|persian|urdu/i.test(fontName)) {
-          actualLanguages.add('Arabic')
-        }
-        if (/hebrew/i.test(fontName)) {
-          actualLanguages.add('Hebrew')
-        }
-        if (/chinese|cjk|han/i.test(fontName)) {
-          actualLanguages.add('Chinese')
-        }
-        if (/japanese|hiragana|katakana/i.test(fontName)) {
-          actualLanguages.add('Japanese')
-        }
-        if (/korean|hangul/i.test(fontName)) {
-          actualLanguages.add('Korean')
-        }
-        
-        // For fonts without specific script indicators, add common languages
-        actualLanguages.add('Cyrillic')
-        actualLanguages.add('Greek')
       }
     })
     
-    console.log(`All detected languages:`, Array.from(actualLanguages));
+    console.log(`All detected languages:`, Array.from(actualLanguages))
+    console.log(`=== END LANGUAGES DEBUG ===\n`)
     
-    // Define preferred order for common languages
-    const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
-    
-    // Return languages in preferred order, but only those that actually exist
-    const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
-    
-    // Add any remaining languages that exist but aren't in the preferred order
-    const remainingLanguages = Array.from(actualLanguages)
-      .filter(lang => !languageOrder.includes(lang))
-      .sort()
-    
-    const result = [...orderedLanguages, ...remainingLanguages];
-    console.log(`Final language result for ${displayMode}:`, result);
-    return result;
+    // Return only actual languages from database, no fallbacks
+    return Array.from(actualLanguages).sort()
   }
 
   // Helper function to convert weight number to style name
