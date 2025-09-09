@@ -120,8 +120,8 @@ export default function CleanAdmin() {
   const loadFonts = async () => {
     try {
       const [fontsResponse, familiesResponse] = await Promise.all([
-        fetch('/api/fonts-clean/list'),
-        fetch('/api/fonts-clean/families')
+        fetch('/api/fonts'),
+        fetch('/api/fonts?families=true')
       ])
       
       if (fontsResponse.ok) {
@@ -182,7 +182,7 @@ export default function CleanAdmin() {
       let updatedCount = 0
       for (const font of fontsToUpdate) {
         try {
-          const response = await fetch('/api/fonts-clean/update', {
+          const response = await fetch(`/api/fonts/${updatedFont.id}`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json'
