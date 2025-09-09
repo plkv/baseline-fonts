@@ -246,19 +246,13 @@ export default function FontLibrary() {
           })
           setFonts(catalogFonts)
           console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
-          console.log(`🔍 First processed font sample:`, {
-            name: catalogFonts[0]?.name,
-            _familyFonts: catalogFonts[0]?._familyFonts?.length,
-            variableAxes: catalogFonts[0]?.variableAxes,
-            openTypeFeatures: catalogFonts[0]?.openTypeFeatures
-          })
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
         }
       }
     } catch (error) {
-      console.error('❌ Failed to load fonts:', error)
+      console.error('Failed to load fonts:', error)
     } finally {
       setIsLoadingFonts(false)
     }
@@ -394,7 +388,6 @@ export default function FontLibrary() {
   // Helper function to get other OpenType features (non-stylistic)
   const getOtherOTFeatures = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
-    console.log(`🔧 getOtherOTFeatures for font ${fontId}:`, { font: font?.name, _familyFonts: font?._familyFonts?.length })
     if (!font?._familyFonts) return []
     
     // Mapping from readable feature names to OpenType tags with descriptive titles
@@ -433,14 +426,11 @@ export default function FontLibrary() {
       }
     })
     
-    const result = Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
-    console.log(`🔧 getOtherOTFeatures result for font ${fontId}:`, result)
-    return result
+    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
   }
 
   const getVariableAxes = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
-    console.log(`🔧 getVariableAxes for font ${fontId}:`, { font: font?.name, _familyFonts: font?._familyFonts?.length })
     if (!font?._familyFonts) return []
     
     // Get variable axes from font metadata
@@ -460,9 +450,7 @@ export default function FontLibrary() {
       }
     })
     
-    const result = Array.from(allAxes.values())
-    console.log(`🔧 getVariableAxes result for font ${fontId}:`, result)
-    return result
+    return Array.from(allAxes.values())
   }
 
   const toggleCategory = (category: string) => {
