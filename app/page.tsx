@@ -142,6 +142,7 @@ export default function FontLibrary() {
 
           // Transform grouped families to catalog UI format
           const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
+            try {
             // Choose the best representative font: 
             // 1. Font marked as default style
             // 2. Non-italic font (regular/normal)
@@ -154,6 +155,8 @@ export default function FontLibrary() {
               console.warn(`No representative font found for family: ${familyName}`)
               return null
             }
+            
+            console.log(`Processing family: ${familyName}, fonts: ${familyFonts.length}`);
             
             // Analyze available weight+style combinations
             const regularFonts = familyFonts.filter(f => !f.style?.toLowerCase().includes('italic'))
@@ -248,6 +251,10 @@ export default function FontLibrary() {
               styleTags: representativeFont.styleTags || [],
               categories: Array.isArray(representativeFont.category) ? representativeFont.category : [representativeFont.category || "Sans"],
               languages: representativeFont.languages || []
+            }
+            } catch (error) {
+              console.error(`Error processing family ${familyName}:`, error)
+              return null
             }
           }).filter(Boolean) // Remove null entries
           setFonts(catalogFonts)
