@@ -124,25 +124,17 @@ export default function FontLibrary() {
     try {
       setIsLoadingFonts(true)
       console.log('🔄 Loading fonts from API...')
-      const response = await fetch('/api/fonts-clean/list')
+      const response = await fetch('/api/fonts?families=true')
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)
-        console.log('📋 Fonts count:', data.fonts?.length)
-        if (data.success && data.fonts && data.fonts.length > 0) {
-          // Group fonts by family name to avoid duplicates
-          const fontsByFamily = new Map<string, any[]>()
-          data.fonts.forEach((font: any) => {
-            const familyName = font.family || font.name
-            if (!fontsByFamily.has(familyName)) {
-              fontsByFamily.set(familyName, [])
-            }
-            fontsByFamily.get(familyName)!.push(font)
-          })
-
-          // Transform grouped families to catalog UI format
-          const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
+        console.log('📋 Families count:', data.families?.length)
+        if (data.success && data.families && data.families.length > 0) {
+          // Transform family data to catalog UI format
+          const catalogFonts: FontData[] = data.families.map((family: any, index: number) => {
             try {
+            const familyName = family.name
+            const familyFonts = family.fonts
             // Choose the best representative font: 
             // 1. Font marked as default style
             // 2. Non-italic font (regular/normal)
@@ -171,8 +163,8 @@ export default function FontLibrary() {
             if (isVariable) {
               // For variable fonts, use weight axis range or common weight stops
               const weightAxes = familyFonts
-                .filter(f => f.variableAxes?.some((axis: any) => axis.axis === 'wght'))
-                .map(f => f.variableAxes?.find((axis: any) => axis.axis === 'wght'))
+                .filter(f => f.variableAxes?.some((axis: any) => axis.tag === 'wght'))
+                .map(f => f.variableAxes?.find((axis: any) => axis.tag === 'wght'))
                 .filter(Boolean)
               
               if (weightAxes.length > 0) {
@@ -239,7 +231,7 @@ export default function FontLibrary() {
               availableWeights: availableWeights,
               hasItalic: hasItalic,
               filename: representativeFont.filename,
-              url: representativeFont.blobUrl || representativeFont.url,
+              url: representativeFont.blob || representativeFont.url,
               variableAxes: representativeFont.variableAxes,
               openTypeFeatures: representativeFont.openTypeFeatures,
               // Store family fonts data for style selection
@@ -258,12 +250,12 @@ export default function FontLibrary() {
             }
           }).filter(Boolean) // Remove null entries
           setFonts(catalogFonts)
-          console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
+          console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.families.reduce((acc: number, fam: any) => acc + fam.fonts.length, 0)} total font files)`)
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
         } else {
-          console.warn('No fonts data or empty fonts array')
+          console.warn('No families data or empty families array')
         }
       } else {
         console.error('API response not ok:', response.status, response.statusText)
@@ -292,7 +284,7 @@ export default function FontLibrary() {
           return `
             @font-face {
               font-family: "${font.family}";
-              src: url("${fontFile.blobUrl || fontFile.url || `/fonts/${fontFile.filename}`}");
+              src: url("${fontFile.blob || fontFile.url || `/fonts/${fontFile.filename}`}");
               font-weight: ${fontWeight};
               font-style: ${isItalic ? 'italic' : 'normal'};
               font-display: swap;
@@ -456,8 +448,8 @@ export default function FontLibrary() {
       if (familyFont.variableAxes) {
         familyFont.variableAxes.forEach((axis: any) => {
           // Use axis tag as key to avoid duplicates
-          allAxes.set(axis.axis, {
-            tag: axis.axis,
+          allAxes.set(axis.tag, {
+            tag: axis.tag,
             name: axis.name,
             min: axis.min,
             max: axis.max,
@@ -1011,7 +1003,7 @@ export default function FontLibrary() {
                 return `
                 @font-face {
                   font-family: "${familyName}";
-                  src: url("${fontFile.blobUrl || fontFile.url}");
+                  src: url("${fontFile.blob || fontFile.url}");
                   font-weight: ${fontFile.weight || 400};
                   font-style: ${fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
                   font-display: swap;
@@ -1020,14 +1012,14 @@ export default function FontLibrary() {
             } else if (font.type === "Variable" && font._familyFonts) {
               // For variable fonts, generate @font-face rules for each file
               return font._familyFonts.map((fontFile: any) => {
-                const weightRange = fontFile.variableAxes?.find((axis: any) => axis.axis === 'wght');
+                const weightRange = fontFile.variableAxes?.find((axis: any) => axis.tag === 'wght');
                 const weightValue = weightRange ? `${weightRange.min} ${weightRange.max}` : '100 900';
                 const isItalic = fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique');
-                console.log(`Variable CSS for ${familyName} ${fontFile.style}: weight=${weightValue}, italic=${isItalic}, file=${fontFile.blobUrl || fontFile.url}`);
+                console.log(`Variable CSS for ${familyName} ${fontFile.style}: weight=${weightValue}, italic=${isItalic}, file=${fontFile.blob || fontFile.url}`);
                 return `
                 @font-face {
                   font-family: "${familyName}";
-                  src: url("${fontFile.blobUrl || fontFile.url}");
+                  src: url("${fontFile.blob || fontFile.url}");
                   font-weight: ${weightValue};
                   font-style: ${isItalic ? 'italic' : 'normal'};
                   font-display: swap;
