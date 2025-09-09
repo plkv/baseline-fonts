@@ -3,280 +3,332 @@
 ## Project Overview
 - **Project Name**: Baseline Font Catalog
 - **Repository**: https://github.com/plkv/baseline-fonts.git  
-- **Current Version**: 0.066 (catalog branch)
-- **Status**: ✅ Working with new catalog UI
-- **IMPORTANT**: Local development is not priority - only Vercel deployment matters!
+- **Current Version**: 0.087 (main branch - production ready)
+- **Status**: ✅ Production stable with all critical UI issues fixed
+- **Live URL**: https://baseline-fonts.vercel.app
+
+## 🎯 CORE PROJECT PRINCIPLES
+1. **Production First**: Local development is NOT priority - only Vercel deployment matters!
+2. **No Patches**: Focus on clean, simple, and effective solutions that fix root causes
+3. **Preserve Working UI**: Always avoid breaking existing functionality when making fixes
 
 ## Project Structure
 ```
-/Users/plkv/Desktop/claude/baseline/baseline/
+/Users/plkv/Desktop/claude/typedump/baseline-fonts/
 ├── app/
-│   ├── page.tsx (main font catalog interface)
-│   ├── admin/ (admin panel for font management)
+│   ├── page.tsx (main font catalog interface - v0.app design)
+│   ├── admin/ (admin panels for font management)
 │   └── api/
-│       └── fonts/ (font API endpoints)
-├── components/
-│   └── ui/ (UI components including card.tsx)
+│       ├── fonts-clean/ (clean font API endpoints)
+│       └── fonts/ (legacy font API endpoints)
+├── components/ui/ (Radix UI components)
 ├── lib/
-│   ├── font-parser.ts (font parsing logic)
-│   └── font-storage.ts (font database management)
-├── public/fonts/ (uploaded font files)
+│   ├── font-parser.ts (OpenType.js font parsing)
+│   └── font-storage-clean.ts (Vercel Blob + KV storage)
 ├── package.json
-├── vercel.json (deployment config)
+├── vercel.json (deployment + env config)
 └── CLAUDE.md (this file)
 ```
 
-## Recent Major Fixes Applied
-1. **Next.js 15 Compatibility** - Updated route handlers to use async params
-2. **TypeScript Errors** - Fixed all implicit 'any' type errors throughout codebase
-3. **Missing UI Components** - Added card.tsx component
-4. **OpenType.js Integration** - Fixed font parsing and type issues
-5. **Git Repository** - Corrected remote to baseline-fonts.git
-6. **Phase 1 Critical Fixes** - Removed hardcoded fonts array, improved font loading
-7. **User Experience** - Added proper empty state handling when no fonts uploaded
-8. **Dependencies** - Added missing @vercel/blob and @vercel/kv packages
+## Current Status: ✅ PRODUCTION STABLE
+
+### Latest Achievement: All Critical UI Issues Fixed (v0.087)
+**Deployed**: 2025-09-09 - Fixed 9 critical UI issues reported by user
+
+1. **✅ Language support filters** - Added Latin fallback for fonts without language data
+2. **✅ Text presets rendering** - Fixed CSS variable artifacts polluting Key Glyphs/Basic presets 
+3. **✅ Appearance tags** - Added category-based fallbacks when styleTags missing
+4. **✅ Text Size slider** - Corrected range from 50-200px to 12-200px
+5. **✅ Line height slider** - Corrected range from 80-200% to 90-160%
+6. **✅ Variable axis interaction** - Fixed dropdown sync after weight axis slider changes
+7. **✅ Download button logic** - Only shows when admin sets download link (not blob URLs)
+8. **✅ Text editing cursor** - Enhanced preservation to prevent jumping to start
+9. **✅ Stylistic alternates** - Enhanced detection from multiple OpenType feature sources
+
+### Mobile Responsive (User-implemented)
+**Commit c703b5b**: Mobile responsive improvements
+- ✅ Dynamic sidebar hiding on mobile (<768px)
+- ✅ Floating overlay for mobile sidebar interaction  
+- ✅ Prevention of layout flash with proper SSR handling
+- ✅ Resize event listeners for dynamic screen changes
 
 ## Version Management System
 - **Always update version on every push**
-- Update 2 locations:
+- Update 3 locations:
   1. `package.json` - "version" field
-  2. `app/page.tsx` - version display in header (line ~763)
-  3. `vercel.json` - NEXT_PUBLIC_VERSION env var
-- Current version pattern: 0.0XX (increment last digits)
+  2. `vercel.json` - NEXT_PUBLIC_VERSION env var  
+  3. Git tag (optional)
+- Current version: **0.088**
 
-## Deployment Process
-1. Update version in all 3 files
-2. `git add .`
-3. `git commit -m "descriptive message"`
-4. `git push origin main`
-5. Vercel auto-deploys from GitHub pushes
-
-## Key Technical Details
-
-### Font Management
-- Fonts stored in `/public/fonts/uploads/`
-- Font metadata stored in JSON database
-- Dynamic CSS generation for uploaded fonts
-- OpenType.js used for font parsing
-
-### API Endpoints
-- `/api/fonts/list` - Get all fonts
-- `/api/fonts/upload` - Upload new fonts
-- `/api/fonts/[id]` - Get/delete specific font
-- `/api/fonts/css` - Generate font CSS
-
-### Development Commands
+## Deployment Process (PRODUCTION FOCUSED)
 ```bash
-npm run dev     # Start development server
-npm run build   # Build for production
-npm run start   # Start production server
+# 1. Update version
+# Edit package.json and vercel.json
+
+# 2. Commit and deploy
+git add .
+git commit -m "Descriptive message with bullet points"
+git push origin main
+
+# 3. Vercel auto-deploys from GitHub
+# Monitor at https://vercel.com/dashboard
 ```
 
-### Environment
-- Working directory: `/Users/plkv/Desktop/claude/baseline/baseline/`
-- Platform: macOS (Darwin 24.5.0)
-- Node.js project with Next.js 15.2.4
-- Uses TypeScript, Tailwind CSS, Radix UI components
+## API Architecture
 
-## Current Status
-- ✅ Project builds successfully without errors
-- ✅ All TypeScript issues resolved
-- ✅ Git repository pointing to correct URL
-- ✅ Version synced across all files (0.026)
-- ✅ Latest commit pushed to main branch
-- ✅ Vercel deployment triggered
+### Font Storage System
+- **Storage**: Vercel Blob (files) + Vercel KV (metadata)
+- **Parser**: OpenType.js for comprehensive font analysis
+- **API**: `/api/fonts-clean/` endpoints (primary)
 
-## Known Working Features
-- Font catalog with search/filter functionality
-- Font upload and management system
-- Variable font axis controls
-- OpenType feature toggles
+### Key Endpoints
+- `GET /api/fonts-clean/list` - Get all published fonts
+- `POST /api/fonts-clean/upload` - Upload new fonts with parsing
+- `PATCH /api/fonts-clean/update` - Update font metadata
+- `DELETE /api/fonts-clean/delete` - Remove fonts and files
+
+### Admin Interfaces
+- `/admin-simple` - Simple font management
+- `/admin` - Advanced font management with family merging
+
+## Technical Stack
+- **Framework**: Next.js 15.2.4 with TypeScript
+- **UI**: Radix UI + Tailwind CSS + Material Symbols
+- **Storage**: Vercel Blob + KV
+- **Parsing**: OpenType.js 
+- **Deployment**: Vercel with auto-deploy from GitHub
+
+## Font Catalog Features
+
+### Core Functionality ✅ Working
+- Beautiful v0.app-designed catalog interface
+- Dynamic font loading from Vercel storage
+- Real-time font preview with contentEditable text
+- Advanced filtering: categories, weights, languages, appearance tags
+- Text presets: Names, Key Glyphs, Basic, Paragraph, Brands
+- Collection modes: Text, Display, Weirdo
+- Variable font axis controls with sliders
+- OpenType feature toggles (stylistic alternates, ligatures, etc.)
+- Mobile responsive with floating sidebar
 - Theme switching (light/dark/color themes)
-- Responsive design for mobile/desktop
 
-## Dependencies Installed
-- @types/opentype.js (for TypeScript support)
-- All Radix UI components for interface
-- OpenType.js for font parsing
-- Vercel CLI for deployment
-- @vercel/blob (for persistent file storage)
-- @vercel/kv (for metadata storage)
+### Admin Features ✅ Working  
+- Font upload with automatic metadata extraction
+- Font family management and merging
+- Style tag management and bulk operations
+- Publishing/unpublishing control
+- Download link management
+- Font editing and deletion
+
+## Known Working Integrations
+- ✅ GitHub auto-deployment to Vercel
+- ✅ Vercel Blob storage for font files
+- ✅ Vercel KV for metadata storage  
+- ✅ OpenType.js for font parsing
+- ✅ Material Symbols icons
+- ✅ Radix UI component library
+- ✅ Tailwind CSS styling system
 
 ## Commit Message Format
-Always use this format for consistency:
 ```
 Brief description of changes
 
 - Detailed bullet points of what changed
-- Any technical improvements made
-- Version updates included
+- Technical improvements made
+- Version bump noted
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
-## Important Notes
-- Always run `npm run build` to verify no TypeScript errors before pushing
-- Font uploads are handled via API with proper validation
-- CSS is dynamically generated for uploaded fonts
-- Admin interface available at `/admin` route
-- Project uses comprehensive error handling and logging
+## Development Guidelines
 
-## Next Steps Checklist
-If continuing development:
-1. [ ] Verify latest version number
-2. [ ] Check if build passes: `npm run build`
-3. [ ] Update version before any new push
-4. [ ] Test font upload functionality
-5. [ ] Ensure Vercel deployment is working
+### When Adding New Features:
+1. **Check existing patterns** - Follow established code conventions
+2. **Test in production context** - Focus on Vercel deployment behavior  
+3. **Preserve working functionality** - Never break existing features
+4. **Use clean solutions** - Avoid patches, fix root causes
+5. **Update version** - Increment version number before pushing
 
-Last updated: 2025-09-04
+### When Debugging Issues:
+1. **Check production first** - Issues often only appear in Vercel environment
+2. **Look for data consistency** - Font metadata might be incomplete
+3. **Check API responses** - Verify data structure matches expectations
+4. **Test responsive behavior** - Ensure mobile and desktop both work
 
-## Phase 1 Critical Fixes Completed
-✅ **All Phase 1 objectives achieved:**
-1. ✅ Removed hardcoded fonts array from main page (app/page.tsx lines 16-107)
-2. ✅ Fixed font loading to use only uploaded fonts via API call
-3. ✅ Added proper error handling for font loading failures with fallback states
-4. ✅ Improved user feedback when no fonts uploaded (empty state with admin link)
-5. ✅ Tested complete user flow - API returns fonts correctly, build succeeds
-6. ✅ Updated version to 0.024 across all files
-7. ✅ Added missing Vercel dependencies (@vercel/blob, @vercel/kv)
+### File Locations to Remember:
+- Main catalog: `/app/page.tsx` (1445 lines)
+- Font storage: `/lib/font-storage-clean.ts`  
+- Font parsing: `/lib/font-parser.ts`
+- Admin interfaces: `/app/admin/` directory
+- API endpoints: `/app/api/fonts-clean/`
 
-## Admin Functionality Testing Results
+## Environment Details
+- **Working Directory**: `/Users/plkv/Desktop/claude/typedump/baseline-fonts/`
+- **Platform**: macOS (Darwin 24.5.0)
+- **Node.js**: Latest LTS with Next.js 15.2.4
+- **Deployment**: Vercel production environment
 
-### ✅ Working Functions:
-1. **Font Upload** - Comprehensive metadata extraction (19 OpenType features)
-2. **Font Parsing** - Extracts weight, style, languages, foundry, features
-3. **Font Editing** - Successfully updates all metadata fields
-4. **Font Removal** - Properly deletes files and metadata
-5. **Publishing/Unpublishing** - NEW: Complete publish status control
-   - Public API filters unpublished fonts
-   - Admin API shows all fonts with `?includeUnpublished=true`
+## Quick Start for New Sessions
+```bash
+# Navigate to project
+cd /Users/plkv/Desktop/claude/typedump/baseline-fonts/
 
-### ❌ Critical Issues Identified:
+# Check current status  
+git status
+git log --oneline -5
 
-#### 1. Deployment Font Persistence (CRITICAL)
-- **Problem**: Every deploy removes uploaded fonts
-- **Cause**: Missing Vercel Blob/KV environment variables
-- **Impact**: Production unusable - fonts disappear on deployment
-- **Solution**: Configure BLOB_READ_WRITE_TOKEN, KV_REST_API_URL, KV_REST_API_TOKEN
+# Verify production deployment
+# Visit: https://baseline-fonts.vercel.app
+```
 
-#### 2. Path Mismatch (FIXED)
-- **Problem**: Inconsistent font paths in storage system
-- **Fix Applied**: Updated to use consistent `/fonts/filename.otf` paths
+## 🚀 ARCHITECTURAL REFACTOR PLAN - CTO SOLUTION
 
-**Technical Implementation:**
-- Font loading now exclusively uses `loadUploadedFonts()` function
-- Enhanced empty state differentiation: "no fonts uploaded" vs "filtered results"
-- API endpoint `/api/fonts/list` verified working
-- Build process clean with no TypeScript errors
-- All error states properly handled with user-friendly feedback
-- Publishing system filters public vs admin views
-- Added `/api/fonts/publish` endpoint for status control
+### Problem Analysis: Recurring Bug Pattern
+The current system suffers from **3 fundamental architectural flaws** causing recurring bugs:
 
-## FONT PERSISTENCE SOLUTION IMPLEMENTED
+1. **Scattered State Management** - 20+ useState hooks with interdependent updates
+2. **Inconsistent Data Models** - Multiple schemas for same font data across API/UI/Storage  
+3. **DOM-Heavy React Patterns** - Direct DOM manipulation breaking React reconciliation
 
-### ✅ **Font Persistence Guaranteed**
-The critical deployment issue has been solved with a comprehensive persistent storage system:
+### Root Cause → Bug Mapping:
+- **Cursor Reset** → Direct DOM manipulation in contentEditable
+- **Language Support Empty** → Missing fallback in scattered state
+- **Appearance Filters Broken** → Inconsistent styleTags data model
+- **Text Preset Errors** → CSS injection during DOM manipulation
+- **Missing Symbols False Positives** → Unreliable canvas measurement
+- **Stylistic Alternates Missing** → Complex parsing from multiple sources
+- **Family Connection Broken** → Flat storage without proper hierarchy
 
-#### New Persistent Storage Manager (`lib/persistent-storage.ts`)
-- **Development**: Fonts stored in `/public/fonts/` + `fonts-data.json` 
-- **Production (with Vercel Storage)**: Fonts stored in Vercel Blob + KV
-- **Production (without Vercel Storage)**: Memory only + warnings
+### Solution: Font Management System (FMS)
 
-#### Smart Storage Detection
-- Automatically detects environment and available storage
-- Provides clear warnings when storage is misconfigured
-- Falls back gracefully with explicit storage type logging
+#### Phase 1: Foundation (Week 1)
+```bash
+# Install state management
+npm install zustand
 
-#### Deployment Setup Required
-**URGENT**: Configure Vercel storage to prevent font loss:
+# Create unified data models
+lib/models/FontFamily.ts    # Hierarchical family model
+lib/models/FontVariant.ts   # Individual font variants
+lib/font-store.ts          # Centralized Zustand store
+```
 
-1. Go to https://vercel.com/dashboard → baseline-fonts project → Storage
-2. Create KV Database + Blob Store  
-3. Add environment variables:
-   - `BLOB_READ_WRITE_TOKEN`
-   - `KV_REST_API_URL` 
-   - `KV_REST_API_TOKEN`
-4. Redeploy project
+#### Phase 2: Data Architecture (Week 2)  
+```bash
+# Hierarchical data model
+lib/font-processor.ts      # Multi-stage validation pipeline
+scripts/migrate-families.ts # Convert flat data to hierarchy
+app/api/fonts-clean/families # New family-based endpoints
+```
 
-#### Verification Endpoints
-- `/api/fonts/storage-status` - Check storage configuration
-- Storage logs show type: "Vercel Cloud (Persistent)" vs "Memory Only"
+#### Phase 3: UI Refactor (Week 3)
+```bash
+# Replace useState patterns
+components/ControlledTextPreview.tsx  # Controlled inputs
+lib/symbol-detector.ts               # Unicode-aware detection
+app/page.tsx                        # Connect to FontStore
+```
 
-#### Comprehensive Documentation
-- `FONT-PERSISTENCE-GUIDE.md` - Complete setup instructions
-- `scripts/setup-vercel-storage.js` - Automated configuration checker
-- `DEPLOYMENT-SETUP.md` - Technical deployment details
+#### Phase 4: Testing & Deploy (Week 4)
+```bash
+# Comprehensive testing
+tests/font-store.test.ts
+tests/font-processor.test.ts
+# Performance optimization & migration validation
+```
 
-**Result**: Once configured, all fonts uploaded through admin panel will persist permanently across all deployments! 🎉
+### Key Architectural Changes:
 
-## 🎉 CATALOG BRANCH - NEW UI INTEGRATED (2025-09-07)
+#### 1. Unified State Management
+**Before**: 20+ useState hooks
+**After**: Single FontStore with computed values
+```typescript
+interface FontStore {
+  fonts: NormalizedFont[]
+  families: FontFamily[]
+  filters: FilterState
+  
+  // Computed (eliminates filter bugs)
+  filteredFonts: () => NormalizedFont[]
+  availableLanguages: () => string[]
+  availableStyleTags: () => string[]
+}
+```
 
-### Major Achievement: Beautiful Catalog UI from v0.app
+#### 2. Hierarchical Data Model
+**Before**: Flat font storage with weak connections
+**After**: True parent-child hierarchy with inheritance
+```typescript
+interface FontFamily {
+  id: string
+  name: string
+  // Global settings inherited by all variants
+  collection: 'Text' | 'Display' | 'Weirdo'
+  styleTags: string[]
+  languages: string[]
+  fonts: FontVariant[]  // Children inherit these settings
+}
+```
 
-Successfully integrated the sophisticated catalog interface from https://github.com/plkv/typedump-front-v0 with the existing admin functionality!
+#### 3. Controlled Input System
+**Before**: Direct DOM manipulation causing cursor jump
+**After**: Pure React with state-managed cursor position
+```typescript
+// No more DOM manipulation - cursor tracked in React state
+const [textValue, setTextValue] = useState("")
+const [cursorPosition, setCursorPosition] = useState(0)
+```
 
-### What's New in Catalog Branch:
+#### 4. Robust Font Processing Pipeline
+**Before**: Inconsistent metadata extraction
+**After**: Multi-stage validation with fallbacks
+```typescript
+// Standardized processing eliminates missing data
+validateFile → extractMetadata → parseFeatures → detectLanguages → validate
+```
 
-**✅ New Catalog Interface:**
-- Beautiful, professional font catalog UI created with v0.app
-- Preserved exact design system, colors, and typography from v0 frontend
-- Dynamic font loading from existing API endpoints
-- Advanced font preview with real-time editing
-- Sophisticated filtering and sorting capabilities
-- Variable font axis controls and OpenType feature toggles
+### Expected Outcomes:
+- **🎯 Zero recurring bugs** - Issues prevented by design
+- **📈 Maintainability** - Single source of truth for all data
+- **⚡ Performance** - Computed values, no redundant processing
+- **🛡️ Data Consistency** - Validation pipeline prevents corrupt entries
+- **🔄 Family Sync** - Collection changes propagate automatically
 
-**✅ Seamless Admin Integration:**  
-- Admin link in catalog navigation (`/admin-simple`)
-- Fonts uploaded via admin appear automatically in catalog
-- Complete preservation of existing admin functionality
-- Both interfaces share the same backend and storage
+### Migration Strategy:
+- **Backward Compatible** - Existing fonts work during transition
+- **Gradual Rollout** - Phase-by-phase implementation
+- **Data Preservation** - No font data loss during migration
+- **Production Focus** - Vercel deployment priority maintained
 
-**✅ Advanced Features:**
-- Text presets (Names, Key Glyphs, Basic, Paragraph, Brands)  
-- Display mode selection (Text, Display, Weirdo)
-- Font category filtering (Sans, Serif, Display, Mono, etc.)
-- Dynamic font weight and italic selection
-- Real-time text size and line height adjustment
-- Expandable font cards with OpenType controls
-- Responsive design with collapsible sidebar
+### 🎯 PHASE 1 COMPLETE: Foundation Architecture (v0.088)
+**Completed**: 2025-09-09 - Core architectural foundation implemented
 
-### Technical Implementation:
+#### ✅ Phase 1 Deliverables:
+1. **Zustand State Management** - Single source of truth replacing 20+ useState hooks
+2. **Hierarchical Data Models** - FontFamily + FontVariant with proper inheritance  
+3. **Centralized FontStore** - Computed selectors eliminate filter inconsistencies
+4. **ControlledTextPreview** - Eliminates cursor jumping with pure React state
+5. **Unicode Symbol Detector** - Accurate fallback detection vs canvas measurement
+6. **Font Processing Pipeline** - Multi-stage validation with consistent metadata
 
-**Backend Integration:**
-- Connects to existing `/api/fonts/list-v2` endpoint
-- Transforms font data to catalog UI format
-- Dynamic CSS injection for uploaded fonts
-- Preserves all metadata from font parser
+#### 📁 New Architecture Files:
+```
+lib/models/
+├── FontFamily.ts          # Hierarchical family model with inheritance
+└── FontVariant.ts         # Individual font variants
 
-**Design System Preserved:**  
-- Copied `globals.css`, `layout.tsx` from v0 frontend
-- Maintained exact color scheme and typography
-- Preserved Material Symbols icons and styling
-- Kept all UI components and interactions
+lib/
+├── font-store.ts          # Centralized Zustand store
+├── font-processor.ts      # Robust processing pipeline  
+└── symbol-detector.ts     # Unicode-aware symbol detection
 
-### Branch Structure:
-- **catalog branch**: ✅ New catalog UI + existing admin (CURRENT)
-- **main branch**: ✅ Advanced admin functionality (commit 73fb580)  
-- **admin branch**: Simple admin interface
+components/ui/font/
+└── ControlledTextPreview.tsx # Cursor-stable text inputs
+```
 
-### URLs:
-- **Catalog**: http://localhost:3000 (Beautiful font browsing)
-- **Admin**: http://localhost:3000/admin-simple (Font management)
-- **Full Admin**: http://localhost:3000/admin (Advanced management)
+#### 🔄 Next: Phase 2 - Data Migration
+Ready to convert existing flat data to hierarchical families and update API endpoints.
 
-### Development Status:
-- ✅ Build passes successfully 
-- ✅ Development server running
-- ✅ API integration working
-- ✅ Font loading and preview working
-- ✅ Admin functionality preserved
-- ✅ Design system intact
-
-### ⚠️ IMPORTANT PROJECT RULE:
-**Local development is NOT priority - only Vercel deployment matters!**
-- Focus on production deployment functionality
-- Local compilation/development issues are secondary
-- Vercel-specific features and environment take precedence
+**Last Updated**: 2025-09-09  
+**Status**: 🏗️ Phase 1 Foundation Complete - Ready for Phase 2 Data Migration
