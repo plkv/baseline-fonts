@@ -128,7 +128,6 @@ export default function FontLibrary() {
       if (response.ok) {
         const data = await response.json()
         console.log('📋 API Response:', data)
-        console.log('🔍 First font sample:', data.fonts?.[0])
         if (data.success && data.fonts) {
           // Group fonts by family name to avoid duplicates
           const fontsByFamily = new Map<string, any[]>()
@@ -599,87 +598,184 @@ export default function FontLibrary() {
 
   // Get all available style tags from fonts in current collection only
   const getAvailableStyleTags = () => {
-    const actualTags = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    const allTags = new Set<string>()
+    let fontsWithoutStyleTags = 0
     
-    console.log(`\n=== STYLE TAGS DEBUG for ${displayMode} collection ===`)
-    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
-    
-    fontsInCollection.forEach((font, index) => {
-      console.log(`Font ${index + 1}: "${font.name}"`)
-      console.log(`  - styleTags field:`, font.styleTags)
-      console.log(`  - type:`, font.type)
-      
-      // Only use ACTUAL styleTags from database
-      if (font.styleTags && Array.isArray(font.styleTags) && font.styleTags.length > 0) {
-        font.styleTags.forEach(tag => actualTags.add(tag))
+    fonts.forEach(font => {
+      // Only include tags from fonts in the current collection
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode) {
+        if (font.styleTags && Array.isArray(font.styleTags) && font.styleTags.length > 0) {
+          font.styleTags.forEach(tag => allTags.add(tag))
+        } else {
+          fontsWithoutStyleTags++
+          // Enhanced fallback: generate style tags from multiple data sources
+          const fontName = (font.name || font.family || '').toLowerCase()
+          const categories = font.categories || []
+          const openTypeFeatures = font.openTypeFeatures || []
+          
+          // Collection-based tags
+          if (font.collection === 'Display') allTags.add('Display')
+          if (font.collection === 'Weirdo') allTags.add('Experimental')
+          
+          // Category-based tags
+          if (categories.includes('Serif')) allTags.add('Serif')
+          if (categories.includes('Sans')) allTags.add('Sans Serif')  
+          if (categories.includes('Mono')) allTags.add('Monospace')
+          if (categories.includes('Script')) allTags.add('Script')
+          if (categories.includes('Decorative')) allTags.add('Decorative')
+          if (categories.includes('Slab')) allTags.add('Slab Serif')
+          
+          // Variable font detection
+          if (font.type === 'Variable') allTags.add('Variable')
+          
+          // OpenType feature-based tags
+          if (openTypeFeatures.some(f => f.toLowerCase().includes('ligature'))) {
+            allTags.add('Ligatures')
+          }
+          if (openTypeFeatures.some(f => f.toLowerCase().includes('stylistic'))) {
+            allTags.add('Stylistic Sets')
+          }
+          if (openTypeFeatures.some(f => f.toLowerCase().includes('small cap'))) {
+            allTags.add('Small Caps')
+          }
+          
+          // Font name pattern-based tags
+          if (/condensed|narrow/i.test(fontName)) allTags.add('Condensed')
+          if (/extended|wide/i.test(fontName)) allTags.add('Extended')
+          if (/rounded|round/i.test(fontName)) allTags.add('Rounded')
+          if (/stencil/i.test(fontName)) allTags.add('Stencil')
+          if (/outline|inline/i.test(fontName)) allTags.add('Outline')
+          if (/shadow|3d/i.test(fontName)) allTags.add('Shadow')
+          if (/vintage|retro|classic/i.test(fontName)) allTags.add('Vintage')
+          if (/modern|contemporary/i.test(fontName)) allTags.add('Modern')
+        }
       }
     })
     
-    console.log(`All detected style tags:`, Array.from(actualTags))
-    console.log(`=== END STYLE TAGS DEBUG ===\n`)
+    // Ensure basic tags are available if most fonts lack style data
+    if (fontsWithoutStyleTags > fonts.length * 0.7) {
+      if (displayMode === 'Text') {
+        allTags.add('Sans Serif')
+        allTags.add('Serif')
+        allTags.add('Monospace')
+      } else if (displayMode === 'Display') {
+        allTags.add('Display')
+        allTags.add('Decorative')
+        allTags.add('Script')
+      } else if (displayMode === 'Weirdo') {
+        allTags.add('Experimental')
+        allTags.add('Artistic')
+      }
+    }
     
-    // Return only actual tags from database, no fallbacks
-    return Array.from(actualTags).sort()
+    console.log(`Style tags in ${displayMode} collection:`, Array.from(allTags));
+    console.log(`Fonts without style tags: ${fontsWithoutStyleTags}/${fonts.length}`);
+    
+    return Array.from(allTags).sort()
   }
 
   // Get dynamic categories based on fonts actually present in current collection
   const getCollectionCategories = () => {
+    // Get all categories from fonts in the current collection
     const actualCategories = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
-    
-    console.log(`\n=== CATEGORIES DEBUG for ${displayMode} collection ===`)
-    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
-    
-    fontsInCollection.forEach((font, index) => {
-      console.log(`Font ${index + 1}: "${font.name}"`)
-      console.log(`  - category field:`, font.category)
-      console.log(`  - categories field:`, font.categories)
-      console.log(`  - collection:`, font.collection)
-      
-      // Check both 'category' and 'categories' fields
-      if (font.category) {
-        if (Array.isArray(font.category)) {
-          font.category.forEach(cat => actualCategories.add(cat))
-        } else {
-          actualCategories.add(font.category)
-        }
-      }
-      
-      if (font.categories && Array.isArray(font.categories)) {
-        font.categories.forEach(cat => actualCategories.add(cat))
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode && font.categories) {
+        font.categories.forEach(category => actualCategories.add(category))
       }
     })
     
-    console.log(`All detected categories:`, Array.from(actualCategories))
-    console.log(`=== END CATEGORIES DEBUG ===\n`)
+    // Define the ideal order for each collection
+    const categoryOrder = {
+      Text: ['Sans', 'Serif', 'Slab', 'Mono'],
+      Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
+      Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
+    }
     
-    // Return all found categories, sorted
-    return Array.from(actualCategories).sort()
+    const preferredOrder = categoryOrder[displayMode] || categoryOrder.Text
+    
+    // Return categories in preferred order, but only those that actually exist
+    const orderedCategories = preferredOrder.filter(cat => actualCategories.has(cat))
+    
+    // Add any remaining categories that exist but aren't in the preferred order
+    const remainingCategories = Array.from(actualCategories)
+      .filter(cat => !preferredOrder.includes(cat))
+      .sort()
+    
+    return [...orderedCategories, ...remainingCategories]
   }
 
   const getCollectionLanguages = () => {
+    // Get all languages from fonts in the current collection
     const actualLanguages = new Set<string>()
-    const fontsInCollection = fonts.filter(font => (font.collection || 'Text') === displayMode)
+    let fontsWithoutLanguageData = 0
     
-    console.log(`\n=== LANGUAGES DEBUG for ${displayMode} collection ===`)
-    console.log(`Found ${fontsInCollection.length} fonts in ${displayMode} collection`)
-    
-    fontsInCollection.forEach((font, index) => {
-      console.log(`Font ${index + 1}: "${font.name}"`)
-      console.log(`  - languages field:`, font.languages)
-      
-      // Only use ACTUAL languages from database
-      if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
-        font.languages.forEach(language => actualLanguages.add(language))
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode) {
+        // Check if font has language data
+        if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
+          font.languages.forEach(language => actualLanguages.add(language))
+        } else {
+          fontsWithoutLanguageData++
+          // Enhanced fallback: analyze font metadata for language clues
+          const fontName = (font.name || '').toLowerCase()
+          const categories = font.categories || []
+          
+          // Always add Latin as a safe fallback
+          actualLanguages.add('Latin')
+          
+          // Detect other scripts from font naming patterns
+          if (/cyrillic|russian|ukraine|serbian/i.test(fontName)) {
+            actualLanguages.add('Cyrillic')
+          }
+          if (/greek|hellenic/i.test(fontName)) {
+            actualLanguages.add('Greek')
+          }
+          if (/arabic|persian|urdu/i.test(fontName)) {
+            actualLanguages.add('Arabic')
+          }
+          if (/hebrew/i.test(fontName)) {
+            actualLanguages.add('Hebrew')
+          }
+          if (/chinese|cjk|han/i.test(fontName)) {
+            actualLanguages.add('Chinese')
+          }
+          if (/japanese|hiragana|katakana/i.test(fontName)) {
+            actualLanguages.add('Japanese')
+          }
+          if (/korean|hangul/i.test(fontName)) {
+            actualLanguages.add('Korean')
+          }
+        }
       }
     })
     
-    console.log(`All detected languages:`, Array.from(actualLanguages))
-    console.log(`=== END LANGUAGES DEBUG ===\n`)
+    // If most fonts lack language data, ensure common languages are available
+    if (fontsWithoutLanguageData > fonts.length * 0.5) {
+      actualLanguages.add('Latin')
+      actualLanguages.add('Cyrillic')
+      actualLanguages.add('Greek')
+    }
     
-    // Return only actual languages from database, no fallbacks
-    return Array.from(actualLanguages).sort()
+    console.log(`Languages in ${displayMode} collection:`, Array.from(actualLanguages));
+    console.log(`Fonts without language data: ${fontsWithoutLanguageData}/${fonts.length}`);
+    
+    // Define preferred order for common languages
+    const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
+    
+    // Return languages in preferred order, but only those that actually exist
+    const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
+    
+    // Add any remaining languages that exist but aren't in the preferred order
+    const remainingLanguages = Array.from(actualLanguages)
+      .filter(lang => !languageOrder.includes(lang))
+      .sort()
+    
+    const result = [...orderedLanguages, ...remainingLanguages];
+    console.log(`Final language result for ${displayMode}:`, result);
+    return result;
   }
 
   // Helper function to convert weight number to style name
@@ -743,51 +839,112 @@ export default function FontLibrary() {
     }
   }
 
-  // Simplified missing symbols detection - focus on making unsupported chars slightly faded
+  // Improved font fallback detection using DOM and font metrics
   useEffect(() => {
-    const highlightMissingSymbols = () => {
+    const detectAndHighlightFallbackChars = () => {
       // Find all font preview text display divs
-      const previewDivs = document.querySelectorAll('div[style*="fontFamily"]:not([data-processed])')
+      const previewDivs = document.querySelectorAll('div[style*="fontFamily"]')
       
       previewDivs.forEach((div) => {
         const element = div as HTMLElement
+        const fontFamily = element.style.fontFamily
+        if (!fontFamily || element.dataset.processed === 'true') return
+
         const originalText = element.textContent || ''
         if (!originalText.trim()) return
         
-        // Simple heuristic: characters outside basic Latin + common punctuation
-        // are likely to need fallback fonts and should be highlighted
-        let highlightedHTML = originalText
+        // Create test elements for more accurate font detection
+        const testElement = document.createElement('span')
+        testElement.style.cssText = `
+          position: absolute;
+          visibility: hidden;
+          white-space: nowrap;
+          font-size: 16px;
+          left: -9999px;
+          top: -9999px;
+        `
+        document.body.appendChild(testElement)
         
-        // Look for non-Latin characters that might use fallback fonts
-        const nonLatinChars = originalText.match(/[^\x00-\x7F\u00A0-\u00FF]/g) || []
-        const uniqueNonLatinChars = [...new Set(nonLatinChars)]
+        const uniqueChars = [...new Set(originalText.split(''))]
+        const fallbackChars = new Set<string>()
         
-        if (uniqueNonLatinChars.length > 0) {
-          for (const char of uniqueNonLatinChars) {
+        for (const char of uniqueChars) {
+          // Skip basic Latin characters, whitespace, and punctuation
+          const codePoint = char.codePointAt(0)
+          if (!codePoint || codePoint <= 127 || /[\s\p{P}]/u.test(char)) continue
+          
+          try {
+            // Test with intended font family
+            testElement.style.fontFamily = fontFamily
+            testElement.textContent = char
+            const withFont = testElement.getBoundingClientRect()
+            
+            // Test with generic fallback only
+            testElement.style.fontFamily = 'sans-serif'
+            testElement.textContent = char
+            const withFallback = testElement.getBoundingClientRect()
+            
+            // More sophisticated detection: check both width and height differences
+            const widthDiff = Math.abs(withFont.width - withFallback.width)
+            const heightDiff = Math.abs(withFont.height - withFallback.height)
+            
+            // If dimensions are identical or very close, likely using fallback
+            if (widthDiff < 2 && heightDiff < 2) {
+              // Additional check: test with a known non-supporting font
+              testElement.style.fontFamily = 'monospace'
+              testElement.textContent = char
+              const withMono = testElement.getBoundingClientRect()
+              
+              // If all three measurements are similar, definitely fallback
+              if (Math.abs(withFont.width - withMono.width) < 2) {
+                fallbackChars.add(char)
+              }
+            }
+          } catch (error) {
+            continue
+          }
+        }
+        
+        document.body.removeChild(testElement)
+        
+        // Apply highlighting if fallback characters found
+        if (fallbackChars.size > 0) {
+          let highlightedHTML = originalText
+          
+          // Sort by length to avoid nested replacements
+          const sortedFallbacks = Array.from(fallbackChars).sort((a, b) => b.length - a.length)
+          
+          for (const char of sortedFallbacks) {
             const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             const regex = new RegExp(escapedChar, 'g')
-            // Wrap in span with fallback styling (slightly faded but still visible)
             highlightedHTML = highlightedHTML.replace(
               regex,
               `<span class="fallback-char">${char}</span>`
             )
           }
           
-          // Only update if we have changes and element is not being edited
+          // Only update if we have actual changes and element is not being edited
           if (highlightedHTML !== originalText && !element.matches(':focus-within')) {
             element.innerHTML = highlightedHTML
           }
         }
         
-        // Mark as processed
+        // Mark as processed to avoid repeated processing
         element.dataset.processed = 'true'
       })
     }
     
-    // Run highlighting with a short delay to allow DOM updates
-    const timer = setTimeout(highlightMissingSymbols, 100)
+    // Run detection after fonts load and DOM updates
+    const timer = setTimeout(() => {
+      // Clear processed flags first
+      document.querySelectorAll('div[data-processed="true"]').forEach(el => {
+        el.removeAttribute('data-processed')
+      })
+      detectAndHighlightFallbackChars()
+    }, 200)
+    
     return () => clearTimeout(timer)
-  }, [fonts, customText, selectedPreset, textSize])
+  }, [fonts, customText, textSize])
 
   // Placeholder function - now handled by useEffect
   const highlightMissingCharacters = (text: string, fontId: number) => {
@@ -900,8 +1057,8 @@ export default function FontLibrary() {
       <style dangerouslySetInnerHTML={{
         __html: `
           .fallback-char {
-            opacity: 0.6 !important;
-            filter: contrast(0.7) !important;
+            opacity: 0.4 !important;
+            color: var(--gray-cont-tert) !important;
           }
           ${fonts.map(font => {
             const familyName = font.name; // Use clean family name without quotes
@@ -1365,7 +1522,7 @@ export default function FontLibrary() {
                       className="relative cursor-text"
                       onClick={() => toggleCardExpansion(font.id)}
                     >
-                      {/* Semi-transparent textarea for text input - shows cursor but styled text shows through */}
+                      {/* Invisible textarea for text input - eliminates cursor jumping */}
                       <textarea
                         value={customText || getPreviewContent(font.name)}
                         onChange={(e) => {
@@ -1377,13 +1534,11 @@ export default function FontLibrary() {
                           const newCursor = e.currentTarget.selectionStart || 0
                           setTextCursorPosition(newCursor)
                         }}
-                        className="absolute inset-0 w-full h-full resize-none border-none outline-none bg-transparent resize-none"
+                        className="absolute inset-0 w-full h-full resize-none border-none outline-none bg-transparent text-transparent caret-transparent selection:bg-blue-500/20"
                         style={{
                           fontSize: `${textSize[0]}px`,
                           lineHeight: `${lineHeight[0]}%`,
                           fontFamily: font.fontFamily,
-                          color: 'rgba(0,0,0,0.01)', // Almost transparent text but cursor still visible
-                          caretColor: 'var(--gray-cont-prim)', // Visible cursor
                           zIndex: 10,
                         }}
                         onClick={(e) => e.stopPropagation()}
