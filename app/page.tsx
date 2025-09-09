@@ -130,7 +130,7 @@ export default function FontLibrary() {
         const data = await response.json()
         console.log('📋 API Response:', data)
         console.log('🔍 First font sample:', data.fonts?.[0])
-        if (data.success && data.fonts) {
+        if (data.success && data.fonts && Array.isArray(data.fonts)) {
           // Store ALL fonts for filtering purposes
           setAllFonts(data.fonts)
           
@@ -253,10 +253,19 @@ export default function FontLibrary() {
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
+        } else {
+          console.error('❌ Invalid API response format:', {
+            success: data.success,
+            fonts: data.fonts,
+            fontsIsArray: Array.isArray(data.fonts),
+            fontsLength: data.fonts?.length
+          })
         }
+      } else {
+        console.error('❌ API request failed:', response.status, response.statusText)
       }
     } catch (error) {
-      console.error('Failed to load fonts:', error)
+      console.error('❌ Failed to load fonts:', error)
     } finally {
       setIsLoadingFonts(false)
     }
