@@ -3,6 +3,9 @@
  * Single source of truth for all font-related data structures
  */
 
+// Font organization types
+export type FontCollection = 'Text' | 'Display' | 'Weirdo'
+
 // Core font data model - simplified and consistent
 export interface Font {
   // Identity
@@ -24,8 +27,8 @@ export interface Font {
   features: string[]    // OpenType features
   languages: string[]   // Supported languages
   
-  // Organization
-  collection: 'Text' | 'Display' | 'Weirdo'
+  // Organization  
+  collection: FontCollection
   tags: string[]        // User-defined tags for filtering
   category: FontCategory[]  // Sans, Serif, Mono, etc.
   
@@ -62,14 +65,14 @@ export interface FontFamily {
   name: string
   fonts: Font[]
   defaultFontId: string  // ID of the default style
-  collection: 'Text' | 'Display' | 'Weirdo'
+  collection: FontCollection
   tags: string[]         // Aggregated from all fonts in family
   categories: FontCategory[]  // Aggregated from all fonts in family
 }
 
 // Filter state
 export interface FilterState {
-  collection: 'Text' | 'Display' | 'Weirdo'
+  collection: FontCollection
   categories: FontCategory[]
   tags: string[]
   languages: string[]
@@ -104,13 +107,13 @@ export interface FontResponse {
 
 export interface FontUploadRequest {
   file: File
-  collection?: 'Text' | 'Display' | 'Weirdo'
+  collection?: FontCollection
   tags?: string[]
 }
 
 export interface FontUpdateRequest {
   name?: string
-  collection?: 'Text' | 'Display' | 'Weirdo'
+  collection?: FontCollection
   tags?: string[]
   downloadUrl?: string
   published?: boolean
