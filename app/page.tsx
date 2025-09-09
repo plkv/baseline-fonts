@@ -604,6 +604,8 @@ export default function FontLibrary() {
   // Get all available style tags from fonts in current collection only
   const getAvailableStyleTags = () => {
     const actualTags = new Set<string>()
+    // Wait for fonts to load before filtering
+    if (allFonts.length === 0) return []
     const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== STYLE TAGS DEBUG for ${displayMode} collection ===`)
@@ -630,6 +632,8 @@ export default function FontLibrary() {
   // Get dynamic categories based on fonts actually present in current collection
   const getCollectionCategories = () => {
     const actualCategories = new Set<string>()
+    // Wait for fonts to load before filtering
+    if (allFonts.length === 0) return []
     const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== CATEGORIES DEBUG for ${displayMode} collection ===`)
@@ -664,6 +668,8 @@ export default function FontLibrary() {
 
   const getCollectionLanguages = () => {
     const actualLanguages = new Set<string>()
+    // Wait for fonts to load before filtering
+    if (allFonts.length === 0) return []
     const fontsInCollection = allFonts.filter(font => (font.collection || 'Text') === displayMode)
     
     console.log(`\n=== LANGUAGES DEBUG for ${displayMode} collection ===`)
