@@ -246,6 +246,12 @@ export default function FontLibrary() {
           })
           setFonts(catalogFonts)
           console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
+          console.log(`🔍 First processed font sample:`, {
+            name: catalogFonts[0]?.name,
+            _familyFonts: catalogFonts[0]?._familyFonts?.length,
+            variableAxes: catalogFonts[0]?.variableAxes,
+            openTypeFeatures: catalogFonts[0]?.openTypeFeatures
+          })
           
           // Load CSS for all fonts
           loadFontCSS(catalogFonts)
