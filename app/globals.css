@@ -368,9 +368,9 @@
   /* Updated dropdown styling */
   .dropdown-select {
     display: flex;
-    padding: 6px 10px;
+    padding: 6px 8px;
     align-items: center;
-    border-radius: 8px;
+    border-radius: 0; /* handled by wrapper */
     font-family: "Inter Variable", sans-serif;
     font-size: 14px;
     font-style: normal;
@@ -378,14 +378,46 @@
     line-height: 20px;
     font-feature-settings: "ss03" on, "cv06" on, "cv11" on;
     color: var(--gray-cont-prim);
-    background-color: var(--gray-surface-sec);
+    background-color: transparent; /* wrapped */
     border: none;
     transition: all 0.2s ease;
     cursor: pointer;
+    min-height: 32px;
   }
 
   .dropdown-select:hover {
+    background-color: transparent; /* hover handled by wrapper */
+  }
+
+  /* Dropdown wrapper and icon to avoid absolute positioning/jumps */
+  .dropdown-wrap {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 6px;
+    background-color: var(--gray-surface-sec);
+    overflow: hidden;
+  }
+
+  .dropdown-wrap:hover {
     background-color: var(--gray-fill-sec);
+  }
+
+  /* Disabled state: no hover visuals */
+  .dropdown-wrap[data-disabled="true"] {
+    background-color: var(--gray-surface-sec);
+    cursor: default;
+  }
+  .dropdown-wrap[data-disabled="true"]:hover {
+    background-color: var(--gray-surface-sec);
+  }
+
+  .dropdown-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    gap: 10px;
+    color: var(--gray-cont-tert);
   }
 
   /* Scrollbar hide utility for sidebar */
@@ -409,9 +441,11 @@
 
   .segmented-control-button {
     display: flex;
-    padding: 4px 12px;
+    padding: 6px 10px;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 8px;
     flex: 1 0 0;
     border-radius: 6px;
     font-family: "Inter Variable", sans-serif;
