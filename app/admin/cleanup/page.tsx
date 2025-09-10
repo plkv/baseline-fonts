@@ -13,27 +13,40 @@ export default function Cleanup() {
     setRunning(true)
     setLog([])
     try {
-      const res = await fetch('/api/fonts-clean/list', { cache: 'no-store' })
-      const data = await res.json()
+      // 1) Purge legacy storage (used by /admin page)
+      const resLegacy = await fetch('/api/fonts?includeUnpublished=true', { cache: 'no-store' })
+      const legacy = await resLegacy.json()
+      const files: string[] = (legacy.fonts || []).map((f: any) => f.filename)
+      append(`Legacy fonts: ${files.length}`)
+      for (let i = 0; i < files.length; i++) {
+        const filename = files[i]
+        try {
+          await fetch(`/api/fonts/delete?filename=${encodeURIComponent(filename)}`, { method: 'DELETE' })
+          if ((i + 1) % 10 === 0) append(`Legacy deleted ${i + 1}/${files.length}`)
+        } catch (e: any) {
+          append(`Legacy delete error ${filename}: ${e?.message || 'unknown'}`)
+        }
+      }
+
+      // 2) Purge clean storage (used by catalog)
+      const resClean = await fetch('/api/fonts-clean/list', { cache: 'no-store' })
+      const data = await resClean.json()
       const ids: string[] = (data.fonts || []).map((f: any) => f.id)
-      setProgress({ total: ids.length, done: 0 })
-      append(`Found ${ids.length} fonts. Deleting…`)
-      let done = 0
-      for (const id of ids) {
+      append(`Clean fonts: ${ids.length}`)
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i]
         try {
           await fetch('/api/fonts-clean/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id }),
           })
-          done++
-          setProgress({ total: ids.length, done })
-          if (done % 10 === 0) append(`Deleted ${done}/${ids.length}`)
+          if ((i + 1) % 10 === 0) append(`Clean deleted ${i + 1}/${ids.length}`)
         } catch (e: any) {
-          append(`Error deleting ${id}: ${e?.message || 'unknown'}`)
+          append(`Clean delete error ${id}: ${e?.message || 'unknown'}`)
         }
       }
-      append('Done')
+      append('Done. Refresh Library/Admin to verify it is empty.')
     } catch (e: any) {
       append(`Error: ${e?.message || 'unknown'}`)
     } finally {
@@ -56,4 +69,3 @@ export default function Cleanup() {
     </main>
   )
 }
-
