@@ -1,6 +1,7 @@
 import type { FontFamily } from '@/lib/models/FontFamily'
 import { FontVariantUtils } from '@/lib/models/FontVariant'
 import { canonicalFamilyName } from '@/lib/font-naming'
+import { shortHash } from '@/lib/hash'
 
 function escapeCssString(input: string): string {
   return input.replace(/"/g, '\\"')
@@ -14,7 +15,9 @@ function toProxyUrl(url: string): string {
 export function buildFontCSS(families: FontFamily[]): string {
   const chunks: string[] = []
   for (const fam of families) {
-    const familyName = escapeCssString(canonicalFamilyName(fam.name))
+    const canonical = canonicalFamilyName(fam.name)
+    const alias = `${canonical}-${shortHash(canonical).slice(0,6)}`
+    const familyName = escapeCssString(alias)
     for (const v of fam.variants) {
       if (!v.blobUrl) continue
       const proxied = { ...v, blobUrl: toProxyUrl(v.blobUrl) }
