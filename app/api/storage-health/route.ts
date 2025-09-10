@@ -36,10 +36,13 @@ async function checkBlobViaUpload() {
 async function checkBlobViaExisting() {
   try {
     const fonts = await fontStorageClean.getAllFonts()
-    const any = fonts.find((f) => f.blobUrl)
-    if (!any) return { ok: false, error: 'no fonts with blobUrl found' }
-    const head = await fetch(any.blobUrl, { method: 'HEAD', cache: 'no-store' })
-    return { ok: head.ok, url: any.blobUrl, status: head.status }
+    const candidates = fonts
+      .map((f) => ({ url: (f as any).blobUrl || (f as any).url, id: f.id, filename: f.filename }))
+      .filter((c) => !!c.url) as { url: string; id: string; filename: string }[]
+    if (candidates.length === 0) return { ok: false, error: 'no fonts with url/blobUrl found' }
+    const first = candidates[0]
+    const head = await fetch(first.url, { method: 'HEAD', cache: 'no-store' })
+    return { ok: head.ok, url: first.url, status: head.status }
   } catch (e: any) {
     return { ok: false, error: e?.message || String(e) }
   }
@@ -76,4 +79,3 @@ export async function GET() {
     return NextResponse.json({ success: false }, { status: 500 })
   }
 }
-
