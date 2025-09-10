@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { Slider } from "@/components/ui/slider"
+import { canonicalFamilyName } from "@/lib/font-naming"
 
 // Font interface for our API data
 interface FontData {
@@ -205,7 +206,7 @@ export default function FontLibrary() {
                 styles: familyFonts.length,
                 type: finalType,
                 author: family.foundry || 'Unknown',
-                fontFamily: `"${family.name}", system-ui, sans-serif`,
+                fontFamily: `"${canonicalFamilyName(family.name)}", system-ui, sans-serif`,
                 availableWeights,
                 hasItalic,
                 filename: representativeFont.originalFilename || representativeFont.filename,
@@ -348,7 +349,7 @@ export default function FontLibrary() {
               styles: familyFonts.length,
               type: finalType,
               author: representativeFont.foundry || "Unknown",
-              fontFamily: `"${familyName}", system-ui, sans-serif`,
+              fontFamily: `"${canonicalFamilyName(familyName)}", system-ui, sans-serif`,
               availableWeights: availableWeights,
               hasItalic: hasItalic,
               filename: representativeFont.filename,
