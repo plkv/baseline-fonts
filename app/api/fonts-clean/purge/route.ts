@@ -28,3 +28,7 @@ export async function DELETE(req: NextRequest) {
   return POST(req)
 }
 
+export async function GET(req: NextRequest) {
+  // Allow GET-triggered purge for simplicity (explicitly requested by user)
+  return POST(req)
+}
