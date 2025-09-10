@@ -4,14 +4,8 @@ import { fontStorageClean } from '@/lib/font-storage-clean'
 export async function POST(_req: NextRequest) {
   try {
     const blob = await import('@vercel/blob')
-    // List all blobs under fonts/ once
-    const { blobs } = await blob.list({ prefix: 'fonts/' })
-    const byFilename = new Map<string, string>()
-    for (const b of blobs) {
-      const parts = b.pathname.split('/')
-      const fname = parts[parts.length - 1]
-      if (fname) byFilename.set(fname, b.url)
-    }
+    // List blobs (could be outside fonts/); attempt fuzzy match by filename
+    const { blobs } = await blob.list({})
 
     const fonts = await fontStorageClean.getAllFonts()
     let updated = 0
@@ -20,7 +14,18 @@ export async function POST(_req: NextRequest) {
       const hasBlob = Boolean((f as any).blobUrl)
       const hasUrl = Boolean((f as any).url)
       if (hasBlob || hasUrl) continue
-      const url = byFilename.get(f.filename)
+      const parts = f.filename.split('.')
+      const base = parts.slice(0, -1).join('.')
+      const ext = parts[parts.length - 1].toLowerCase()
+      const candidates = blobs.filter((b: any) => {
+        const seg = b.pathname.split('/').pop() || ''
+        const segLower = seg.toLowerCase()
+        return segLower.startsWith(base.toLowerCase()) && segLower.endsWith('.' + ext)
+      })
+      // Prefer exact filename match first
+      const exact = candidates.find((b: any) => (b.pathname.split('/').pop() || '') === f.filename)
+      const pick = exact || candidates[0]
+      const url = pick?.url
       if (url) {
         await fontStorageClean.updateFont(f.id, { blobUrl: url } as any)
         updated++
@@ -33,4 +38,3 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-
