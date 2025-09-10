@@ -1090,6 +1090,32 @@ export default function FontLibrary() {
     loadFonts()
   }, [loadFonts])
 
+  // Client-side font load verification: sample top families and report
+  useEffect(() => {
+    const verify = async () => {
+      try {
+        const sample = fonts.slice(0, 20)
+        for (const f of sample) {
+          const aliasMatch = /"([^"]+)"/.exec(f.fontFamily)
+          const alias = aliasMatch ? aliasMatch[1] : ''
+          if (!alias) continue
+          // Attempt to load a test string with this font family alias
+          const ok = await (document as any).fonts?.load
+            ? await (document as any).fonts.load(`16px "${alias}"`).then((res: any) => res && res.length > 0)
+            : true
+          // Report result to server for diagnostics
+          fetch('/api/preview-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alias, family: f.name, ok }),
+            keepalive: true,
+          }).catch(() => {})
+        }
+      } catch {}
+    }
+    if (fonts.length > 0) verify()
+  }, [fonts])
+
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
       {/* Dynamic font loading and fallback character styles */}
