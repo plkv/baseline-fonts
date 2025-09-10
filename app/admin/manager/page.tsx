@@ -41,6 +41,8 @@ export default function AdminManager() {
   const [editing, setEditing] = useState<Record<string, { collection: Family['collection']; styleTags: string[]; languages: string[] }>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadFamily, setUploadFamily] = useState('')
+  const [dragOver, setDragOver] = useState(false)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   const load = async () => {
     setLoading(true)
@@ -54,6 +56,21 @@ export default function AdminManager() {
   }
 
   useEffect(() => { load() }, [])
+
+  // Build a vocabulary of existing tags to avoid duplicates
+  const tagVocabulary = useMemo<string[]>(() => {
+    const tags = new Set<string>()
+    for (const f of fonts) {
+      (f.styleTags || []).forEach(t => tags.add(t))
+    }
+    return Array.from(tags).sort((a, b) => a.localeCompare(b))
+  }, [fonts])
+
+  const normalizeTag = (t: string) => {
+    const s = t.trim().replace(/\s+/g, ' ')
+    // Title Case simple
+    return s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+  }
 
   const families = useMemo<Family[]>(() => {
     const m = new Map<string, CleanFont[]>()
@@ -122,6 +139,23 @@ export default function AdminManager() {
     }
   }
 
+  const handleFiles = async (files: File[]) => {
+    if (!files.length) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      files.forEach(f => fd.append('files', f))
+      if (uploadFamily.trim()) fd.append('family', uploadFamily.trim())
+      const res = await fetch('/api/fonts-clean/bulk-upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!data.success) alert('Upload failed')
+      await load()
+    } finally {
+      setUploading(false)
+      setPendingFiles([])
+    }
+  }
+
   return (
     <main className="p-6 space-y-6">
       <header className="flex items-center justify-between gap-3">
@@ -140,6 +174,41 @@ export default function AdminManager() {
           </select>
         </div>
       </header>
+
+      {/* Upload zone (prominent, at top) */}
+      <section className="p-4 rounded-md space-y-3" style={{ border: '1px dashed var(--gray-brd-prim)', background: 'var(--gray-surface-sec)' }}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); const files = Array.from(e.dataTransfer.files || []); if (files.length) setPendingFiles(files) }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-font-name">Upload Fonts</h2>
+            <div className="text-sm" style={{ color: 'var(--gray-cont-tert)' }}>
+              Drag & drop font files here or select files. Supports single static, multi-file family, and variable fonts.
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input className="btn-md" placeholder="Optional family name" value={uploadFamily} onChange={e => setUploadFamily(e.target.value)} />
+            <label className="btn-md cursor-pointer">
+              <input type="file" multiple accept=".ttf,.otf,.woff,.woff2" onChange={onUpload} style={{ display: 'none' }} />
+              {uploading ? 'Uploading…' : 'Select Files'}
+            </label>
+          </div>
+        </div>
+        {pendingFiles.length > 0 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm" style={{ color: 'var(--gray-cont-prim)' }}>{pendingFiles.length} files ready</div>
+            <div className="flex gap-2">
+              <button className="btn-md" onClick={() => handleFiles(pendingFiles)} disabled={uploading}>{uploading ? 'Uploading…' : 'Upload Now'}</button>
+              <button className="btn-md" onClick={() => setPendingFiles([])} disabled={uploading}>Clear</button>
+            </div>
+          </div>
+        )}
+        <div className="text-xs" style={{ color: dragOver ? 'var(--gray-cont-prim)' : 'var(--gray-cont-tert)' }}>
+          {dragOver ? 'Release to add to queue' : 'Parsed metadata: family, styles (weight/italic), author, version, release date, license, categories, languages, variable axes, OpenType features.'}
+        </div>
+      </section>
 
       {/* Families list */}
       <section className="space-y-3">
@@ -181,9 +250,39 @@ export default function AdminManager() {
                     <div className="btn-md">Languages: {ed ? (
                       <input className="btn-md" placeholder="Comma-separated" value={ed.languages.join(', ')} onChange={e => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))} />
                     ) : fam.languages.join(', ')}</div>
-                    <div className="btn-md">Tags: {ed ? (
-                      <input className="btn-md" placeholder="Comma-separated" value={ed.styleTags.join(', ')} onChange={e => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))} />
-                    ) : (fam.styleTags.length ? fam.styleTags.join(', ') : '—')}</div>
+                    <div className="btn-md" style={{ minWidth: 280 }}>
+                      <div>Tags:</div>
+                      {ed ? (
+                        <div className="mt-1">
+                          <div className="flex gap-1 flex-wrap mb-1">
+                            {ed.styleTags.map((t, idx) => (
+                              <button key={idx} className="btn-sm" onClick={() => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: ed.styleTags.filter(x => x !== t) } }))}>{t} ✕</button>
+                            ))}
+                          </div>
+                          <input className="btn-md w-full" placeholder="Type to add tag…" onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              const v = normalizeTag((e.target as HTMLInputElement).value)
+                              if (v && !ed.styleTags.map(x => x.toLowerCase()).includes(v.toLowerCase())) {
+                                setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: [...ed.styleTags, v] } }))
+                              }
+                              ;(e.target as HTMLInputElement).value = ''
+                            }
+                          }} />
+                          {/* Suggestions from vocabulary */}
+                          <div className="flex gap-1 flex-wrap mt-1">
+                            {tagVocabulary.filter(v => !ed.styleTags.map(x => x.toLowerCase()).includes(v.toLowerCase())).slice(0, 12).map(v => (
+                              <button key={v} className="btn-sm" onClick={() => {
+                                const t = normalizeTag(v)
+                                if (!ed.styleTags.map(x => x.toLowerCase()).includes(t.toLowerCase())) {
+                                  setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: [...ed.styleTags, t] } }))
+                                }
+                              }}>{v}</button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (fam.styleTags.length ? fam.styleTags.join(', ') : '—')}
+                    </div>
                   </div>
                   {ed && (
                     <div className="flex gap-2">
@@ -218,4 +317,3 @@ export default function AdminManager() {
     </main>
   )
 }
-
