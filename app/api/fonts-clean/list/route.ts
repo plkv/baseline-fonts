@@ -6,12 +6,14 @@ export async function GET(request: NextRequest) {
     const fonts = await fontStorageClean.getAllFonts()
     
     // Transform fonts to match frontend expectations
-    const transformedFonts = fonts.map(font => ({
-      ...font,
-      name: font.family, // Frontend expects 'name' property
-      url: font.blobUrl,  // Frontend expects 'url' property
-      // Keep original properties too for compatibility
-    }))
+    const transformedFonts = fonts.map((font: any) => {
+      const url = font?.blobUrl || font?.url || font?.blob || null
+      return {
+        ...font,
+        name: font.family, // Frontend expects 'name' property
+        url,               // Expose a best-effort usable URL
+      }
+    })
     
     return NextResponse.json({ 
       success: true, 

@@ -3,6 +3,7 @@ import { fontStorageClean } from '@/lib/font-storage-clean'
 import { buildFontCSS } from '@/lib/font-css'
 import { canonicalFamilyName } from '@/lib/font-naming'
 import { shortHash } from '@/lib/hash'
+import { resolveFontUrl } from '@/lib/font-url'
 
 export async function GET() {
   try {
@@ -19,12 +20,12 @@ export async function GET() {
       const stats = variants.map((v) => ({
         id: v.id,
         filename: v.filename,
-        blobUrl: v.blobUrl || v.url,
+        blobUrl: resolveFontUrl(v),
         format: v.format,
         isVariable: Boolean(v.isVariable),
         weight: v.weight,
         style: v.style,
-        hasUrl: Boolean(v.blobUrl || v.url),
+        hasUrl: Boolean(resolveFontUrl(v)),
       }))
       const hasAnyUrl = stats.some((s) => s.hasUrl)
       return { family: name, alias, canonical, variants: stats, hasAnyUrl }
@@ -82,4 +83,3 @@ export async function GET() {
     return NextResponse.json({ success: false, error: 'health check failed' }, { status: 500 })
   }
 }
-

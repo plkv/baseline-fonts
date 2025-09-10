@@ -3,8 +3,10 @@ import { fontStorageClean } from '@/lib/font-storage-clean'
 import type { FontFamily } from '@/lib/models/FontFamily'
 import type { FontVariant } from '@/lib/models/FontVariant'
 import { buildFontCSS } from '@/lib/font-css'
+import { resolveFontUrl } from '@/lib/font-url'
 
 function toVariant(font: any, familyId: string): FontVariant {
+  const src = resolveFontUrl(font)
   return {
     id: font.id || `variant_${familyId}_${font.filename}`,
     familyId,
@@ -12,7 +14,7 @@ function toVariant(font: any, familyId: string): FontVariant {
     weight: font.weight || 400,
     isItalic: Boolean(font.italicStyle) || /italic|oblique/i.test(font.style || ''),
     styleName: font.style || 'Regular',
-    blobUrl: font.url || font.blobUrl,
+    blobUrl: src || '',
     fileSize: font.fileSize || 0,
     format: (font.format || 'woff2').toString(),
     isVariable: Boolean(font.isVariable),
@@ -124,4 +126,3 @@ export async function GET(_req: NextRequest) {
     })
   }
 }
-
