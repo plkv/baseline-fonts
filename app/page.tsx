@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { Slider } from "@/components/ui/slider"
+import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
 import { canonicalFamilyName } from "@/lib/font-naming"
 import { shortHash } from "@/lib/hash"
 
@@ -112,6 +113,7 @@ export default function FontLibrary() {
   const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
 
   const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
+  const [textCursorPosition, setTextCursorPosition] = useState(0)
 
   // Load fonts from our API
   const loadFonts = useCallback(async () => {
@@ -226,6 +228,7 @@ export default function FontLibrary() {
                 _availableStyles: availableStylesWithWeights,
                 collection: family.collection || 'Text',
                 styleTags: family.styleTags || [],
+                languages: Array.isArray(family.languages) ? family.languages : ['Latin'],
                 categories: Array.isArray(family.category) ? family.category : [family.category || 'Sans'],
               } as FontData
             }).filter(Boolean)
@@ -364,6 +367,7 @@ export default function FontLibrary() {
               // Add collection and style tags for filtering
               collection: representativeFont.collection || 'Text',
               styleTags: representativeFont.styleTags || [],
+              languages: Array.isArray(representativeFont.languages) ? representativeFont.languages : ['Latin'],
               categories: Array.isArray(representativeFont.category) ? representativeFont.category : [representativeFont.category || "Sans"]
             }
             } catch (error) {
@@ -712,7 +716,37 @@ export default function FontLibrary() {
     return getPresetContent(selectedPreset, fontName)
   }
 
-  // Get all available style tags from fonts in current collection only
+  // Small wrapper to use ControlledTextPreview but keep behavior identical
+  function ControlledPreviewInput({
+    value,
+    cursorPosition,
+    onChangeText,
+    className,
+    style,
+    onToggleExpand,
+  }: {
+    value: string
+    cursorPosition: number
+    onChangeText: (v: string, pos: number) => void
+    className?: string
+    style?: React.CSSProperties
+    onToggleExpand?: () => void
+  }) {
+    return (
+      <div onClick={(e) => { const sel = window.getSelection(); if (!sel || sel.isCollapsed) { e.preventDefault(); onToggleExpand?.() } }}>
+        <ControlledTextPreview
+          value={value}
+          cursorPosition={cursorPosition}
+          onChange={(v, pos) => onChangeText(v, pos)}
+          className={className}
+          style={style}
+          multiline={false}
+        />
+      </div>
+    )
+  }
+
+  // Get all available style tags from fonts in current collection only (no inference)
   const getAvailableStyleTags = () => {
     const allTags = new Set<string>()
     fonts.forEach(font => {
@@ -721,14 +755,6 @@ export default function FontLibrary() {
       if (fontCollection === displayMode) {
         if (font.styleTags && Array.isArray(font.styleTags)) {
           font.styleTags.forEach(tag => allTags.add(tag))
-        } else {
-          // Fallback: infer basic appearance tags from font metadata
-          if (font.collection === 'Display') allTags.add('Display')
-          if (font.categories?.includes('Serif')) allTags.add('Serif')
-          if (font.categories?.includes('Sans')) allTags.add('Sans Serif')  
-          if (font.categories?.includes('Mono')) allTags.add('Monospace')
-          if (font.categories?.includes('Script')) allTags.add('Script')
-          if (font.categories?.includes('Decorative')) allTags.add('Decorative')
         }
       }
     })
@@ -1526,28 +1552,14 @@ export default function FontLibrary() {
                         return null // Hide button if no admin download link is set
                       })()}
                     </div>
-                    <div
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onInput={(e) => {
-                        const element = e.currentTarget
-                        const newText = element.textContent || ""
-                        handlePreviewEdit(element, newText)
+                    <ControlledPreviewInput
+                      value={getPreviewContent(font.name)}
+                      onChangeText={(val, pos) => {
+                        setCustomText(val)
+                        setTextCursorPosition(pos)
                       }}
-                      onClick={(e) => {
-                        // Only toggle card expansion if user is not selecting text for editing
-                        const selection = window.getSelection()
-                        if (!selection || selection.isCollapsed) {
-                          e.preventDefault()
-                          toggleCardExpansion(font.id)
-                        }
-                      }}
-                      onFocus={(e) => {
-                        // Prevent card expansion when focusing for text editing
-                        e.stopPropagation()
-                      }}
-                      ref={(el) => setEditingElementRef(el)}
-                      className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none"
+                      cursorPosition={textCursorPosition}
+                      className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none w-full bg-transparent border-0"
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
@@ -1558,9 +1570,8 @@ export default function FontLibrary() {
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
-                    >
-                      {getPreviewContent(font.name)}
-                    </div>
+                      onToggleExpand={() => toggleCardExpansion(font.id)}
+                    />
 
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>

@@ -20,7 +20,11 @@ function toVariant(font: any, familyId: string): FontVariant {
     format: (font.format || 'woff2').toString(),
     isVariable: Boolean(font.isVariable),
     variableAxes: font.variableAxes || [],
-    openTypeFeatures: Array.isArray(font.openTypeFeatures) ? font.openTypeFeatures : [],
+    openTypeFeatures: Array.isArray(font.openTypeFeatures)
+      ? font.openTypeFeatures
+      : Array.isArray((font as any).features)
+        ? (font as any).features
+        : [],
     fontMetrics: font.fontMetrics,
     glyphCount: font.glyphCount,
     uploadedAt: font.uploadedAt || new Date().toISOString(),
