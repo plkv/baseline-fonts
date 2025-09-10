@@ -15,7 +15,9 @@ export function buildFontCSS(families: FontFamily[]): string {
   for (const fam of families) {
     const familyName = escapeCssString(fam.name)
     for (const v of fam.variants) {
+      if (!v.blobUrl) continue
       const proxied = { ...v, blobUrl: toProxyUrl(v.blobUrl) }
+      chunks.push(`/* ${familyName} :: ${v.styleName} ${v.weight}${v.isItalic ? ' Italic' : ''} */`)
       chunks.push(FontVariantUtils.toCSSFontFace(proxied, familyName))
     }
   }
