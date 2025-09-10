@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
+import { getAllKnownFonts } from '@/lib/all-fonts'
 import type { FontFamily } from '@/lib/models/FontFamily'
 import type { FontVariant } from '@/lib/models/FontVariant'
 import { resolveFontUrl } from '@/lib/font-url'
@@ -31,7 +32,7 @@ function toVariant(font: any, familyId: string): FontVariant {
 
 export async function GET() {
   try {
-    const fonts = await fontStorageClean.getAllFonts()
+    const fonts = await getAllKnownFonts()
 
     // Group by family name
     const byFamily = new Map<string, any[]>()
