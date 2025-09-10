@@ -124,6 +124,21 @@ export default function FontLibrary() {
           const fd = await respFamilies.json()
           console.log('📋 Families API Response:', fd)
           if (fd.success && Array.isArray(fd.families)) {
+            // Inject CSS directly from normalized families
+            try {
+              const { buildFontCSS } = await import('@/lib/font-css')
+              const css = buildFontCSS(fd.families)
+              const existing = document.querySelector('style[data-font-css]')
+              if (existing) existing.remove()
+              if (css) {
+                const el = document.createElement('style')
+                el.setAttribute('data-font-css', 'true')
+                el.textContent = css
+                document.head.appendChild(el)
+              }
+            } catch (e) {
+              console.warn('Failed to build font CSS from families:', e)
+            }
             const catalogFonts: FontData[] = fd.families.map((family: any, index: number) => {
               const familyFonts = family.variants || []
               const representativeFont =
@@ -215,7 +230,6 @@ export default function FontLibrary() {
 
             setFonts(catalogFonts as FontData[])
             console.log(`📝 Loaded ${catalogFonts.length} families from /api/families`)
-            loadFontCSS(catalogFonts as FontData[])
             handled = true
           }
         }
@@ -1077,57 +1091,7 @@ export default function FontLibrary() {
   return (
     <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
       {/* Dynamic font loading and fallback character styles */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          .fallback-char {
-            opacity: 0.4 !important;
-            color: var(--gray-cont-tert) !important;
-          }
-          ${fonts.map(font => {
-            const familyName = font.name; // Use clean family name without quotes
-            
-            // For static fonts with multiple styles, generate @font-face for each style
-            if (font._familyFonts && font._familyFonts.length > 1 && font.type === "Static") {
-              return font._familyFonts.map((fontFile: any) => {
-                console.log(`CSS for ${familyName} ${fontFile.style}: weight=${fontFile.weight}, italic=${fontFile.style?.toLowerCase().includes('italic')}`);
-                return `
-                @font-face {
-                  font-family: "${familyName}";
-                  src: url("${fontFile.blobUrl || fontFile.url}");
-                  font-weight: ${fontFile.weight || 400};
-                  font-style: ${fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique') ? 'italic' : 'normal'};
-                  font-display: swap;
-                }
-              `}).join('')
-            } else if (font.type === "Variable" && font._familyFonts) {
-              // For variable fonts, generate @font-face rules for each file
-              return font._familyFonts.map((fontFile: any) => {
-                const weightRange = fontFile.variableAxes?.find((axis: any) => axis.axis === 'wght');
-                const weightValue = weightRange ? `${weightRange.min} ${weightRange.max}` : '100 900';
-                const isItalic = fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique');
-                console.log(`Variable CSS for ${familyName} ${fontFile.style}: weight=${weightValue}, italic=${isItalic}, file=${fontFile.blobUrl || fontFile.url}`);
-                return `
-                @font-face {
-                  font-family: "${familyName}";
-                  src: url("${fontFile.blobUrl || fontFile.url}");
-                  font-weight: ${weightValue};
-                  font-style: ${isItalic ? 'italic' : 'normal'};
-                  font-display: swap;
-                }
-              `}).join('')
-            } else {
-              // Single font fallback
-              return `
-                @font-face {
-                  font-family: "${familyName}";
-                  src: url("${font.url}");
-                  font-display: swap;
-                }
-              `
-            }
-          }).join('')}
-        `
-      }} />
+      <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
       {sidebarOpen && (
         <aside
           className="w-[280px] flex-shrink-0 flex flex-col h-full"

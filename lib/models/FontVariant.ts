@@ -213,19 +213,25 @@ export class FontVariantUtils {
    * Get CSS font-face declaration
    */
   static toCSSFontFace(variant: FontVariant, familyName: string): string {
-    const fontWeight = variant.isVariable 
-      ? FontVariantUtils.getWeightRange(variant)?.min || variant.weight
-      : variant.weight
-      
-    return `
-      @font-face {
-        font-family: "${familyName}";
-        src: url("${variant.blobUrl}");
-        font-weight: ${fontWeight};
-        font-style: ${variant.isItalic ? 'italic' : 'normal'};
-        font-display: swap;
-      }
-    `.trim()
+    // Use weight range for variable fonts per spec: e.g. "100 900"
+    const weightRange = FontVariantUtils.getWeightRange(variant)
+    const fontWeight = variant.isVariable && weightRange
+      ? `${weightRange.min} ${weightRange.max}`
+      : `${variant.weight}`
+
+    // Guess format() from variant.format if available
+    const formatMap: Record<string, string> = {
+      'woff2': 'woff2',
+      'woff': 'woff',
+      'truetype': 'truetype',
+      'opentype': 'opentype',
+      'ttf': 'truetype',
+      'otf': 'opentype',
+    }
+    const fmt = (variant.format || '').toLowerCase()
+    const formatHint = formatMap[fmt] ? ` format("${formatMap[fmt]}")` : ''
+
+    return `@font-face{font-family:"${familyName}";src:url("${variant.blobUrl}")${formatHint};font-weight:${fontWeight};font-style:${variant.isItalic ? 'italic' : 'normal'};font-display:swap;}`
   }
   
   /**
