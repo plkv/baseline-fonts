@@ -5,6 +5,7 @@
 
 import { kv } from '@vercel/kv'
 import { put as blobPut, del as blobDel } from '@vercel/blob'
+import crypto from 'crypto'
 
 export interface FontMetadata {
   id: string
@@ -95,9 +96,19 @@ class FontStorageClean {
   ): Promise<FontMetadata> {
     const id = `font_${Date.now()}_${Math.random().toString(36).slice(2)}`
     const uploadedAt = new Date().toISOString()
+    const buffer = await file.arrayBuffer()
+    // Compute checksum for dedupe
+    const checksum = crypto.createHash('sha256').update(Buffer.from(buffer)).digest('hex')
+    const existingId = await kv.get<string>(`checksum:${checksum}`)
+    if (existingId) {
+      const existing = await this.getFontById(existingId)
+      if (existing) {
+        return existing
+      }
+    }
     
     // Upload file to Blob
-    const blob = await blobPut(file.name, file, {
+    const blob = await blobPut(file.name, new Blob([buffer]), {
       access: 'public',
       addRandomSuffix: true  // Allow unique filenames to avoid conflicts
     })
@@ -119,7 +130,6 @@ class FontStorageClean {
     if (parseFont !== false) {
       try {
         const { parseFontFile } = await import('./font-parser')
-        const buffer = await file.arrayBuffer()
         const parsedData = await parseFontFile(buffer, file.name, file.size)
         
         // Extract relevant fields from parsed data
@@ -176,6 +186,9 @@ class FontStorageClean {
       format: file.name.split('.').pop()?.toLowerCase() || 'unknown',
       uploadedAt,
       blobUrl: blob.url,
+      // record checksum for dedupe footprint
+      // @ts-ignore
+      checksum,
       downloadLink: undefined,
       ...extractedMetadata,
       // Override family name and ID if provided (for adding to existing families)
@@ -187,6 +200,7 @@ class FontStorageClean {
     
     // Store metadata in KV
     await kv.set(id, fullMetadata)
+    await kv.set(`checksum:${checksum}`, id)
     
     // Add to index
     await this.addToIndex(id)
@@ -225,7 +239,7 @@ class FontStorageClean {
     'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
     'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId' |
     'version' | 'copyright' | 'license' | 'creationDate' | 'modificationDate' | 'description' | 'openTypeFeatures' |
-    'style'
+    'style' | 'blobUrl'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false
