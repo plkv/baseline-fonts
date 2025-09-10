@@ -68,6 +68,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <head>
+        <link rel="preconnect" href="https://blob.vercel-storage.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="//blob.vercel-storage.com" />
+        <link rel="dns-prefetch" href="//vercel-storage.com" />
+        <link rel="stylesheet" href="/api/font-css" />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0"
           rel="stylesheet"
