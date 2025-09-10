@@ -152,21 +152,39 @@ export const useFontStore = create<FontStore>((set, get) => ({
   
   // Core actions
   loadFonts: async () => {
-    set(state => ({ ui: { ...state.ui, isLoadingFonts: true } }))
-    
+    set((state) => ({ ui: { ...state.ui, isLoadingFonts: true } }))
+
     try {
-      const response = await fetch('/api/fonts-clean/list')
-      const data = await response.json()
-      
-      if (data.success && data.fonts) {
-        // Convert flat font data to hierarchical families
-        const families = convertToFamilies(data.fonts)
+      // Prefer normalized families endpoint
+      let families: FontFamily[] | null = null
+      try {
+        const resFamilies = await fetch('/api/families', { cache: 'no-store' })
+        if (resFamilies.ok) {
+          const d = await resFamilies.json()
+          if (d.success && Array.isArray(d.families)) {
+            families = d.families
+          }
+        }
+      } catch (_) {
+        // fall back silently
+      }
+
+      if (!families) {
+        // Fallback to legacy flat list and convert
+        const response = await fetch('/api/fonts-clean/list', { cache: 'no-store' })
+        const data = await response.json()
+        if (data.success && Array.isArray(data.fonts)) {
+          families = convertToFamilies(data.fonts)
+        }
+      }
+
+      if (families) {
         set({ families })
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
     } finally {
-      set(state => ({ ui: { ...state.ui, isLoadingFonts: false } }))
+      set((state) => ({ ui: { ...state.ui, isLoadingFonts: false } }))
     }
   },
   

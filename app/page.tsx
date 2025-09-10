@@ -116,11 +116,119 @@ export default function FontLibrary() {
     try {
       setIsLoadingFonts(true)
       console.log('🔄 Loading fonts from API...')
-      const response = await fetch('/api/fonts-clean/list')
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📋 API Response:', data)
-        if (data.success && data.fonts) {
+      // Prefer normalized families endpoint; fallback to legacy list
+      let handled = false
+      try {
+        const respFamilies = await fetch('/api/families')
+        if (respFamilies.ok) {
+          const fd = await respFamilies.json()
+          console.log('📋 Families API Response:', fd)
+          if (fd.success && Array.isArray(fd.families)) {
+            const catalogFonts: FontData[] = fd.families.map((family: any, index: number) => {
+              const familyFonts = family.variants || []
+              const representativeFont =
+                familyFonts.find((v: any) => v.isDefaultStyle) ||
+                familyFonts.find((v: any) => !v.isItalic) ||
+                familyFonts[0]
+              if (!representativeFont) return null
+
+              const isVariable = Boolean(family.isVariable) || familyFonts.some((v: any) => v.isVariable)
+              let availableWeights: number[] = []
+              let availableStylesWithWeights: any[] = []
+
+              if (isVariable) {
+                const weightAxes = familyFonts
+                  .filter((v: any) => v.variableAxes?.some((a: any) => a.axis === 'wght'))
+                  .map((v: any) => v.variableAxes?.find((a: any) => a.axis === 'wght'))
+                  .filter(Boolean)
+                if (weightAxes.length > 0) {
+                  const minWeight = Math.min(...weightAxes.map((axis: any) => axis.min))
+                  const maxWeight = Math.max(...weightAxes.map((axis: any) => axis.max))
+                  availableWeights = [100,200,300,400,500,600,700,800,900].filter(w => w >= minWeight && w <= maxWeight)
+                } else {
+                  availableWeights = [100,200,300,400,500,600,700,800,900]
+                }
+                availableStylesWithWeights = availableWeights.map((weight) => ({
+                  weight,
+                  styleName: getStyleNameFromWeight(weight, false),
+                  isItalic: false,
+                }))
+                const hasItalic = familyFonts.some((v: any) => v.isItalic)
+                if (hasItalic) {
+                  availableStylesWithWeights = [
+                    ...availableStylesWithWeights,
+                    ...availableWeights.map((weight) => ({
+                      weight,
+                      styleName: getStyleNameFromWeight(weight, true),
+                      isItalic: true,
+                    })),
+                  ]
+                }
+              } else {
+                const allFontStyles = familyFonts.map((v: any) => ({
+                  weight: v.weight || 400,
+                  styleName: v.styleName || 'Regular',
+                  isItalic: Boolean(v.isItalic),
+                  font: v,
+                }))
+                availableStylesWithWeights = allFontStyles.sort((a: any, b: any) => {
+                  if (a.weight !== b.weight) return a.weight - b.weight
+                  return a.isItalic ? 1 : -1
+                })
+                availableWeights = [...new Set(allFontStyles.map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
+              }
+
+              const hasItalic = familyFonts.some((v: any) => v.isItalic)
+              const finalType = isVariable ? 'Variable' : 'Static'
+
+              return {
+                id: index + 1,
+                name: family.name,
+                family: family.name,
+                style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
+                category: Array.isArray(family.category) ? (family.category[0] || 'Sans') : (family.category || 'Sans'),
+                styles: familyFonts.length,
+                type: finalType,
+                author: family.foundry || 'Unknown',
+                fontFamily: `"${family.name}", system-ui, sans-serif`,
+                availableWeights,
+                hasItalic,
+                filename: representativeFont.originalFilename || representativeFont.filename,
+                url: representativeFont.blobUrl,
+                variableAxes: representativeFont.variableAxes,
+                openTypeFeatures: representativeFont.openTypeFeatures,
+                _familyFonts: familyFonts.map((v: any) => ({
+                  weight: v.weight,
+                  style: v.styleName,
+                  isItalic: v.isItalic,
+                  blobUrl: v.blobUrl,
+                  url: v.blobUrl,
+                  variableAxes: v.variableAxes,
+                  openTypeFeatures: v.openTypeFeatures,
+                })),
+                _availableStyles: availableStylesWithWeights,
+                collection: family.collection || 'Text',
+                styleTags: family.styleTags || [],
+                categories: Array.isArray(family.category) ? family.category : [family.category || 'Sans'],
+              } as FontData
+            }).filter(Boolean)
+
+            setFonts(catalogFonts as FontData[])
+            console.log(`📝 Loaded ${catalogFonts.length} families from /api/families`)
+            loadFontCSS(catalogFonts as FontData[])
+            handled = true
+          }
+        }
+      } catch (e) {
+        console.warn('Families endpoint not available, falling back:', e)
+      }
+
+      if (!handled) {
+        const response = await fetch('/api/fonts-clean/list')
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📋 API Response:', data)
+          if (data.success && data.fonts) {
           // Group fonts by family name to avoid duplicates
           const fontsByFamily = new Map<string, any[]>()
           data.fonts.forEach((font: any) => {
@@ -257,6 +365,7 @@ export default function FontLibrary() {
         }
       } else {
         console.error('API response not ok:', response.status, response.statusText)
+      }
       }
     } catch (error) {
       console.error('Failed to load fonts:', error)
