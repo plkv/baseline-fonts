@@ -96,11 +96,30 @@ export const ControlledTextPreview = forwardRef<
   }
   
   if (multiline) {
+    // Auto-resize textarea to fit content height (prevent inner scrollbars)
+    const taRef = useRef<HTMLTextAreaElement | null>(null)
+    // Bridge forwarded ref and local ref
+    const setRefs = (el: HTMLTextAreaElement | null) => {
+      taRef.current = el
+      if (typeof ref === 'function') ref(el)
+      else if (ref && 'current' in ref) (ref as any).current = el
+    }
+    useLayoutEffect(() => {
+      const el = taRef.current
+      if (!el) return
+      try {
+        el.style.height = 'auto'
+        el.style.overflow = 'hidden'
+        el.style.resize = 'none'
+        el.style.height = `${el.scrollHeight}px`
+      } catch {}
+    }, [value])
     return (
       <textarea
-        ref={ref as React.ForwardedRef<HTMLTextAreaElement>}
+        ref={setRefs}
         {...baseProps}
-        rows={3}
+        rows={1}
+        style={{ ...style, width: '100%', overflow: 'hidden', resize: 'none' }}
       />
     )
   }

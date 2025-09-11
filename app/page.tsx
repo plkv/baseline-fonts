@@ -751,7 +751,7 @@ export default function FontLibrary() {
         onFocus={() => setFocusedFontId(fontId)}
         className={className}
         style={style}
-        multiline={false}
+        multiline={true}
       />
     )
   }
@@ -1602,7 +1602,7 @@ export default function FontLibrary() {
                         }
                       }}
                       cursorPosition={textCursorPosition}
-                      className="whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none w-full bg-transparent border-0"
+                      className="whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0"
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
