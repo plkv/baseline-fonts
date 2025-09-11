@@ -93,7 +93,7 @@ export default function FontLibrary() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
   const [selectedWeights, setSelectedWeights] = useState<number[]>([])
   const [isItalic, setIsItalic] = useState(false)
-  const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean }>>(
+  const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
     {},
   )
   const [textSize, setTextSize] = useState([72])
@@ -339,24 +339,21 @@ export default function FontLibrary() {
                 availableStylesWithWeights = [...availableStylesWithWeights, ...italicStyles]
               }
             } else {
-              // For static fonts, use actual font styles and weights, but de-duplicate by weight + italic
+              // Static family: expose each variant distinctly using per-variant CSS alias to avoid collisions
+              const familyAlias = `${canonicalFamilyName(familyName)}-${shortHash(canonicalFamilyName(familyName)).slice(0,6)}`
               const allFontStyles = familyFonts.map(font => ({
                 weight: font.weight || 400,
                 styleName: font.style || 'Regular',
                 isItalic: font.style?.toLowerCase().includes('italic') || font.style?.toLowerCase().includes('oblique') || false,
-                font: font // Store reference to original font
+                cssFamily: `${familyAlias}__v_${shortHash(font.id || font.filename).slice(0,6)}`,
+                font: font
               }))
-              const unique = new Map<string, typeof allFontStyles[number]>()
-              for (const s of allFontStyles) {
-                const key = `${s.weight}-${s.isItalic ? 'i' : 'n'}`
-                if (!unique.has(key)) unique.set(key, s)
-              }
               // Sort by weight, then regular before italic
-              availableStylesWithWeights = Array.from(unique.values()).sort((a, b) => {
+              availableStylesWithWeights = allFontStyles.sort((a, b) => {
                 if (a.weight !== b.weight) return a.weight - b.weight
                 return a.isItalic ? 1 : -1
               })
-              availableWeights = [...new Set(Array.from(unique.values()).map(style => style.weight))].sort((a, b) => a - b)
+              availableWeights = [...new Set(allFontStyles.map(style => style.weight))].sort((a, b) => a - b)
             }
             
             const finalType = isVariable ? "Variable" : "Static"
@@ -606,11 +603,11 @@ export default function FontLibrary() {
     setSelectedWeights((prev) => (prev.includes(weight) ? prev.filter((w) => w !== weight) : [...prev, weight]))
   }
 
-  const updateFontSelection = (fontId: number, weight: number, italic: boolean) => {
+  const updateFontSelection = (fontId: number, weight: number, italic: boolean, cssFamily?: string) => {
     console.log(`Updating font selection for ${fontId}: weight=${weight}, italic=${italic}`);
     setFontWeightSelections((prev) => ({
       ...prev,
-      [fontId]: { weight, italic },
+      [fontId]: { weight, italic, cssFamily: cssFamily || prev[fontId]?.cssFamily, styleName: prev[fontId]?.styleName },
     }))
     // Ensure variable fonts reflect dropdown in wght axis for rendering
     setFontVariableAxes((prev) => ({
@@ -1545,11 +1542,11 @@ export default function FontLibrary() {
                           >
                             <select
                               ref={(el) => { selectRefs.current[font.id] = el }}
-                              value={`${fontSelection.weight}-${fontSelection.italic}`}
+                              value={`${fontSelection.weight}-${fontSelection.italic}-${fontSelection.cssFamily || ''}`}
                               onChange={(e) => {
-                                const [weight, italic] = e.target.value.split("-")
+                                const [weight, italic, cssFamily] = e.target.value.split("-")
                                 console.log(`Dropdown change for font ${font.id} (${font.name}): ${weight}-${italic}`);
-                                updateFontSelection(font.id, Number.parseInt(weight), italic === "true")
+                                updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                 // Sync variable axis (wght) to reflect dropdown selection
                                 setFontVariableAxes(prev => ({
                                   ...prev,
@@ -1562,7 +1559,7 @@ export default function FontLibrary() {
                               }`}
                             >
                               {font._availableStyles?.map((style, index) => (
-                                <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}-${style.isItalic}`}>
+                                <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}-${style.isItalic}-${style.cssFamily || ''}`}>
                                   {style.styleName}
                                 </option>
                               ))}
@@ -1619,7 +1616,7 @@ export default function FontLibrary() {
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
-                        fontFamily: font.fontFamily,
+                        fontFamily: (fontWeightSelections[font.id]?.cssFamily ? `"${fontWeightSelections[font.id]?.cssFamily}", system-ui, sans-serif` : font.fontFamily),
                         fontWeight: effectiveStyle.weight,
                         fontStyle: effectiveStyle.italic ? "italic" : "normal",
                         color: "var(--gray-cont-prim)",

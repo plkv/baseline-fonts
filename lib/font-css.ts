@@ -26,6 +26,10 @@ export function buildFontCSS(families: FontFamily[]): string {
       chunks.push(FontVariantUtils.toCSSFontFace(proxied, familyName))
       // Fallback direct source if proxy fails (some environments block HEAD/stream)
       chunks.push(FontVariantUtils.toCSSFontFace(v, familyName))
+      // Per-variant alias allows selecting a specific file even when weight/style collide
+      const variantAlias = `${familyName}__v_${shortHash(v.id).slice(0,6)}`
+      chunks.push(FontVariantUtils.toCSSFontFace(proxied, variantAlias))
+      chunks.push(FontVariantUtils.toCSSFontFace(v, variantAlias))
     }
   }
   return chunks.join('\n')
