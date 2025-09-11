@@ -103,11 +103,14 @@ export default function FontLibrary() {
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
   
   // Get a random font-family from current fonts by collection
-  const getRandomFontFromCollection = (collection: "Text" | "Display" | "Weirdo") => {
-    const candidates = fonts.filter(f => f.collection === collection)
-    if (candidates.length === 0) return "Inter Variable, system-ui, sans-serif"
-    const pick = candidates[Math.floor(Math.random() * candidates.length)]
-    return pick?.fontFamily || "Inter Variable, system-ui, sans-serif"
+  const previewFontsRef = useRef<Record<'Text'|'Display'|'Weirdo', string>>({ Text: '', Display: '', Weirdo: '' })
+  const getStablePreviewFontForCollection = (collection: "Text" | "Display" | "Weirdo") => {
+    if (!previewFontsRef.current[collection]) {
+      const candidates = fonts.filter(f => f.collection === collection)
+      const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null
+      previewFontsRef.current[collection] = pick?.fontFamily || "Inter Variable, system-ui, sans-serif"
+    }
+    return previewFontsRef.current[collection]
   }
   const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
   const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
@@ -614,17 +617,15 @@ export default function FontLibrary() {
         return false
       }
       
-      // Filter by selected categories
+      // Filter by selected categories (AND logic)
       if (selectedCategories.length > 0) {
-        const hasMatchingCategory = selectedCategories.some(cat => 
-          font.categories.includes(cat)
-        )
-        if (!hasMatchingCategory) return false
+        const matchesAllCategories = selectedCategories.every(cat => font.categories.includes(cat))
+        if (!matchesAllCategories) return false
       }
       
-      // Filter by selected style tags (appearance)
+      // Filter by selected style tags (AND logic)
       if (selectedStyles.length > 0) {
-        const hasMatchingStyle = selectedStyles.some(style => {
+        const hasMatchingStyle = selectedStyles.every(style => {
           // Check styleTags if available
           if (font.styleTags && Array.isArray(font.styleTags)) {
             return font.styleTags.includes(style)
@@ -716,7 +717,7 @@ export default function FontLibrary() {
     return getPresetContent(selectedPreset, fontName)
   }
 
-  // Small wrapper to use ControlledTextPreview but keep behavior identical
+  // Small wrapper to use ControlledTextPreview with safe focus/cursor handling
   function ControlledPreviewInput({
     value,
     cursorPosition,
@@ -733,16 +734,15 @@ export default function FontLibrary() {
     onToggleExpand?: () => void
   }) {
     return (
-      <div onClick={(e) => { const sel = window.getSelection(); if (!sel || sel.isCollapsed) { e.preventDefault(); onToggleExpand?.() } }}>
-        <ControlledTextPreview
-          value={value}
-          cursorPosition={cursorPosition}
-          onChange={(v, pos) => onChangeText(v, pos)}
-          className={className}
-          style={style}
-          multiline={false}
-        />
-      </div>
+      <ControlledTextPreview
+        value={value}
+        cursorPosition={cursorPosition}
+        onChange={(v, pos) => onChangeText(v, pos)}
+        onCursorChange={(pos) => onChangeText(value, pos)}
+        className={className}
+        style={style}
+        multiline={false}
+      />
     )
   }
 
@@ -1230,7 +1230,7 @@ export default function FontLibrary() {
                         style={{
                           textAlign: "center",
                           fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
-                          fontFamily: getRandomFontFromCollection(mode),
+                          fontFamily: getStablePreviewFontForCollection(mode),
                           fontSize: "24px",
                           fontStyle: "normal",
                           fontWeight: 500,
@@ -1308,7 +1308,7 @@ export default function FontLibrary() {
                     onValueChange={setTextSize}
                     max={200}
                     min={12}
-                    step={10}
+                    step={1}
                     className="flex-1"
                   />
                   <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
@@ -1567,11 +1567,18 @@ export default function FontLibrary() {
                     <ControlledPreviewInput
                       value={getPreviewContent(font.name)}
                       onChangeText={(val, pos) => {
-                        setCustomText(val)
+                        // Only set global customText when user actually changes text
+                        // Avoid setting it on focus/cursor events that pass the same value
                         setTextCursorPosition(pos)
+                        if (val !== customText) {
+                          // If preset is in effect (customText empty) and val equals preset content, skip
+                          const presetValue = getPresetContent(selectedPreset, font.name)
+                          const isPreset = customText.trim() === '' && val === presetValue
+                          if (!isPreset) setCustomText(val)
+                        }
                       }}
                       cursorPosition={textCursorPosition}
-                      className="leading-relaxed whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none w-full bg-transparent border-0"
+                      className="whitespace-pre-line break-words overflow-visible cursor-text focus:outline-none w-full bg-transparent border-0"
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,

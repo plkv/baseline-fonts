@@ -9,6 +9,7 @@ interface ControlledTextPreviewProps {
   value: string
   cursorPosition: number
   onChange: (value: string, cursorPosition: number) => void
+  onCursorChange?: (cursorPosition: number) => void
   onFocus?: () => void
   onBlur?: () => void
   className?: string
@@ -60,14 +61,15 @@ export const ControlledTextPreview = forwardRef<
   const handleSelect = (e: React.SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const target = e.currentTarget
     const newCursorPosition = target.selectionStart || 0
-    onChange(value, newCursorPosition)
+    // Only report cursor movement to avoid unintended value updates on click/focus
+    if (typeof onCursorChange === 'function') onCursorChange(newCursorPosition)
   }
   
   const handleKeyUp = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     // Track cursor position on keyboard navigation
     const target = e.currentTarget
     const newCursorPosition = target.selectionStart || 0
-    onChange(value, newCursorPosition)
+    if (typeof onCursorChange === 'function') onCursorChange(newCursorPosition)
   }
   
   const handleFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
