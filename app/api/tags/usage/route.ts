@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllKnownFonts } from '@/lib/all-fonts'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 import { toTitleCase } from '@/lib/category-utils'
 
 type Coll = 'Text'|'Display'|'Weirdo'
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const type = (searchParams.get('type') as any) || 'appearance'
-    const fonts = await getAllKnownFonts()
+    const fonts = await fontStorageClean.getAllFonts()
     const usage: Record<Coll, Set<string>> = { Text: new Set(), Display: new Set(), Weirdo: new Set() }
     for (const f of fonts as any[]) {
       const coll: Coll = (f.collection as Coll) || 'Text'

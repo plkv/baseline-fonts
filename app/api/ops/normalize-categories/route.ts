@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getAllKnownFonts } from '@/lib/all-fonts'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 import { normalizeCategoryList } from '@/lib/category-utils'
 import { fontStorageClean } from '@/lib/font-storage-clean'
 
 export async function POST() {
   try {
-    const all = await getAllKnownFonts()
+    const all = await fontStorageClean.getAllFonts()
     let updated = 0
     for (const f of all as any[]) {
       const collection = (f.collection as any) || 'Text'

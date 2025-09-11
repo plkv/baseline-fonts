@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { kv } from '@vercel/kv'
-import { getAllKnownFonts } from '@/lib/all-fonts'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 import { toTitleCase } from '@/lib/category-utils'
 
 type Coll = 'Text'|'Display'|'Weirdo'
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     const type = (searchParams.get('type') as 'appearance'|'category') || 'appearance'
     const collection = (searchParams.get('collection') as Coll) || 'Text'
 
-    const all = await getAllKnownFonts()
+    const all = await fontStorageClean.getAllFonts()
     // Count unique families per tag in selected collection
     const familiesByName = new Map<string, any[]>()
     for (const f of all as any[]) {
@@ -48,4 +48,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-

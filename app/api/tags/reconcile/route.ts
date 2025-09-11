@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { kv } from '@vercel/kv'
-import { getAllKnownFonts } from '@/lib/all-fonts'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 import { toTitleCase } from '@/lib/category-utils'
 
 type Coll = 'Text'|'Display'|'Weirdo'
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(()=>({})) as { removeUnused?: boolean }
     const removeUnused = !!body.removeUnused
-    const fonts = await getAllKnownFonts()
+    const fonts = await fontStorageClean.getAllFonts()
 
     const used: Record<'appearance'|'category', Record<Coll, Set<string>>> = {
       appearance: { Text: new Set(), Display: new Set(), Weirdo: new Set() },
