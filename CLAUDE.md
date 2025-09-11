@@ -157,6 +157,47 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 3. **Check API responses** - Verify data structure matches expectations
 4. **Test responsive behavior** - Ensure mobile and desktop both work
 
+## Build Guardrails (Do This Every Time)
+
+- Client vs Server split
+  - Never import server‑only code in client components. If a module needs Node APIs (Buffer, fs, crypto, etc.), mark it server‑only and do not import it from `"use client"` files.
+  - Prefer fetching prebuilt data/CSS via API routes (e.g., `/api/font-css`) instead of generating CSS in the client.
+
+- Server‑only / Client‑only markers
+  - Add `import 'server-only'` to modules that must never be bundled in the client (e.g., storage, CSS builder).
+  - Only `"use client"` components should import browser‑only utilities.
+
+- ESLint checks
+  - Disallow `Buffer` and `node:*` imports in client code.
+  - Disallow importing `buffer`, `fs`, `crypto`, etc. from any `"use client"` file.
+
+- Preview first, then main
+  - Open PRs from a feature branch; verify Vercel Preview is green before merging to `main`.
+
+## Free‑Tier Usage Strategy (Blob + KV + Project)
+
+- Blob
+  - Use direct Blob URLs in `@font-face` (no proxy or HEAD per request).
+  - Deduplicate uploads by checksum; remove orphan files; prefer WOFF2 where possible.
+
+- KV
+  - Avoid hot‑path KV reads; cache API responses with `s-maxage` and `stale-while-revalidate`.
+  - Batch writes on Admin; do not write on every tiny edit.
+
+- Auto‑pause prevention (optional)
+  - Use a scheduled ping to the production URL weekly to avoid Vercel auto‑pausing free projects (see `.github/workflows/keepalive.yml`).
+  - Or simply accept auto‑pause and unpause manually before demos.
+
+## Operational Playbook
+
+1) If deploy fails with no logs:
+   - Look for `Buffer`/Node APIs leaking into client or Edge routes; move to server‑only or remove.
+   - Ensure the project is not paused on Vercel; unpause and redeploy with “Skip build cache”.
+
+2) To keep production stable:
+   - Use feature branches + Preview deploys for UI changes.
+   - Do not modify font CSS generation on the client. Only via `/api/font-css` link tag in layout.
+
 ### File Locations to Remember:
 - Main catalog: `/app/page.tsx` (1445 lines)
 - Font storage: `/lib/font-storage-clean.ts`  

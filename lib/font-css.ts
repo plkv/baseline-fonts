@@ -27,3 +27,4 @@ export function buildFontCSS(families: FontFamily[]): string {
   }
   return chunks.join('\n')
 }
+import 'server-only'

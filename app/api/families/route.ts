@@ -168,7 +168,14 @@ export async function GET() {
       return family
     })
 
-    return NextResponse.json({ success: true, families, totalFamilies: families.length, totalFiles: fonts.length })
+    return NextResponse.json(
+      { success: true, families, totalFamilies: families.length, totalFiles: fonts.length },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+        }
+      }
+    )
   } catch (error) {
     console.error('Families list error:', error)
     return NextResponse.json(

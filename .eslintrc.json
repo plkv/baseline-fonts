@@ -1,0 +1,34 @@
+{
+  "root": true,
+  "extends": ["next", "next/core-web-vitals"],
+  "rules": {
+    "no-restricted-globals": ["error", "Buffer"],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          { "name": "buffer", "message": "Do not import Node Buffer in client code." },
+          { "name": "fs", "message": "Do not import fs in client code." },
+          { "name": "crypto", "message": "Do not import crypto in client code." },
+          { "name": "path", "message": "Do not import path in client code." },
+          { "name": "stream", "message": "Do not import stream in client code." }
+        ],
+        "patterns": ["node:*"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/app/**/page.{ts,tsx}", "**/components/**/*.{ts,tsx}", "**/*.client.{ts,tsx}"],
+      "env": { "browser": true },
+      "rules": {
+        "no-restricted-globals": ["error", "Buffer"],
+        "no-restricted-imports": [
+          "error",
+          { "paths": ["buffer", "fs", "crypto", "path", "stream"], "patterns": ["node:*"] }
+        ]
+      }
+    }
+  ]
+}
+

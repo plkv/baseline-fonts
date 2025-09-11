@@ -488,3 +488,4 @@ class FontStorageClean {
 }
 
 export const fontStorageClean = FontStorageClean.getInstance()
+import 'server-only'
