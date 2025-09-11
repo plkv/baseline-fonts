@@ -754,7 +754,6 @@ export default function FontLibrary() {
         onCursorChange={(pos) => onChangeText(value, pos)}
         onFocus={() => {
           setFocusedFontId(fontId)
-          setExpandedCards(prev => { const s = new Set(prev); s.add(fontId); return s })
         }}
         className={className}
         style={style}
