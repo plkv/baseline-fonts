@@ -338,8 +338,8 @@ export default function AdminManager() {
               <DialogFooter>
                 <DialogClose className="btn-md">Cancel</DialogClose>
                 <button className="btn-md" onClick={async()=>{
-                  // Build new ordered, normalized, de-duplicated list
-                  const base = (tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))
+                  // Build new ordered, normalized, de-duplicated list from current edits (allow empty)
+                  const base = tagEdits.slice()
                   const seen = new Set<string>()
                   const newList: string[] = []
                   base.forEach((t)=>{ const n = normalizeTag(t); const key = n.toLowerCase(); if (n && !seen.has(key)) { seen.add(key); newList.push(n) } })

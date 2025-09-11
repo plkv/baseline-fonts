@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  if (pathname.startsWith('/api/fonts')) {
+  // Block legacy writes only: match /api/fonts or /api/fonts/*, not /api/fonts-clean
+  if (/^\/api\/fonts(?:\/|$)/.test(pathname)) {
     const method = req.method.toUpperCase()
     if (method !== 'GET' && method !== 'HEAD') {
       return new NextResponse(JSON.stringify({ error: 'Legacy API is read-only. Use /api/fonts-clean.' }), {
@@ -18,4 +19,3 @@ export function middleware(req: NextRequest) {
 export const config = {
   matcher: ['/api/:path*']
 }
-
