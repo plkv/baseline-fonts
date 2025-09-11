@@ -746,7 +746,7 @@ export default function FontLibrary() {
     )
   }
 
-  // Get all available style tags from fonts in current collection only (no inference)
+  // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
     const allTags = new Set<string>()
     fonts.forEach(font => {
@@ -758,10 +758,25 @@ export default function FontLibrary() {
         }
       }
     })
-    return Array.from(allTags).sort()
+    const arr = Array.from(allTags)
+    // Sort by per-collection vocab order if available
+    // fetch is done outside during lifecycle; try reading window-managed vocab via endpoint synchronously is costly
+    // For now, do a quick fetch on first call when no local order yet
+    if (typeof window !== 'undefined' && arr.length > 0) {
+      // attempt to use cached order via a data attribute or skip if not fetched
+    }
+    return arr.sort((a,b)=>{
+      const order = (window as any).__appearanceOrder__?.[displayMode] as string[] | undefined
+      if (order && order.length) {
+        const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
+        const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
+        return (ia===-1? 1e6:ia) - (ib===-1? 1e6:ib)
+      }
+      return a.localeCompare(b)
+    })
   }
 
-  // Get dynamic categories based on fonts actually present in current collection
+  // Get dynamic categories based on fonts actually present in current collection, ordered by Manage Tags vocab
   const getCollectionCategories = () => {
     // Get all categories from fonts in the current collection
     const actualCategories = new Set<string>()
@@ -772,24 +787,16 @@ export default function FontLibrary() {
       }
     })
     
-    // Define the ideal order for each collection
-    const categoryOrder = {
-      Text: ['Sans', 'Serif', 'Slab', 'Mono'],
-      Display: ['Sans-based', 'Serif-based', 'Fatface', 'Script', 'Handwritten', 'Pixel', 'Vintage', 'Stencil'],
-      Weirdo: ['Experimental', 'Symbol', 'Bitmap', 'Decorative', 'Artistic', 'Conceptual']
-    }
-    
-    const preferredOrder = categoryOrder[displayMode] || categoryOrder.Text
-    
-    // Return categories in preferred order, but only those that actually exist
-    const orderedCategories = preferredOrder.filter(cat => actualCategories.has(cat))
-    
-    // Add any remaining categories that exist but aren't in the preferred order
-    const remainingCategories = Array.from(actualCategories)
-      .filter(cat => !preferredOrder.includes(cat))
-      .sort()
-    
-    return [...orderedCategories, ...remainingCategories]
+    const arr = Array.from(actualCategories)
+    return arr.sort((a,b)=>{
+      const order = (window as any).__categoryOrder__?.[displayMode] as string[] | undefined
+      if (order && order.length) {
+        const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
+        const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
+        return (ia===-1? 1e6:ia) - (ib===-1? 1e6:ib)
+      }
+      return a.localeCompare(b)
+    })
   }
 
   const getCollectionLanguages = () => {

@@ -68,6 +68,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{__html:`(function(){
+          fetch('/api/tags/vocab?type=appearance&collection=Text').then(r=>r.json()).then(d=>{window.__appearanceOrder__=window.__appearanceOrder__||{};window.__appearanceOrder__.Text=d.list||[]});
+          fetch('/api/tags/vocab?type=appearance&collection=Display').then(r=>r.json()).then(d=>{window.__appearanceOrder__=window.__appearanceOrder__||{};window.__appearanceOrder__.Display=d.list||[]});
+          fetch('/api/tags/vocab?type=appearance&collection=Weirdo').then(r=>r.json()).then(d=>{window.__appearanceOrder__=window.__appearanceOrder__||{};window.__appearanceOrder__.Weirdo=d.list||[]});
+          fetch('/api/tags/vocab?type=category&collection=Text').then(r=>r.json()).then(d=>{window.__categoryOrder__=window.__categoryOrder__||{};window.__categoryOrder__.Text=d.list||[]});
+          fetch('/api/tags/vocab?type=category&collection=Display').then(r=>r.json()).then(d=>{window.__categoryOrder__=window.__categoryOrder__||{};window.__categoryOrder__.Display=d.list||[]});
+          fetch('/api/tags/vocab?type=category&collection=Weirdo').then(r=>r.json()).then(d=>{window.__categoryOrder__=window.__categoryOrder__||{};window.__categoryOrder__.Weirdo=d.list||[]});
+        })();`}} />
         <link rel="preconnect" href="https://blob.vercel-storage.com" crossOrigin="" />
         <link rel="dns-prefetch" href="//blob.vercel-storage.com" />
         <link rel="dns-prefetch" href="//vercel-storage.com" />

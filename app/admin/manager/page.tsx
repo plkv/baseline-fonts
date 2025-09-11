@@ -52,6 +52,7 @@ export default function AdminManager() {
   const [manageType, setManageType] = useState<'appearance'|'category'>('appearance')
   const [manageCollection, setManageCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [tagEdits, setTagEdits] = useState<string[]>([])
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -118,6 +119,8 @@ export default function AdminManager() {
         const merge = (curr: string[], used: string[]) => Array.from(new Set([...(curr||[]), ...(used||[])])).sort((a,b)=>a.localeCompare(b))
         setAppearanceVocab(prev=>({ Text: merge(prev.Text, usageApp.Text), Display: merge(prev.Display, usageApp.Display), Weirdo: merge(prev.Weirdo, usageApp.Weirdo) }))
         setCategoryVocab(prev=>({ Text: merge(prev.Text, usageCat.Text), Display: merge(prev.Display, usageCat.Display), Weirdo: merge(prev.Weirdo, usageCat.Weirdo) }))
+        // initialize editable list to current selection scope so drag-and-drop works
+        setTagEdits((manageType==='appearance'? merge(appearanceVocab[manageCollection], usageApp[manageCollection]) : merge(categoryVocab[manageCollection], usageCat[manageCollection])))
       } catch {}
     })()
   }, [manageTagsOpen])
@@ -294,8 +297,12 @@ export default function AdminManager() {
                     manageType==='appearance' ? (f.styleTags||[]).some(x=>x.toLowerCase()===t.toLowerCase()) : (f.category||[]).some((x:any)=>x.toLowerCase()===t.toLowerCase())
                   )).length
                   return (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <input className="btn-md flex-1" defaultValue={t} onChange={(e)=>{
+                    <div key={idx} className="flex gap-2 items-center" draggable onDragStart={()=>{ setDragIdx(idx); if (!tagEdits.length) setTagEdits(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
+                      if (dragIdx===null) return; const list = (tagEdits.length? [...tagEdits] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]);
+                      const [m] = list.splice(dragIdx,1); list.splice(idx,0,m); setTagEdits(list); setDragIdx(null)
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--gray-cont-tert)', cursor: 'grab' }}>drag_indicator</span>
+                      <input className="btn-md flex-1" value={(tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))[idx] || ''} onChange={(e)=>{
                         setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base[idx] = normalizeTag(e.target.value); return base })
                       }} />
                       <span className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>{usedBy}</span>
