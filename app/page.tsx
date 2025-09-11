@@ -192,17 +192,23 @@ export default function FontLibrary() {
                   ]
                 }
               } else {
+                // Static family: build unique styles by weight + italic to avoid duplicate "Regular" entries
                 const allFontStyles = familyFonts.map((v: any) => ({
                   weight: v.weight || 400,
                   styleName: v.styleName || 'Regular',
                   isItalic: Boolean(v.isItalic),
                   font: v,
                 }))
-                availableStylesWithWeights = allFontStyles.sort((a: any, b: any) => {
+                const unique = new Map<string, any>()
+                for (const s of allFontStyles) {
+                  const key = `${s.weight}-${s.isItalic ? 'i' : 'n'}`
+                  if (!unique.has(key)) unique.set(key, s)
+                }
+                availableStylesWithWeights = Array.from(unique.values()).sort((a: any, b: any) => {
                   if (a.weight !== b.weight) return a.weight - b.weight
                   return a.isItalic ? 1 : -1
                 })
-                availableWeights = [...new Set(allFontStyles.map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
+                availableWeights = [...new Set(Array.from(unique.values()).map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
               }
 
               const hasItalic = familyFonts.some((v: any) => v.isItalic)
@@ -332,22 +338,24 @@ export default function FontLibrary() {
                 availableStylesWithWeights = [...availableStylesWithWeights, ...italicStyles]
               }
             } else {
-              // For static fonts, use actual font styles and weights
+              // For static fonts, use actual font styles and weights, but de-duplicate by weight + italic
               const allFontStyles = familyFonts.map(font => ({
                 weight: font.weight || 400,
                 styleName: font.style || 'Regular',
                 isItalic: font.style?.toLowerCase().includes('italic') || font.style?.toLowerCase().includes('oblique') || false,
                 font: font // Store reference to original font
               }))
-              
-              // Sort by weight, then by italic (regular first)
-              availableStylesWithWeights = allFontStyles.sort((a, b) => {
+              const unique = new Map<string, typeof allFontStyles[number]>()
+              for (const s of allFontStyles) {
+                const key = `${s.weight}-${s.isItalic ? 'i' : 'n'}`
+                if (!unique.has(key)) unique.set(key, s)
+              }
+              // Sort by weight, then regular before italic
+              availableStylesWithWeights = Array.from(unique.values()).sort((a, b) => {
                 if (a.weight !== b.weight) return a.weight - b.weight
-                return a.isItalic ? 1 : -1 // Regular before italic
+                return a.isItalic ? 1 : -1
               })
-              
-              // Extract unique weights in correct order
-              availableWeights = [...new Set(allFontStyles.map(style => style.weight))].sort((a, b) => a - b)
+              availableWeights = [...new Set(Array.from(unique.values()).map(style => style.weight))].sort((a, b) => a - b)
             }
             
             const finalType = isVariable ? "Variable" : "Static"
