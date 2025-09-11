@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { kv } from '@vercel/kv'
+import { getAllKnownFonts } from '@/lib/all-fonts'
+import { toTitleCase } from '@/lib/category-utils'
+
+type Coll = 'Text'|'Display'|'Weirdo'
+const keyOf = (type: 'appearance'|'category', collection: Coll) => `tags:vocab:${type}:${collection}`
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json().catch(()=>({})) as { removeUnused?: boolean }
+    const removeUnused = !!body.removeUnused
+    const fonts = await getAllKnownFonts()
+
+    const used: Record<'appearance'|'category', Record<Coll, Set<string>>> = {
+      appearance: { Text: new Set(), Display: new Set(), Weirdo: new Set() },
+      category: { Text: new Set(), Display: new Set(), Weirdo: new Set() },
+    }
+    for (const f of fonts as any[]) {
+      const coll: Coll = (f.collection as Coll) || 'Text'
+      ;(f.styleTags || []).forEach((t: string) => used.appearance[coll].add(toTitleCase(t)))
+      ;(f.category || []).forEach((t: string) => used.category[coll].add(toTitleCase(t)))
+    }
+
+    const result: any = { success: true, updated: [] as any[] }
+    for (const type of ['appearance','category'] as const) {
+      for (const coll of ['Text','Display','Weirdo'] as Coll[]) {
+        const key = keyOf(type, coll)
+        const curr = (await kv.get<string[]>(key)) || []
+        const currSet = new Set(curr)
+        const usedSet = used[type][coll]
+        let next: string[]
+        if (removeUnused) {
+          next = Array.from(usedSet).sort((a,b)=>a.localeCompare(b))
+        } else {
+          next = Array.from(new Set([ ...curr, ...Array.from(usedSet) ])).sort((a,b)=>a.localeCompare(b))
+        }
+        if (JSON.stringify(next) !== JSON.stringify(curr)) {
+          await kv.set(key, next)
+          result.updated.push({ type, collection: coll, size: next.length })
+        }
+      }
+    }
+    return NextResponse.json(result)
+  } catch (e: any) {
+    return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
+  }
+}
+
