@@ -110,21 +110,19 @@ export default function AdminManager() {
     refreshVocab()
   }, [])
 
-  // Also refresh vocab when the Manage Tags modal is opened so it's never stale
+  // On modal open or scope change, fetch authoritative summary: vocab (ordered) + usage counts + missing
   useEffect(()=>{
     if (!manageTagsOpen) return
     (async ()=>{
       try {
-        const resApp = await fetch('/api/tags/usage?type=appearance', { cache: 'no-store' }); const usageApp = (await resApp.json()).usage || { Text:[], Display:[], Weirdo:[] }
-        const resCat = await fetch('/api/tags/usage?type=category', { cache: 'no-store' }); const usageCat = (await resCat.json()).usage || { Text:[], Display:[], Weirdo:[] }
-        const merge = (curr: string[], used: string[]) => Array.from(new Set([...(curr||[]), ...(used||[])])).sort((a,b)=>a.localeCompare(b))
-        setAppearanceVocab(prev=>({ Text: merge(prev.Text, usageApp.Text), Display: merge(prev.Display, usageApp.Display), Weirdo: merge(prev.Weirdo, usageApp.Weirdo) }))
-        setCategoryVocab(prev=>({ Text: merge(prev.Text, usageCat.Text), Display: merge(prev.Display, usageCat.Display), Weirdo: merge(prev.Weirdo, usageCat.Weirdo) }))
-        // initialize editable list to current selection scope so drag-and-drop works
-        setTagEdits((manageType==='appearance'? merge(appearanceVocab[manageCollection], usageApp[manageCollection]) : merge(categoryVocab[manageCollection], usageCat[manageCollection])))
+        const res = await fetch(`/api/tags/summary?type=${manageType}&collection=${manageCollection}`, { cache: 'no-store' })
+        const data = await res.json()
+        const vocab: string[] = Array.isArray(data.vocab) ? data.vocab : []
+        // Set editable list to vocab only (no implicit merge) to prevent surprises
+        setTagEdits(vocab)
       } catch {}
     })()
-  }, [manageTagsOpen])
+  }, [manageTagsOpen, manageType, manageCollection])
 
   // Vocabularies persisted in KV; fallback to dataset on first load
   const [appearanceVocab, setAppearanceVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
@@ -297,6 +295,7 @@ export default function AdminManager() {
               </div>
               <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
                 {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => {
+                  // usage count computed against current families
                   const usedBy = families.filter(f=>f.collection===manageCollection && (
                     manageType==='appearance' ? (f.styleTags||[]).some(x=>x.toLowerCase()===t.toLowerCase()) : (f.category||[]).some((x:any)=>x.toLowerCase()===t.toLowerCase())
                   )).length
@@ -315,6 +314,11 @@ export default function AdminManager() {
                   )
                 })}
                 <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), 'New Tag'])}>+ Add Tag</button>
+                {/* Missing used tags not in vocab: quick add list */}
+                <div className="mt-2">
+                  <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Used but not in list</div>
+                  <MissingUsed type={manageType} collection={manageCollection} current={(tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))} onAdd={(t)=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), normalizeTag(t)])} />
+                </div>
               </div>
               <DialogFooter>
                 <DialogClose className="btn-md">Cancel</DialogClose>
@@ -527,5 +531,26 @@ export default function AdminManager() {
         </div>
       </section>
     </main>
+  )
+}
+
+function MissingUsed({ type, collection, current, onAdd }: { type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo', current: string[], onAdd: (t:string)=>void }) {
+  const [missing, setMissing] = useState<string[]>([])
+  useEffect(()=>{
+    (async ()=>{
+      try {
+        const res = await fetch(`/api/tags/summary?type=${type}&collection=${collection}`, { cache:'no-store' })
+        const data = await res.json()
+        const currL = (current||[]).map(x=>x.toLowerCase())
+        const miss = (Array.isArray(data.missing)? data.missing:[]).filter((t:string)=>!currL.includes(t.toLowerCase()))
+        setMissing(miss)
+      } catch { setMissing([]) }
+    })()
+  }, [type, collection, JSON.stringify(current)])
+  if (!missing.length) return null
+  return (
+    <div className="flex gap-1 flex-wrap mt-1">
+      {missing.map((t)=>(<button key={t} className="btn-sm" onClick={()=>onAdd(t)}>+ {t}</button>))}
+    </div>
   )
 }
