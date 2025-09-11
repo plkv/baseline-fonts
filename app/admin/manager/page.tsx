@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog'
 
 type CleanFont = {
   id: string
@@ -43,6 +44,8 @@ export default function AdminManager() {
   const [uploadFamily, setUploadFamily] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [manageTagsOpen, setManageTagsOpen] = useState(false)
+  const [tagEdits, setTagEdits] = useState<string[]>([])
 
   const load = async () => {
     setLoading(true)
@@ -95,6 +98,14 @@ export default function AdminManager() {
     else filtered.sort((a, b) => (b.uploadedAt || '').localeCompare(a.uploadedAt || ''))
     return filtered
   }, [fonts, collectionFilter, sortBy, query])
+
+  // Build language vocabulary from data
+  const languageVocabulary = useMemo<string[]>(() => {
+    const langs = new Set<string>()
+    for (const f of fonts) (f.languages || []).forEach(l => langs.add(l))
+    if (!langs.size) return ['Latin']
+    return Array.from(langs).sort((a, b) => a.localeCompare(b))
+  }, [fonts])
 
   const toggleExpand = (name: string) => {
     setExpanded(prev => { const s = new Set(prev); s.has(name) ? s.delete(name) : s.add(name); return s })
@@ -172,6 +183,61 @@ export default function AdminManager() {
             <option value="date">Date</option>
             <option value="alpha">A–Z</option>
           </select>
+          <Dialog open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
+            <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Manage Appearance Tags</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2">
+                {(tagEdits.length ? tagEdits : tagVocabulary).map((t, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <input className="btn-md flex-1" defaultValue={t} onChange={(e)=>{
+                      setTagEdits(prev=>{ const base = prev.length? [...prev] : [...tagVocabulary]; base[idx] = normalizeTag(e.target.value); return base })
+                    }} />
+                    <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...tagVocabulary]; base.splice(idx,1); return base })}>Remove</button>
+                  </div>
+                ))}
+                <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : tagVocabulary), 'New Tag'])}>+ Add Tag</button>
+              </div>
+              <DialogFooter>
+                <DialogClose className="btn-md">Cancel</DialogClose>
+                <button className="btn-md" onClick={async()=>{
+                  // Build rename map (old -> new) and removed set
+                  const current = tagVocabulary
+                  const edited = (tagEdits.length? tagEdits : tagVocabulary).map(normalizeTag).filter(Boolean)
+                  // Align lengths by index; if removed, drop
+                  const renameMap: Record<string,string> = {}
+                  const keep = new Set(edited)
+                  current.forEach((old, i)=>{
+                    const neo = edited[i]
+                    if (neo && normalizeTag(old) !== neo) renameMap[old] = neo
+                  })
+                  // Apply across families
+                  const famMap = new Map<string, Family>()
+                  families.forEach(f=>famMap.set(f.name, f))
+                  const updates: Array<Promise<any>> = []
+                  families.forEach(f=>{
+                    const curr = new Set(f.styleTags || [])
+                    // rename
+                    Object.entries(renameMap).forEach(([o,n])=>{ if (curr.has(o)) { curr.delete(o); curr.add(n) } })
+                    // remove tags that no longer exist
+                    Array.from(curr).forEach(t=>{ if (!keep.has(t)) curr.delete(t) })
+                    const newTags = Array.from(curr)
+                    if (JSON.stringify(newTags.sort()) !== JSON.stringify((f.styleTags||[]).slice().sort())) {
+                      f.fonts.forEach(font=>{
+                        updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: newTags } }) }))
+                      })
+                    }
+                  })
+                  await Promise.all(updates)
+                  setTagEdits([])
+                  setManageTagsOpen(false)
+                  await load()
+                }}>Save</button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </header>
 
@@ -238,51 +304,43 @@ export default function AdminManager() {
                       </div>
                     ))}
                   </div>
-                  <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Metadata</div>
-                  <div className="flex gap-3 flex-wrap">
-                    <div className="btn-md">Collection: {ed ? (
-                      <select className="btn-md" value={ed.collection} onChange={e => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], collection: e.target.value as any } }))}>
-                        <option>Text</option>
-                        <option>Display</option>
-                        <option>Weirdo</option>
-                      </select>
-                    ) : fam.collection}</div>
-                    <div className="btn-md">Languages: {ed ? (
-                      <input className="btn-md" placeholder="Comma-separated" value={ed.languages.join(', ')} onChange={e => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], languages: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } }))} />
-                    ) : fam.languages.join(', ')}</div>
-                    <div className="btn-md" style={{ minWidth: 280 }}>
-                      <div>Tags:</div>
-                      {ed ? (
-                        <div className="mt-1">
-                          <div className="flex gap-1 flex-wrap mb-1">
-                            {ed.styleTags.map((t, idx) => (
-                              <button key={idx} className="btn-sm" onClick={() => setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: ed.styleTags.filter(x => x !== t) } }))}>{t} ✕</button>
-                            ))}
-                          </div>
-                          <input className="btn-md w-full" placeholder="Type to add tag…" onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault()
-                              const v = normalizeTag((e.target as HTMLInputElement).value)
-                              if (v && !ed.styleTags.map(x => x.toLowerCase()).includes(v.toLowerCase())) {
-                                setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: [...ed.styleTags, v] } }))
-                              }
-                              ;(e.target as HTMLInputElement).value = ''
-                            }
-                          }} />
-                          {/* Suggestions from vocabulary */}
-                          <div className="flex gap-1 flex-wrap mt-1">
-                            {tagVocabulary.filter(v => !ed.styleTags.map(x => x.toLowerCase()).includes(v.toLowerCase())).slice(0, 12).map(v => (
-                              <button key={v} className="btn-sm" onClick={() => {
-                                const t = normalizeTag(v)
-                                if (!ed.styleTags.map(x => x.toLowerCase()).includes(t.toLowerCase())) {
-                                  setEditing(p => ({ ...p, [fam.name]: { ...p![fam.name], styleTags: [...ed.styleTags, t] } }))
-                                }
-                              }}>{v}</button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (fam.styleTags.length ? fam.styleTags.join(', ') : '—')}
-                    </div>
+                  {/* Collection row */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Collection</div>
+                    {(['Text','Display','Weirdo'] as const).map(c => (
+                      <button key={c} className={`btn-sm ${ (editing[fam.name]?.collection ?? fam.collection) === c ? 'active' : '' }`} onClick={()=>{
+                        if (!editing[fam.name]) startEdit(fam)
+                        setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{ collection: fam.collection, styleTags: fam.styleTags, languages: fam.languages }), collection: c }}))
+                      }}>{c}</button>
+                    ))}
+                  </div>
+
+                  {/* Languages row */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Languages</div>
+                    {languageVocabulary.map(l => (
+                      <button key={l} className={`btn-sm ${ (editing[fam.name]?.languages ?? fam.languages).includes(l) ? 'active' : '' }`} onClick={()=>{
+                        const base = editing[fam.name]?.languages ?? fam.languages
+                        const next = base.includes(l) ? base.filter(x=>x!==l) : [...base, l]
+                        if (!editing[fam.name]) startEdit(fam)
+                        setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{ collection: fam.collection, styleTags: fam.styleTags, languages: fam.languages }), languages: next }}))
+                      }}>{l}</button>
+                    ))}
+                  </div>
+
+                  {/* Tags row */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Appearance</div>
+                    {tagVocabulary.map(t => (
+                      <button key={t} className={`btn-sm ${ (editing[fam.name]?.styleTags ?? fam.styleTags).map(x=>x.toLowerCase()).includes(t.toLowerCase()) ? 'active' : '' }`} onClick={()=>{
+                        const base = editing[fam.name]?.styleTags ?? fam.styleTags
+                        const normalized = normalizeTag(t)
+                        const has = base.map(x=>x.toLowerCase()).includes(normalized.toLowerCase())
+                        const next = has ? base.filter(x=>x.toLowerCase()!==normalized.toLowerCase()) : [...base, normalized]
+                        if (!editing[fam.name]) startEdit(fam)
+                        setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{ collection: fam.collection, styleTags: fam.styleTags, languages: fam.languages }), styleTags: next }}))
+                      }}>{t}</button>
+                    ))}
                   </div>
                   {ed && (
                     <div className="flex gap-2">
