@@ -56,6 +56,54 @@ export async function GET() {
 
       const familyId = `family_${familyName}`
       let variants: FontVariant[] = familyFonts.map((ff) => toVariant(ff, familyId))
+
+      // If static family appears to have ambiguous styles/weights (e.g., all Regular 400),
+      // try to infer weights from filenames to stabilize UI across common families (e.g., Cormorant Unicase)
+      const isStaticFamily = !variants.some(v => v.isVariable)
+      const uniqueWeights = new Set(variants.map(v => v.weight))
+      if (isStaticFamily && uniqueWeights.size <= 1 && variants.length > 1) {
+        const weightMap: Record<string, number> = {
+          'thin': 100,
+          'ultralight': 200,
+          'extra light': 200,
+          'extralight': 200,
+          'light': 300,
+          'book': 380,
+          'regular': 400,
+          'normal': 400,
+          'roman': 400,
+          'medium': 500,
+          'semibold': 600,
+          'demibold': 600,
+          'bold': 700,
+          'extrabold': 800,
+          'extra bold': 800,
+          'heavy': 800,
+          'black': 900,
+        }
+        function inferWeightFromTokens(tokens: string[]): number | null {
+          const joined = tokens.join(' ').toLowerCase()
+          for (const [k, w] of Object.entries(weightMap)) {
+            if (joined.includes(k)) return w
+          }
+          return null
+        }
+        function deriveTokens(idx: number): string[] {
+          const raw = (familyFonts[idx] as any)?.originalFilename || (familyFonts[idx] as any)?.filename || ''
+          const base = raw.replace(/\.(ttf|otf|woff2?)$/i, '')
+          const stripped = base.replace(new RegExp(`^${familyName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}[\s_-]*`, 'i'), '')
+          return stripped.split(/[_\-\s]+/).filter(Boolean)
+        }
+        variants = variants.map((v, idx) => {
+          let weight = v.weight
+          const tokens = deriveTokens(idx)
+          const inferred = inferWeightFromTokens([v.styleName, ...tokens])
+          if (inferred && inferred !== v.weight) {
+            weight = inferred
+          }
+          return { ...v, weight }
+        })
+      }
       // De-duplicate ambiguous style names (e.g., multiple "Regular") by deriving from filename where needed
       const seen = new Map<string, number>()
       variants = variants.map((v, idx) => {
