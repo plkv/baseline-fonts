@@ -23,6 +23,7 @@ type CleanFont = {
   styleTags?: string[]
   languages?: string[]
   category?: string[]
+  downloadLink?: string
 }
 
 type Family = {
@@ -83,6 +84,7 @@ export default function AdminManager() {
         styleTags: fam.styleTags || [],
         languages: fam.languages || [],
         category: fam.category || [],
+        downloadLink: fam.downloadLink,
       })))
       setFonts(flat)
     } finally {
