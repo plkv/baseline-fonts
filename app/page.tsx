@@ -759,7 +759,10 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onFocus={() => setFocusedFontId(fontId)}
+        onFocus={() => {
+          setFocusedFontId(fontId)
+          setExpandedCards(prev => { const s = new Set(prev); s.add(fontId); return s })
+        }}
         className={className}
         style={style}
         multiline={true}
