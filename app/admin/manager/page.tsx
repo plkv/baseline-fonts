@@ -54,6 +54,7 @@ export default function AdminManager() {
   const [manageCollection, setManageCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [tagEdits, setTagEdits] = useState<string[]>([])
   const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
 
   const load = async () => {
     setLoading(true)
@@ -118,7 +119,11 @@ export default function AdminManager() {
         const res = await fetch(`/api/tags/summary?type=${manageType}&collection=${manageCollection}`, { cache: 'no-store' })
         const data = await res.json()
         const vocab: string[] = Array.isArray(data.vocab) ? data.vocab : []
-        // Set editable list to vocab only (no implicit merge) to prevent surprises
+        // build usage map
+        const usageArr: Array<{ tag: string; count: number }> = Array.isArray(data.usage) ? data.usage : []
+        const map: Record<string, number> = {}
+        usageArr.forEach(u => { map[u.tag] = u.count })
+        setUsageCounts(map)
         setTagEdits(vocab)
       } catch {}
     })()
@@ -295,10 +300,7 @@ export default function AdminManager() {
               </div>
               <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
                 {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => {
-                  // usage count computed against current families
-                  const usedBy = families.filter(f=>f.collection===manageCollection && (
-                    manageType==='appearance' ? (f.styleTags||[]).some(x=>x.toLowerCase()===t.toLowerCase()) : (f.category||[]).some((x:any)=>x.toLowerCase()===t.toLowerCase())
-                  )).length
+                  const usedBy = usageCounts[t] || 0
                   return (
                     <div key={idx} className="flex gap-2 items-center" draggable onDragStart={()=>{ setDragIdx(idx); if (!tagEdits.length) setTagEdits(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
                       if (dragIdx===null) return; const list = (tagEdits.length? [...tagEdits] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]);
