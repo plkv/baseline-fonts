@@ -102,18 +102,22 @@ export default function FontLibrary() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
   
-  // Get a random font-family from current fonts by collection
+  // Stable preview font per collection (don't change during session)
   const previewFontsRef = useRef<Record<'Text'|'Display'|'Weirdo', string>>({ Text: '', Display: '', Weirdo: '' })
   const getStablePreviewFontForCollection = (collection: "Text" | "Display" | "Weirdo") => {
     if (!previewFontsRef.current[collection]) {
       const candidates = fonts.filter(f => f.collection === collection)
-      const pick = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null
-      previewFontsRef.current[collection] = pick?.fontFamily || "Inter Variable, system-ui, sans-serif"
+      if (candidates.length) {
+        const pick = candidates[Math.floor(Math.random() * candidates.length)]
+        previewFontsRef.current[collection] = pick?.fontFamily || "Inter Variable, system-ui, sans-serif"
+      }
     }
-    return previewFontsRef.current[collection]
+    return previewFontsRef.current[collection] || "Inter Variable, system-ui, sans-serif"
   }
   const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
   const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
+  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({})
+  const [focusedFontId, setFocusedFontId] = useState<number | null>(null)
 
   const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
   const [textCursorPosition, setTextCursorPosition] = useState(0)
@@ -725,6 +729,7 @@ export default function FontLibrary() {
     className,
     style,
     onToggleExpand,
+    fontId,
   }: {
     value: string
     cursorPosition: number
@@ -732,19 +737,38 @@ export default function FontLibrary() {
     className?: string
     style?: React.CSSProperties
     onToggleExpand?: () => void
+    fontId: number
   }) {
+    const localRef = useRef<HTMLInputElement | null>(null)
+    useEffect(() => { inputRefs.current[fontId] = localRef.current }, [fontId])
     return (
       <ControlledTextPreview
+        ref={localRef as any}
         value={value}
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
+        onFocus={() => setFocusedFontId(fontId)}
         className={className}
         style={style}
         multiline={false}
       />
     )
   }
+
+  // Restore focus to the currently edited preview input after state updates
+  useEffect(() => {
+    if (focusedFontId != null) {
+      const el = inputRefs.current[focusedFontId]
+      if (el) {
+        try {
+          el.focus()
+          const pos = Math.min(textCursorPosition, el.value.length)
+          el.setSelectionRange(pos, pos)
+        } catch {}
+      }
+    }
+  }, [customText, textCursorPosition])
 
   // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
@@ -1590,6 +1614,7 @@ export default function FontLibrary() {
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
                       onToggleExpand={() => toggleCardExpansion(font.id)}
+                      fontId={font.id}
                     />
 
                     {expandedCards.has(font.id) && (
