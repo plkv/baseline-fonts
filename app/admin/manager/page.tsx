@@ -62,32 +62,36 @@ export default function AdminManager() {
 
   useEffect(() => { load() }, [])
 
-  // Appearance vocabulary per collection
-  const appearanceVocab = useMemo<Record<'Text'|'Display'|'Weirdo', string[]>>(()=>{
-    const map: any = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() }
-    for (const f of fonts) {
-      const c = (f.collection as any) || 'Text'
-      ;(f.styleTags||[]).forEach(t=> map[c].add(t))
-    }
-    return {
-      Text: Array.from(map.Text).sort((a,b)=>a.localeCompare(b)),
-      Display: Array.from(map.Display).sort((a,b)=>a.localeCompare(b)),
-      Weirdo: Array.from(map.Weirdo).sort((a,b)=>a.localeCompare(b)),
-    }
-  }, [fonts])
+  // Vocabularies persisted in KV; fallback to dataset on first load
+  const [appearanceVocab, setAppearanceVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
+  const [categoryVocab, setCategoryVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
 
-  // Category vocabulary per collection
-  const categoryVocab = useMemo<Record<'Text'|'Display'|'Weirdo', string[]>>(()=>{
-    const map: any = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() }
-    for (const f of fonts) {
-      const c = (f.collection as any) || 'Text'
-      ;(f.category||[]).forEach(t=> map[c].add(t))
+  useEffect(()=>{
+    const fetchVocab = async () => {
+      const loadOne = async (type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo') => {
+        const res = await fetch(`/api/tags/vocab?type=${type}&collection=${collection}`, { cache:'no-store' })
+        const data = await res.json()
+        return Array.isArray(data.list) ? data.list : []
+      }
+      const defaultsAppearance = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() } as any
+      fonts.forEach(f=>{ const c = (f.collection as any)||'Text'; (f.styleTags||[]).forEach((t)=> defaultsAppearance[c].add(t)) })
+      const defaultsCategory = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() } as any
+      fonts.forEach(f=>{ const c = (f.collection as any)||'Text'; (f.category||[]).forEach((t)=> defaultsCategory[c].add(t)) })
+
+      const appText = await loadOne('appearance','Text'); const appDisp = await loadOne('appearance','Display'); const appWeir = await loadOne('appearance','Weirdo')
+      const catText = await loadOne('category','Text'); const catDisp = await loadOne('category','Display'); const catWeir = await loadOne('category','Weirdo')
+      setAppearanceVocab({
+        Text: (appText.length? appText : Array.from(defaultsAppearance.Text)).sort((a,b)=>a.localeCompare(b)),
+        Display: (appDisp.length? appDisp : Array.from(defaultsAppearance.Display)).sort((a,b)=>a.localeCompare(b)),
+        Weirdo: (appWeir.length? appWeir : Array.from(defaultsAppearance.Weirdo)).sort((a,b)=>a.localeCompare(b)),
+      })
+      setCategoryVocab({
+        Text: (catText.length? catText : Array.from(defaultsCategory.Text)).sort((a,b)=>a.localeCompare(b)),
+        Display: (catDisp.length? catDisp : Array.from(defaultsCategory.Display)).sort((a,b)=>a.localeCompare(b)),
+        Weirdo: (catWeir.length? catWeir : Array.from(defaultsCategory.Weirdo)).sort((a,b)=>a.localeCompare(b)),
+      })
     }
-    return {
-      Text: Array.from(map.Text).sort((a,b)=>a.localeCompare(b)),
-      Display: Array.from(map.Display).sort((a,b)=>a.localeCompare(b)),
-      Weirdo: Array.from(map.Weirdo).sort((a,b)=>a.localeCompare(b)),
-    }
+    fetchVocab()
   }, [fonts])
 
   const normalizeTag = (t: string) => {
@@ -268,10 +272,18 @@ export default function AdminManager() {
                       })
                     }
                   })
+                  // Persist vocabulary to KV
+                  await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, collection: manageCollection, list: edited }) })
                   await Promise.all(updates)
                   setTagEdits([])
                   setManageTagsOpen(false)
                   await load()
+                  // refresh vocab
+                  const res = await fetch(`/api/tags/vocab?type=${manageType}&collection=${manageCollection}`, { cache:'no-store' })
+                  const data = await res.json()
+                  const list = Array.isArray(data.list) ? data.list : []
+                  if (manageType==='appearance') setAppearanceVocab(prev=>({ ...prev, [manageCollection]: list }))
+                  else setCategoryVocab(prev=>({ ...prev, [manageCollection]: list }))
                 }}>Save</button>
               </DialogFooter>
             </DialogContent>
