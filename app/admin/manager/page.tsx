@@ -42,6 +42,7 @@ export default function AdminManager() {
   const [editing, setEditing] = useState<Record<string, { collection: Family['collection']; styleTags: string[]; languages: string[]; category?: string[] }>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadFamily, setUploadFamily] = useState('')
+  const [uploadCollection, setUploadCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [dragOver, setDragOver] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [manageTagsOpen, setManageTagsOpen] = useState(false)
@@ -165,6 +166,7 @@ export default function AdminManager() {
       const fd = new FormData()
       Array.from(files).forEach(f => fd.append('files', f))
       if (uploadFamily.trim()) fd.append('family', uploadFamily.trim())
+      fd.append('collection', uploadCollection)
       const res = await fetch('/api/fonts-clean/bulk-upload', { method: 'POST', body: fd })
       const data = await res.json()
       if (!data.success) alert('Upload failed')
@@ -182,6 +184,7 @@ export default function AdminManager() {
       const fd = new FormData()
       files.forEach(f => fd.append('files', f))
       if (uploadFamily.trim()) fd.append('family', uploadFamily.trim())
+      fd.append('collection', uploadCollection)
       const res = await fetch('/api/fonts-clean/bulk-upload', { method: 'POST', body: fd })
       const data = await res.json()
       if (!data.success) alert('Upload failed')
@@ -306,6 +309,11 @@ export default function AdminManager() {
           </div>
           <div className="flex items-center gap-2">
             <input className="btn-md" placeholder="Optional family name" value={uploadFamily} onChange={e => setUploadFamily(e.target.value)} />
+            <select className="btn-md" value={uploadCollection} onChange={e=> setUploadCollection(e.target.value as any)}>
+              <option>Text</option>
+              <option>Display</option>
+              <option>Weirdo</option>
+            </select>
             <label className="btn-md cursor-pointer">
               <input type="file" multiple accept=".ttf,.otf,.woff,.woff2" onChange={onUpload} style={{ display: 'none' }} />
               {uploading ? 'Uploading…' : 'Select Files'}
