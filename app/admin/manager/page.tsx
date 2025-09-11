@@ -32,6 +32,7 @@ type Family = {
   collection: 'Text' | 'Display' | 'Weirdo'
   styleTags: string[]
   languages: string[]
+  category: string[]
 }
 
 export default function AdminManager() {
@@ -173,7 +174,8 @@ export default function AdminManager() {
       const collection = (representative.collection as any) || 'Text'
       const styleTags = representative.styleTags || []
       const languages = representative.languages || ['Latin']
-      return { name, fonts: list, stylesCount, uploadedAt, collection, styleTags, languages }
+      const category = (representative.category as any) || []
+      return { name, fonts: list, stylesCount, uploadedAt, collection, styleTags, languages, category }
     })
     // basic filter/sort
     const filtered = arr.filter(f => (collectionFilter === 'all' ? true : f.collection === collectionFilter))
@@ -287,14 +289,20 @@ export default function AdminManager() {
                 </select>
               </div>
               <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
-                {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <input className="btn-md flex-1" defaultValue={t} onChange={(e)=>{
-                      setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base[idx] = normalizeTag(e.target.value); return base })
-                    }} />
-                    <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base.splice(idx,1); return base })}>Remove</button>
-                  </div>
-                ))}
+                {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => {
+                  const usedBy = families.filter(f=>f.collection===manageCollection && (
+                    manageType==='appearance' ? (f.styleTags||[]).some(x=>x.toLowerCase()===t.toLowerCase()) : (f.category||[]).some((x:any)=>x.toLowerCase()===t.toLowerCase())
+                  )).length
+                  return (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <input className="btn-md flex-1" defaultValue={t} onChange={(e)=>{
+                        setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base[idx] = normalizeTag(e.target.value); return base })
+                      }} />
+                      <span className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>{usedBy}</span>
+                      <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base.splice(idx,1); return base })}>Remove</button>
+                    </div>
+                  )
+                })}
                 <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), 'New Tag'])}>+ Add Tag</button>
               </div>
               <DialogFooter>
