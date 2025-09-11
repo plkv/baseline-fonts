@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog'
+import { canonicalFamilyName } from '@/lib/font-naming'
+import { shortHash } from '@/lib/hash'
 
 type CleanFont = {
   id: string
@@ -338,13 +340,15 @@ export default function AdminManager() {
       <section className="space-y-3">
         {loading && <div>Loading…</div>}
         {!loading && families.map(fam => {
+          const alias = `${canonicalFamilyName(fam.name)}-${shortHash(canonicalFamilyName(fam.name)).slice(0,6)}`
           const isOpen = expanded.has(fam.name)
           const ed = editing[fam.name]
           return (
             <div key={fam.name} className="p-3 rounded-md" style={{ border: '1px solid var(--gray-brd-prim)' }}>
               <div className="flex items-center justify-between">
                 <button onClick={() => toggleExpand(fam.name)} className="menu-tab">
-                  {fam.name} <span style={{ color: 'var(--gray-cont-tert)', marginLeft: 8 }}>• {fam.stylesCount} styles • {new Date(fam.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                  <span style={{ fontFamily: `"${alias}", system-ui, sans-serif`, fontWeight: 600 }}>{fam.name}</span>
+                  <span style={{ color: 'var(--gray-cont-tert)', marginLeft: 8 }}>• {fam.stylesCount} styles • {new Date(fam.uploadedAt || Date.now()).toLocaleDateString()}</span>
                 </button>
                 <div className="flex gap-2">
                   {!ed && <button className="btn-sm" onClick={() => startEdit(fam)}>Edit</button>}

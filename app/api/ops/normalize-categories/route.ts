@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAllKnownFonts } from '@/lib/all-fonts'
 import { normalizeCategoryList } from '@/lib/category-utils'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 
 export async function POST() {
   try {
@@ -11,7 +12,7 @@ export async function POST() {
       const normalized = normalizeCategoryList(f.category)
       if (normalized.length && JSON.stringify(normalized.sort()) !== JSON.stringify((f.category||[]).slice().sort())) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/fonts-clean/update`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ id: f.id, updates: { category: normalized } }) })
+          await fontStorageClean.updateFont(f.id, { category: normalized } as any)
           updated++
         } catch {}
       }
@@ -21,4 +22,3 @@ export async function POST() {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-
