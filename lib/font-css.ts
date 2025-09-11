@@ -22,7 +22,10 @@ export function buildFontCSS(families: FontFamily[]): string {
       if (!v.blobUrl) continue
       const proxied = { ...v, blobUrl: toProxyUrl(v.blobUrl) }
       chunks.push(`/* ${familyName} :: ${v.styleName} ${v.weight}${v.isItalic ? ' Italic' : ''} */`)
+      // Primary proxied source
       chunks.push(FontVariantUtils.toCSSFontFace(proxied, familyName))
+      // Fallback direct source if proxy fails (some environments block HEAD/stream)
+      chunks.push(FontVariantUtils.toCSSFontFace(v, familyName))
     }
   }
   return chunks.join('\n')

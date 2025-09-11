@@ -173,6 +173,7 @@ export default function FontLibrary() {
                   const maxWeight = Math.max(...weightAxes.map((axis: any) => axis.max))
                   availableWeights = [100,200,300,400,500,600,700,800,900].filter(w => w >= minWeight && w <= maxWeight)
                 } else {
+                  // If axis data missing, expose full common range
                   availableWeights = [100,200,300,400,500,600,700,800,900]
                 }
                 availableStylesWithWeights = availableWeights.map((weight) => ({
@@ -302,24 +303,24 @@ export default function FontLibrary() {
             let availableWeights
             let availableStylesWithWeights = []
             
-            if (isVariable) {
-              // For variable fonts, use weight axis range or common weight stops
-              const weightAxes = familyFonts
-                .filter(f => f.variableAxes?.some(axis => axis.axis === 'wght'))
-                .map(f => f.variableAxes?.find(axis => axis.axis === 'wght'))
-                .filter(Boolean)
-              
-              if (weightAxes.length > 0) {
-                // Use weight range from variable axis
-                const minWeight = Math.min(...weightAxes.map(axis => axis.min))
-                const maxWeight = Math.max(...weightAxes.map(axis => axis.max))
-                // Common weight stops within the range
-                availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-                  .filter(w => w >= minWeight && w <= maxWeight)
-              } else {
+              if (isVariable) {
+                // For variable fonts, use weight axis range or common weight stops
+                const weightAxes = familyFonts
+                  .filter(f => f.variableAxes?.some(axis => axis.axis === 'wght'))
+                  .map(f => f.variableAxes?.find(axis => axis.axis === 'wght'))
+                  .filter(Boolean)
+                
+                if (weightAxes.length > 0) {
+                  // Use weight range from variable axis
+                  const minWeight = Math.min(...weightAxes.map(axis => axis.min))
+                  const maxWeight = Math.max(...weightAxes.map(axis => axis.max))
+                  // Common weight stops within the range
+                  availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                    .filter(w => w >= minWeight && w <= maxWeight)
+                } else {
                 // Fallback for variable fonts without clear weight axis
                 availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-              }
+                }
               
               // For variable fonts, generate style names from weights
               availableStylesWithWeights = availableWeights.map(weight => ({
@@ -1120,7 +1121,7 @@ export default function FontLibrary() {
     const fontSelection = fontWeightSelections[fontId] || { weight: 400, italic: false }
     const stateAxes = fontVariableAxes[fontId] || {}
     const otFeatures = fontOTFeatures[fontId] || {}
-    const isFamilyVariable = !!(font?.variableAxes && font.variableAxes.length)
+    const isFamilyVariable = (font?.type === 'Variable') || !!(font?.variableAxes && font.variableAxes.length)
 
     // Base axes: ensure variable fonts always carry an explicit wght so browser doesn't use font's internal default
     const axesOut: Record<string, number> = { ...stateAxes }

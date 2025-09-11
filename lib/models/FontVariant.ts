@@ -225,6 +225,9 @@ export class FontVariantUtils {
       } else {
         fontWeight = `${min} ${max}`
       }
+    } else if (variant.isVariable && !weightRange) {
+      // If variable but axis data missing, still expose broad range for CSS variable rendering
+      fontWeight = '100 900'
     } else {
       fontWeight = `${variant.weight}`
     }
