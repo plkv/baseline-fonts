@@ -1513,6 +1513,11 @@ export default function FontLibrary() {
                                 const [weight, italic] = e.target.value.split("-")
                                 console.log(`Dropdown change for font ${font.id} (${font.name}): ${weight}-${italic}`);
                                 updateFontSelection(font.id, Number.parseInt(weight), italic === "true")
+                                // Sync variable axis (wght) to reflect dropdown selection
+                                setFontVariableAxes(prev => ({
+                                  ...prev,
+                                  [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) }
+                                }))
                               }}
                               disabled={font._availableStyles && font._availableStyles.length <= 1}
                               className={`dropdown-select text-sidebar-title appearance-none ${
