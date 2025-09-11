@@ -34,6 +34,8 @@ type Family = {
   styleTags: string[]
   languages: string[]
   category: string[]
+  foundry?: string
+  downloadLink?: string
 }
 
 export default function AdminManager() {
@@ -188,7 +190,10 @@ export default function AdminManager() {
       const styleTags = representative.styleTags || []
       const languages = representative.languages || ['Latin']
       const category = (representative.category as any) || []
-      return { name, fonts: list, stylesCount, uploadedAt, collection, styleTags, languages, category }
+      const foundry = representative.foundry
+      // Assume family-level download link shared across variants
+      const downloadLink = (list.find(f => (f as any).downloadLink)?.downloadLink as any) || undefined
+      return { name, fonts: list, stylesCount, uploadedAt, collection, styleTags, languages, category, foundry, downloadLink }
     })
     // basic filter/sort
     const filtered = arr.filter(f => (collectionFilter === 'all' ? true : f.collection === collectionFilter))
@@ -211,7 +216,7 @@ export default function AdminManager() {
   }
 
   const startEdit = (fam: Family) => {
-    setEditing(prev => ({ ...prev, [fam.name]: { collection: fam.collection, styleTags: [...fam.styleTags], languages: [...fam.languages] } }))
+    setEditing(prev => ({ ...prev, [fam.name]: { collection: fam.collection, styleTags: [...fam.styleTags], languages: [...fam.languages], name: fam.name, foundry: fam.foundry || '', downloadLink: fam.downloadLink || '' } as any }))
     setExpanded(prev => new Set(prev).add(fam.name))
   }
 
@@ -221,15 +226,20 @@ export default function AdminManager() {
     // apply updates to all fonts in family
     const updates: any = { collection: e.collection, styleTags: e.styleTags, languages: e.languages }
     if ((editing[fam.name] as any)?.category) updates.category = (editing[fam.name] as any).category
+    if ((editing[fam.name] as any)?.foundry !== undefined) updates.foundry = (editing[fam.name] as any).foundry
+    if ((editing[fam.name] as any)?.downloadLink !== undefined) updates.downloadLink = (editing[fam.name] as any).downloadLink
+    const targetName = (editing[fam.name] as any)?.name || fam.name
     await Promise.all(fam.fonts.map(async f => {
-      const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, updates }) })
+      const body: any = { id: f.id, updates: { ...updates } }
+      if (targetName && targetName !== fam.name) body.updates.family = targetName
+      const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (!res.ok) {
         // ignore legacy-only variants for now
       }
     }))
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
     // Optimistic local update to avoid full reload
-    setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, collection: e.collection, styleTags: e.styleTags, languages: e.languages, category: (updates.category || (f as any).category || []) } : f))
+    setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, family: targetName, foundry: updates.foundry ?? f.foundry, collection: e.collection, styleTags: e.styleTags, languages: e.languages, category: (updates.category || (f as any).category || []), downloadLink: updates.downloadLink ?? (f as any).downloadLink } : f))
     try { toast.success('Family updated') } catch {}
   }
 
@@ -448,12 +458,48 @@ export default function AdminManager() {
               </div>
               {isOpen && (
                 <div className="mt-3 space-y-3">
+                  {/* Family metadata editing: name, author, download link */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                    {ed ? (
+                      <input className="btn-md" placeholder="Font name" value={(ed as any).name ?? fam.name} onChange={e=> setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{} as any), name: e.target.value } }))} />
+                    ) : (
+                      <div className="text-font-name">{fam.name}</div>
+                    )}
+                    {ed ? (
+                      <input className="btn-md" placeholder="Author / Foundry" value={(ed as any).foundry ?? fam.foundry ?? ''} onChange={e=> setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{} as any), foundry: e.target.value } }))} />
+                    ) : (
+                      <div className="text-author">{fam.foundry || 'Unknown'}</div>
+                    )}
+                    {ed ? (
+                      <input className="btn-md" placeholder="Download link (https://...)" value={(ed as any).downloadLink ?? fam.downloadLink ?? ''} onChange={e=> setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{} as any), downloadLink: e.target.value } }))} />
+                    ) : (
+                      fam.downloadLink ? <a className="btn-md" href={fam.downloadLink} target="_blank" rel="noreferrer">Open download</a> : <div className="text-sm" style={{ color: 'var(--gray-cont-tert)' }}>No download link</div>
+                    )}
+                  </div>
+                  {/* Default style selection */}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Default style</div>
+                    <select className="btn-md" onChange={(e)=> setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{} as any), defaultStyleId: e.target.value } }))} defaultValue={(ed as any)?.defaultStyleId || fam.fonts.find(f => (f as any).isDefaultStyle)?.id || (fam.fonts[0]?.id || '')}>
+                      {fam.fonts.map(f => (
+                        <option key={f.id} value={f.id}>{f.style || 'Regular'} ({f.weight || 400}{(f as any).italicStyle ? ' Italic' : ''})</option>
+                      ))}
+                    </select>
+                    <button className="btn-sm" onClick={async()=>{
+                      const styleId = (editing[fam.name] as any)?.defaultStyleId || fam.fonts[0].id
+                      try {
+                        await fetch('/api/fonts-clean/set-default', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ familyName: (editing[fam.name] as any)?.name || fam.name, styleId }) })
+                        toast.success('Default style saved')
+                      } catch {}
+                    }}>Set</button>
+                  </div>
                   <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Files</div>
                   <div className="text-sm" style={{ color: 'var(--gray-cont-prim)' }}>
                     {fam.fonts.map(f => (
-                      <div key={f.id} className="flex justify-between border-b border-[var(--gray-brd-prim)] py-1">
-                        <span>{f.filename}</span>
-                        <span>{(f.isVariable ? 'Variable' : (f.style || 'Regular'))} • {f.weight || 400}</span>
+                      <div key={f.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-[var(--gray-brd-prim)] py-1">
+                        <span title="Filename">{f.filename}</span>
+                        <span title="Style/Weight">{(f.isVariable ? 'Variable' : (f.style || 'Regular'))} • {f.weight || 400}</span>
+                        <span title="Version">{(f as any).version || '—'}</span>
+                        <span title="License">{(f as any).license || '—'}</span>
                       </div>
                     ))}
                   </div>

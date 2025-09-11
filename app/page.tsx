@@ -22,6 +22,7 @@ interface FontData {
   hasItalic: boolean
   filename: string
   url?: string
+  downloadLink?: string
   variableAxes?: Array<{
     name: string
     axis: string
@@ -221,6 +222,7 @@ export default function FontLibrary() {
                 hasItalic,
                 filename: representativeFont.originalFilename || representativeFont.filename,
                 url: representativeFont.blobUrl,
+                downloadLink: family.downloadLink,
                 variableAxes: representativeFont.variableAxes,
                 openTypeFeatures: representativeFont.openTypeFeatures,
                 _familyFonts: familyFonts.map((v: any) => ({
@@ -229,6 +231,7 @@ export default function FontLibrary() {
                   isItalic: v.isItalic,
                   blobUrl: v.blobUrl,
                   url: v.blobUrl,
+                  downloadLink: v.downloadLink,
                   variableAxes: v.variableAxes,
                   openTypeFeatures: v.openTypeFeatures,
                 })),
@@ -266,7 +269,7 @@ export default function FontLibrary() {
           })
 
           // Transform grouped families to catalog UI format
-          const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
+            const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
             try {
             // Choose the best representative font: 
             // 1. Font marked as default style
@@ -365,6 +368,7 @@ export default function FontLibrary() {
               hasItalic: hasItalic,
               filename: representativeFont.filename,
               url: representativeFont.url || representativeFont.blobUrl,
+              downloadLink: representativeFont.downloadLink,
               variableAxes: representativeFont.variableAxes,
               openTypeFeatures: representativeFont.openTypeFeatures,
               // Store family fonts data for style selection
@@ -1568,7 +1572,7 @@ export default function FontLibrary() {
                       </div>
                       {(() => {
                         // Check if any font in the family has a download link set in admin (not the blob URL)
-                        const adminDownloadLink = font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink
+                        const adminDownloadLink = font.downloadLink || font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink
                         const hasAdminDownloadLink = Boolean(adminDownloadLink)
                         
                         if (hasAdminDownloadLink) {

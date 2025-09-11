@@ -55,7 +55,22 @@ export async function GET() {
         familyFonts[0]
 
       const familyId = `family_${familyName}`
-      const variants: FontVariant[] = familyFonts.map((ff) => toVariant(ff, familyId))
+      let variants: FontVariant[] = familyFonts.map((ff) => toVariant(ff, familyId))
+      // De-duplicate ambiguous style names (e.g., multiple "Regular") by deriving from filename where needed
+      const seen = new Map<string, number>()
+      variants = variants.map((v, idx) => {
+        const key = `${v.weight}-${v.isItalic ? 'i' : 'n'}-${(v.styleName || '').toLowerCase()}`
+        const count = (seen.get(key) || 0) + 1
+        seen.set(key, count)
+        if (count > 1) {
+          const raw = (familyFonts[idx] as any)?.originalFilename || (familyFonts[idx] as any)?.filename || ''
+          const base = raw.replace(/\.(ttf|otf|woff2?)$/i, '')
+          let derived = base.replace(new RegExp(`^${familyName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}[\s_-]*`, 'i'), '').trim()
+          if (!derived) derived = `${v.styleName} ${count}`
+          return { ...v, styleName: derived }
+        }
+        return v
+      })
 
       const defaultVariant = variants.find((v) => v.isDefaultStyle)
 
