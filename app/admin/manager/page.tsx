@@ -53,6 +53,7 @@ export default function AdminManager() {
   const [manageType, setManageType] = useState<'appearance'|'category'>('appearance')
   const [manageCollection, setManageCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [tagEdits, setTagEdits] = useState<string[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
 
@@ -114,18 +115,23 @@ export default function AdminManager() {
   // On modal open or scope change, fetch authoritative summary: vocab (ordered) + usage counts + missing
   useEffect(()=>{
     if (!manageTagsOpen) return
-    (async ()=>{
+    setTagsLoading(true)
+    ;(async ()=>{
       try {
         const res = await fetch(`/api/tags/summary?type=${manageType}&collection=${manageCollection}`, { cache: 'no-store' })
         const data = await res.json()
         const vocab: string[] = Array.isArray(data.vocab) ? data.vocab : []
-        // build usage map
         const usageArr: Array<{ tag: string; count: number }> = Array.isArray(data.usage) ? data.usage : []
         const map: Record<string, number> = {}
         usageArr.forEach(u => { map[u.tag] = u.count })
         setUsageCounts(map)
         setTagEdits(vocab)
-      } catch {}
+      } catch {
+        // fallback to existing vocab state if summary fails
+        setTagEdits(manageType==='appearance' ? appearanceVocab[manageCollection] : categoryVocab[manageCollection])
+      } finally {
+        setTagsLoading(false)
+      }
     })()
   }, [manageTagsOpen, manageType, manageCollection])
 
@@ -312,27 +318,34 @@ export default function AdminManager() {
                 </select>
               </div>
               <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
-                {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => {
+                {tagsLoading && (
+                  <div className="text-sm" style={{ color: 'var(--gray-cont-tert)' }}>Loading…</div>
+                )}
+                {!tagsLoading && tagEdits.map((t, idx) => {
                   const usedBy = usageCounts[t] || 0
                   return (
-                    <div key={idx} className="flex gap-2 items-center" draggable onDragStart={()=>{ setDragIdx(idx); if (!tagEdits.length) setTagEdits(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
-                      if (dragIdx===null) return; const list = (tagEdits.length? [...tagEdits] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]);
+                    <div key={idx} className="flex gap-2 items-center" draggable onDragStart={()=>{ setDragIdx(idx) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
+                      if (dragIdx===null) return; const list = [...tagEdits]
                       const [m] = list.splice(dragIdx,1); list.splice(idx,0,m); setTagEdits(list); setDragIdx(null)
                     }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--gray-cont-tert)', cursor: 'grab' }}>drag_indicator</span>
-                      <input className="btn-md flex-1" value={(tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))[idx] || ''} onChange={(e)=>{
-                        setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base[idx] = normalizeTag(e.target.value); return base })
+                      <input className="btn-md flex-1" value={tagEdits[idx] || ''} onChange={(e)=>{
+                        setTagEdits(prev=>{ const base = [...prev]; base[idx] = normalizeTag(e.target.value); return base })
                       }} />
                       <span className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>{usedBy}</span>
-                      <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base.splice(idx,1); return base })}>Remove</button>
+                      <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = [...prev]; base.splice(idx,1); return base })}>Remove</button>
                     </div>
                   )
                 })}
-                <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), 'New Tag'])}>+ Add Tag</button>
+                {!tagsLoading && (
+                  <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...prev, 'New Tag'])}>+ Add Tag</button>
+                )}
                 {/* Missing used tags not in vocab: quick add list */}
                 <div className="mt-2">
                   <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Used but not in list</div>
-                  <MissingUsed type={manageType} collection={manageCollection} current={(tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))} onAdd={(t)=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), normalizeTag(t)])} />
+                  {!tagsLoading && (
+                    <MissingUsed type={manageType} collection={manageCollection} current={tagEdits} onAdd={(t)=>setTagEdits(prev=>[...prev, normalizeTag(t)])} />
+                  )}
                 </div>
               </div>
               <DialogFooter>
@@ -357,6 +370,16 @@ export default function AdminManager() {
                   const list = Array.isArray(data.list) ? data.list : []
                   if (manageType==='appearance') setAppearanceVocab(prev=>({ ...prev, [manageCollection]: list }))
                   else setCategoryVocab(prev=>({ ...prev, [manageCollection]: list }))
+                  // Update global order used by catalog pages without full reload
+                  if (typeof window !== 'undefined') {
+                    if (manageType === 'appearance') {
+                      ;(window as any).__appearanceOrder__ = (window as any).__appearanceOrder__ || {}
+                      ;(window as any).__appearanceOrder__[manageCollection] = list
+                    } else {
+                      ;(window as any).__categoryOrder__ = (window as any).__categoryOrder__ || {}
+                      ;(window as any).__categoryOrder__[manageCollection] = list
+                    }
+                  }
                 }}>Save</button>
               </DialogFooter>
             </DialogContent>
