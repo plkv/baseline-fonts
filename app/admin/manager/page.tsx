@@ -39,12 +39,14 @@ export default function AdminManager() {
   const [collectionFilter, setCollectionFilter] = useState<'all' | 'Text' | 'Display' | 'Weirdo'>('all')
   const [sortBy, setSortBy] = useState<'date' | 'alpha'>('date')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [editing, setEditing] = useState<Record<string, { collection: Family['collection']; styleTags: string[]; languages: string[] }>>({})
+  const [editing, setEditing] = useState<Record<string, { collection: Family['collection']; styleTags: string[]; languages: string[]; category?: string[] }>>({})
   const [uploading, setUploading] = useState(false)
   const [uploadFamily, setUploadFamily] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [manageTagsOpen, setManageTagsOpen] = useState(false)
+  const [manageType, setManageType] = useState<'appearance'|'category'>('appearance')
+  const [manageCollection, setManageCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [tagEdits, setTagEdits] = useState<string[]>([])
 
   const load = async () => {
@@ -60,13 +62,32 @@ export default function AdminManager() {
 
   useEffect(() => { load() }, [])
 
-  // Build a vocabulary of existing tags to avoid duplicates
-  const tagVocabulary = useMemo<string[]>(() => {
-    const tags = new Set<string>()
+  // Appearance vocabulary per collection
+  const appearanceVocab = useMemo<Record<'Text'|'Display'|'Weirdo', string[]>>(()=>{
+    const map: any = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() }
     for (const f of fonts) {
-      (f.styleTags || []).forEach(t => tags.add(t))
+      const c = (f.collection as any) || 'Text'
+      ;(f.styleTags||[]).forEach(t=> map[c].add(t))
     }
-    return Array.from(tags).sort((a, b) => a.localeCompare(b))
+    return {
+      Text: Array.from(map.Text).sort((a,b)=>a.localeCompare(b)),
+      Display: Array.from(map.Display).sort((a,b)=>a.localeCompare(b)),
+      Weirdo: Array.from(map.Weirdo).sort((a,b)=>a.localeCompare(b)),
+    }
+  }, [fonts])
+
+  // Category vocabulary per collection
+  const categoryVocab = useMemo<Record<'Text'|'Display'|'Weirdo', string[]>>(()=>{
+    const map: any = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() }
+    for (const f of fonts) {
+      const c = (f.collection as any) || 'Text'
+      ;(f.category||[]).forEach(t=> map[c].add(t))
+    }
+    return {
+      Text: Array.from(map.Text).sort((a,b)=>a.localeCompare(b)),
+      Display: Array.from(map.Display).sort((a,b)=>a.localeCompare(b)),
+      Weirdo: Array.from(map.Weirdo).sort((a,b)=>a.localeCompare(b)),
+    }
   }, [fonts])
 
   const normalizeTag = (t: string) => {
@@ -183,29 +204,40 @@ export default function AdminManager() {
             <option value="date">Date</option>
             <option value="alpha">A–Z</option>
           </select>
-          <Dialog open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
+          <Dialog open={manageTagsOpen} onOpenChange={(o)=>{ setManageTagsOpen(o); if(!o) setTagEdits([]) }}>
             <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Manage Appearance Tags</DialogTitle>
+                <DialogTitle>Manage Tags</DialogTitle>
               </DialogHeader>
-              <div className="space-y-2">
-                {(tagEdits.length ? tagEdits : tagVocabulary).map((t, idx) => (
+              <div className="flex gap-2 mb-2">
+                <select className="btn-md" value={manageType} onChange={e=>{ setManageType(e.target.value as any); setTagEdits([]) }}>
+                  <option value="appearance">Appearance</option>
+                  <option value="category">Category</option>
+                </select>
+                <select className="btn-md" value={manageCollection} onChange={e=>{ setManageCollection(e.target.value as any); setTagEdits([]) }}>
+                  <option>Text</option>
+                  <option>Display</option>
+                  <option>Weirdo</option>
+                </select>
+              </div>
+              <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
+                {(tagEdits.length ? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])).map((t, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
                     <input className="btn-md flex-1" defaultValue={t} onChange={(e)=>{
-                      setTagEdits(prev=>{ const base = prev.length? [...prev] : [...tagVocabulary]; base[idx] = normalizeTag(e.target.value); return base })
+                      setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base[idx] = normalizeTag(e.target.value); return base })
                     }} />
-                    <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...tagVocabulary]; base.splice(idx,1); return base })}>Remove</button>
+                    <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = prev.length? [...prev] : [...(manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])]; base.splice(idx,1); return base })}>Remove</button>
                   </div>
                 ))}
-                <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : tagVocabulary), 'New Tag'])}>+ Add Tag</button>
+                <button className="btn-sm" onClick={()=>setTagEdits(prev=>[...(prev.length? prev : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])), 'New Tag'])}>+ Add Tag</button>
               </div>
               <DialogFooter>
                 <DialogClose className="btn-md">Cancel</DialogClose>
                 <button className="btn-md" onClick={async()=>{
-                  // Build rename map (old -> new) and removed set
-                  const current = tagVocabulary
-                  const edited = (tagEdits.length? tagEdits : tagVocabulary).map(normalizeTag).filter(Boolean)
+                  // Build rename map (old -> new) and removed set for selected collection/type
+                  const current = (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])
+                  const edited = (tagEdits.length? tagEdits : current).map(normalizeTag).filter(Boolean)
                   // Align lengths by index; if removed, drop
                   const renameMap: Record<string,string> = {}
                   const keep = new Set(edited)
@@ -214,19 +246,25 @@ export default function AdminManager() {
                     if (neo && normalizeTag(old) !== neo) renameMap[old] = neo
                   })
                   // Apply across families
-                  const famMap = new Map<string, Family>()
-                  families.forEach(f=>famMap.set(f.name, f))
                   const updates: Array<Promise<any>> = []
-                  families.forEach(f=>{
-                    const curr = new Set(f.styleTags || [])
-                    // rename
-                    Object.entries(renameMap).forEach(([o,n])=>{ if (curr.has(o)) { curr.delete(o); curr.add(n) } })
-                    // remove tags that no longer exist
-                    Array.from(curr).forEach(t=>{ if (!keep.has(t)) curr.delete(t) })
-                    const newTags = Array.from(curr)
-                    if (JSON.stringify(newTags.sort()) !== JSON.stringify((f.styleTags||[]).slice().sort())) {
+                  families.filter(f=>f.collection===manageCollection).forEach(f=>{
+                    if (manageType==='appearance') {
+                      const curr = new Set(f.styleTags || [])
+                      Object.entries(renameMap).forEach(([o,n])=>{ if (curr.has(o)) { curr.delete(o); curr.add(n) } })
+                      Array.from(curr).forEach(t=>{ if (!keep.has(t)) curr.delete(t) })
+                      const newTags = Array.from(curr)
+                      if (JSON.stringify(newTags.sort()) !== JSON.stringify((f.styleTags||[]).slice().sort())) {
+                        f.fonts.forEach(font=>{
+                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: newTags } }) }))
+                        })
+                      }
+                    } else {
+                      const currCat = new Set((f as any).category || [])
+                      Object.entries(renameMap).forEach(([o,n])=>{ if (currCat.has(o)) { currCat.delete(o); currCat.add(n) } })
+                      Array.from(currCat).forEach(t=>{ if (!keep.has(t)) currCat.delete(t) })
+                      const newCategories = Array.from(currCat)
                       f.fonts.forEach(font=>{
-                        updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: newTags } }) }))
+                        updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { category: newCategories } }) }))
                       })
                     }
                   })
@@ -328,10 +366,24 @@ export default function AdminManager() {
                     ))}
                   </div>
 
-                  {/* Tags row */}
+                  {/* Category row */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Category</div>
+                    {categoryVocab[(editing[fam.name]?.collection ?? fam.collection)]?.map(t => (
+                      <button key={t} className={`btn-sm ${ ((editing[fam.name] as any)?.category ?? (fam as any).category ?? []).map((x:string)=>x.toLowerCase()).includes(t.toLowerCase()) ? 'active' : '' }`} onClick={()=>{
+                        const base = (((editing[fam.name] as any)?.category ?? (fam as any).category) || []) as string[]
+                        const has = base.map(x=>x.toLowerCase()).includes(t.toLowerCase())
+                        const next = has ? base.filter(x=>x.toLowerCase()!==t.toLowerCase()) : [...base, t]
+                        if (!editing[fam.name]) startEdit(fam)
+                        setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{ collection: fam.collection, styleTags: fam.styleTags, languages: fam.languages }), category: next }}))
+                      }}>{t}</button>
+                    ))}
+                  </div>
+
+                  {/* Appearance row */}
                   <div className="flex gap-2 flex-wrap items-center">
                     <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Appearance</div>
-                    {tagVocabulary.map(t => (
+                    {appearanceVocab[(editing[fam.name]?.collection ?? fam.collection)]?.map(t => (
                       <button key={t} className={`btn-sm ${ (editing[fam.name]?.styleTags ?? fam.styleTags).map(x=>x.toLowerCase()).includes(t.toLowerCase()) ? 'active' : '' }`} onClick={()=>{
                         const base = editing[fam.name]?.styleTags ?? fam.styleTags
                         const normalized = normalizeTag(t)
@@ -344,7 +396,16 @@ export default function AdminManager() {
                   </div>
                   {ed && (
                     <div className="flex gap-2">
-                      <button className="btn-md" onClick={() => saveEdit(fam)}>Save</button>
+                      <button className="btn-md" onClick={() => {
+                        // If category edited, persist alongside other fields
+                        const edState = editing[fam.name]
+                        if (edState?.category) {
+                          fam.fonts.forEach(font=>{
+                            fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { category: edState.category } }) })
+                          })
+                        }
+                        saveEdit(fam)
+                      }}>Save</button>
                       <button className="btn-md" onClick={() => setEditing(p => { const c = { ...p }; delete c[fam.name]; return c })}>Cancel</button>
                     </div>
                   )}
