@@ -215,9 +215,19 @@ export class FontVariantUtils {
   static toCSSFontFace(variant: FontVariant, familyName: string): string {
     // Use weight range for variable fonts per spec: e.g. "100 900"
     const weightRange = FontVariantUtils.getWeightRange(variant)
-    const fontWeight = variant.isVariable && weightRange
-      ? `${weightRange.min} ${weightRange.max}`
-      : `${variant.weight}`
+    let fontWeight: string
+    if (variant.isVariable && weightRange) {
+      const min = Math.max(1, Math.min(1000, Math.floor(weightRange.min)))
+      const max = Math.max(1, Math.min(1000, Math.ceil(weightRange.max)))
+      // Defensive: if range collapsed or invalid, fall back to a broad range so font-variation-settings can take effect
+      if (!isFinite(min) || !isFinite(max) || max <= min) {
+        fontWeight = '100 900'
+      } else {
+        fontWeight = `${min} ${max}`
+      }
+    } else {
+      fontWeight = `${variant.weight}`
+    }
 
     // Guess format() from variant.format if available
     const formatMap: Record<string, string> = {
