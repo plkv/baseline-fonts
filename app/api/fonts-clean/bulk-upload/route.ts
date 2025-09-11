@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
+import { kv } from '@vercel/kv'
 
 export const runtime = 'nodejs'
 
@@ -25,14 +26,11 @@ export async function POST(req: NextRequest) {
         const normalizedCats = normalizeCategoryList((meta as any).category)
         if (normalizedCats.length) {
           await fontStorageClean.updateFont(meta.id, { category: normalizedCats } as any)
-          // ensure vocab includes these
-          try {
-            const res = await fetch(`${req.nextUrl.origin}/api/tags/vocab?type=category&collection=${collectionSel}`)
-            const data = await res.json()
-            const list: string[] = Array.isArray(data.list) ? data.list : []
-            const merged = Array.from(new Set([ ...list, ...normalizedCats ])).sort((a,b)=>a.localeCompare(b))
-            await fetch(`${req.nextUrl.origin}/api/tags/vocab`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'category', collection: collectionSel, list: merged }) })
-          } catch {}
+          // ensure vocab includes these in KV directly
+          const key = `tags:vocab:category:${collectionSel}`
+          const list = (await kv.get<string[]>(key)) || []
+          const merged = Array.from(new Set([...list, ...normalizedCats])).sort((a,b)=>a.localeCompare(b))
+          await kv.set(key, merged)
         }
         results.push({ filename: file.name, id: meta.id, family: meta.family, ok: true })
       } catch (e: any) {
