@@ -214,16 +214,28 @@ export default function AdminManager() {
     if (!e) return
     // apply updates to all fonts in family
     const updates = { collection: e.collection, styleTags: e.styleTags, languages: e.languages }
-    await Promise.all(fam.fonts.map(f => fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, updates }) })))
+    await Promise.all(fam.fonts.map(async f => {
+      const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, updates }) })
+      if (!res.ok) {
+        // ignore legacy-only variants for now
+      }
+    }))
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
-    await load()
+    // Optimistic local update to avoid full reload
+    setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, collection: e.collection, styleTags: e.styleTags, languages: e.languages } : f))
     try { toast.success('Family updated') } catch {}
   }
 
   const deleteFamily = async (fam: Family) => {
     if (!confirm(`Delete family ${fam.name} and all ${fam.fonts.length} styles?`)) return
-    await Promise.all(fam.fonts.map(f => fetch('/api/fonts-clean/delete', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id }) })))
-    await load()
+    await Promise.all(fam.fonts.map(async f => {
+      const resp = await fetch('/api/fonts-clean/delete', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id }) })
+      if (!resp.ok) {
+        // fallback to legacy delete by filename
+        try { await fetch(`/api/fonts/delete?filename=${encodeURIComponent(f.filename)}`, { method: 'DELETE' }) } catch {}
+      }
+    }))
+    setFonts(prev => prev.filter(f => f.family !== fam.name))
     try { toast.success('Family deleted') } catch {}
   }
 
