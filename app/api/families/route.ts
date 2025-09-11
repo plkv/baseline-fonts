@@ -73,10 +73,19 @@ export async function GET() {
         if (Array.isArray(f.styleTags)) f.styleTags.forEach((s: string) => union.styleTags.add(s))
       }
 
+      // Resolve family collection by majority across variants to avoid per-variant drift
+      const collCounts: Record<'Text'|'Display'|'Weirdo', number> = { Text: 0, Display: 0, Weirdo: 0 }
+      for (const ff of familyFonts) {
+        const c = (ff.collection as 'Text'|'Display'|'Weirdo') || 'Text'
+        collCounts[c]++
+      }
+      const resolvedCollection = (['Text','Display','Weirdo'] as const)
+        .reduce((best, curr) => (collCounts[curr] > collCounts[best] ? curr : best), 'Text' as const)
+
       const family: FontFamily = {
         id: familyId,
         name: familyName,
-        collection: representative?.collection || 'Text',
+        collection: resolvedCollection || representative?.collection || 'Text',
         styleTags: Array.from(union.styleTags),
         languages: Array.from(union.languages.size ? union.languages : new Set(['Latin'])),
         category: Array.from(union.categories.size ? union.categories : new Set(['Sans'])),

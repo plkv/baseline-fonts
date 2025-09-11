@@ -13,17 +13,20 @@ export async function GET(req: NextRequest) {
     const collection = (searchParams.get('collection') as Coll) || 'Text'
 
     const all = await fontStorageClean.getAllFonts()
-    // Count unique families per tag in selected collection
+    // Group all variants by family, then resolve a single family collection (majority) to match catalog behavior
     const familiesByName = new Map<string, any[]>()
     for (const f of all as any[]) {
-      const coll: Coll = (f.collection as Coll) || 'Text'
-      if (coll !== collection) continue
       const fam = f.family || f.name
       if (!familiesByName.has(fam)) familiesByName.set(fam, [])
       familiesByName.get(fam)!.push(f)
     }
     const counts = new Map<string, number>()
     familiesByName.forEach((fonts, famName) => {
+      // Resolve collection by majority across family variants
+      const collCounts: Record<Coll, number> = { Text: 0, Display: 0, Weirdo: 0 }
+      fonts.forEach((f: any)=>{ const c: Coll = (f.collection as Coll) || 'Text'; collCounts[c]++ })
+      const resolved: Coll = (['Text','Display','Weirdo'] as Coll[]).reduce((best, curr) => (collCounts[curr] > collCounts[best] ? curr : best), 'Text')
+      if (resolved !== collection) return
       const tagSet = new Set<string>()
       fonts.forEach((f: any) => {
         if (type === 'category') {
