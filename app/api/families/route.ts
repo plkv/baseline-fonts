@@ -3,6 +3,7 @@ import { fontStorageClean } from '@/lib/font-storage-clean'
 import type { FontFamily } from '@/lib/models/FontFamily'
 import type { FontVariant } from '@/lib/models/FontVariant'
 import { resolveFontUrl } from '@/lib/font-url'
+import { toTitleCase } from '@/lib/category-utils'
 
 // Helper to normalize a single font record coming from storage
 function toVariant(font: any, familyId: string): FontVariant {
@@ -67,8 +68,8 @@ export async function GET() {
       for (const f of familyFonts) {
         if (Array.isArray(f.languages)) f.languages.forEach((l: string) => union.languages.add(l))
         else union.languages.add('Latin')
-        if (Array.isArray(f.category)) f.category.forEach((c: string) => union.categories.add(c))
-        else if (typeof f.category === 'string' && f.category) union.categories.add(f.category)
+        if (Array.isArray(f.category)) f.category.forEach((c: string) => union.categories.add(toTitleCase(c)))
+        else if (typeof f.category === 'string' && f.category) union.categories.add(toTitleCase(f.category))
         if (Array.isArray(f.styleTags)) f.styleTags.forEach((s: string) => union.styleTags.add(s))
       }
 
