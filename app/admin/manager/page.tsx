@@ -344,30 +344,10 @@ export default function AdminManager() {
                   const newList: string[] = []
                   base.forEach((t)=>{ const n = normalizeTag(t); const key = n.toLowerCase(); if (n && !seen.has(key)) { seen.add(key); newList.push(n) } })
                   const keep = new Set(newList.map(x=>x.toLowerCase()))
-                  // Apply pruning across families (no auto-rename to avoid duplicates)
-                  const updates: Array<Promise<any>> = []
-                  families.filter(f=>f.collection===manageCollection).forEach(f=>{
-                    if (manageType==='appearance') {
-                      const curr = (f.styleTags||[])
-                      const pruned = curr.filter(t=> keep.has((t||'').toLowerCase()))
-                      if (JSON.stringify(pruned.slice().sort()) !== JSON.stringify(curr.slice().sort())) {
-                        f.fonts.forEach(font=>{
-                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: pruned } }) }))
-                        })
-                      }
-                    } else {
-                      const curr = ((f as any).category||[])
-                      const pruned = curr.filter((t:string)=> keep.has((t||'').toLowerCase()))
-                      if (JSON.stringify(pruned.slice().sort()) !== JSON.stringify(curr.slice().sort())) {
-                        f.fonts.forEach(font=>{
-                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { category: pruned } }) }))
-                        })
-                      }
-                    }
-                  })
+                  // Apply pruning across families server-side for consistency
+                  await fetch('/api/tags/apply', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type: manageType, collection: manageCollection, list: newList }) })
                   // Persist vocabulary order to KV
                   await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, collection: manageCollection, list: newList }) })
-                  await Promise.all(updates)
                   setTagEdits(newList)
                   try { toast.success('Tags saved') } catch {}
                   await load()

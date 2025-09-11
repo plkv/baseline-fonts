@@ -70,17 +70,6 @@ export async function GET() {
         if (Array.isArray(f.category)) f.category.forEach((c: string) => union.categories.add(c))
         else if (typeof f.category === 'string' && f.category) union.categories.add(f.category)
         if (Array.isArray(f.styleTags)) f.styleTags.forEach((s: string) => union.styleTags.add(s))
-        // Infer appearance tags if missing
-        if (!Array.isArray(f.styleTags) || f.styleTags.length === 0) {
-          if (f.collection === 'Display') union.styleTags.add('Display')
-          if (Array.isArray(f.category)) {
-            if (f.category.includes('Serif')) union.styleTags.add('Serif')
-            if (f.category.includes('Sans')) union.styleTags.add('Sans Serif')
-            if (f.category.includes('Mono')) union.styleTags.add('Monospace')
-            if (f.category.includes('Script')) union.styleTags.add('Script')
-            if (f.category.includes('Decorative')) union.styleTags.add('Decorative')
-          }
-        }
       }
 
       const family: FontFamily = {
