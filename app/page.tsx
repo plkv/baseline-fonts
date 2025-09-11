@@ -603,6 +603,11 @@ export default function FontLibrary() {
       ...prev,
       [fontId]: { weight, italic },
     }))
+    // Ensure variable fonts reflect dropdown in wght axis for rendering
+    setFontVariableAxes((prev) => ({
+      ...prev,
+      [fontId]: { ...(prev[fontId] || {}), wght: weight },
+    }))
   }
 
   const handleSort = (sortType: "Date" | "Alphabetical") => {
@@ -1103,31 +1108,26 @@ export default function FontLibrary() {
   }
 
   const getEffectiveStyle = (fontId: number) => {
+    const font = fonts.find(f => f.id === fontId)
     const fontSelection = fontWeightSelections[fontId] || { weight: 400, italic: false }
-    const variableAxes = fontVariableAxes[fontId] || {}
+    const stateAxes = fontVariableAxes[fontId] || {}
     const otFeatures = fontOTFeatures[fontId] || {}
+    const isFamilyVariable = !!(font?.variableAxes && font.variableAxes.length)
 
-    // If sidebar has weight/italic selections, use those for preview
-    if (selectedWeights.length > 0 || isItalic) {
-      const result = {
-        weight: selectedWeights.length > 0 ? selectedWeights[0] : variableAxes.wght || fontSelection.weight,
-        italic: isItalic || fontSelection.italic,
-        variableAxes,
-        otFeatures,
-      }
-      console.log(`Effective style (global) for font ${fontId}:`, result);
-      return result;
+    // Base axes: ensure variable fonts always carry an explicit wght so browser doesn't use font's internal default
+    const axesOut: Record<string, number> = { ...stateAxes }
+    if (isFamilyVariable && axesOut.wght == null) {
+      axesOut.wght = selectedWeights.length > 0 ? selectedWeights[0] : (fontSelection.weight || 400)
     }
 
-    // Otherwise use individual font selection
-    const result = {
-      weight: variableAxes.wght || fontSelection.weight,
-      italic: fontSelection.italic,
-      variableAxes,
-      otFeatures,
-    }
-    console.log(`Effective style (individual) for font ${fontId}:`, result);
-    return result;
+    // Resolve weight/italic with sidebar filters taking precedence when set
+    const weight = selectedWeights.length > 0
+      ? selectedWeights[0]
+      : (axesOut.wght || fontSelection.weight || 400)
+    const italic = isItalic || fontSelection.italic || false
+
+    const result = { weight, italic, variableAxes: axesOut, otFeatures }
+    return result
   }
 
   const getFontFeatureSettings = (otFeatures: Record<string, boolean>) => {
