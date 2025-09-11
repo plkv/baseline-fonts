@@ -18,8 +18,10 @@ export async function POST(req: NextRequest) {
     }
     for (const f of fonts as any[]) {
       const coll: Coll = (f.collection as Coll) || 'Text'
-      ;(f.styleTags || []).forEach((t: string) => used.appearance[coll].add(toTitleCase(t)))
-      ;(f.category || []).forEach((t: string) => used.category[coll].add(toTitleCase(t)))
+      const styleTags: string[] = Array.isArray(f.styleTags) ? f.styleTags : (typeof f.styleTags === 'string' ? [f.styleTags] : [])
+      const categories: string[] = Array.isArray(f.category) ? f.category : (typeof f.category === 'string' ? [f.category] : [])
+      styleTags.forEach((t: string) => used.appearance[coll].add(toTitleCase(t)))
+      categories.forEach((t: string) => used.category[coll].add(toTitleCase(t)))
     }
 
     const result: any = { success: true, updated: [] as any[] }
@@ -46,4 +48,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-
