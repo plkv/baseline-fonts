@@ -193,23 +193,18 @@ export default function FontLibrary() {
                   ]
                 }
               } else {
-                // Static family: build unique styles by weight + italic to avoid duplicate "Regular" entries
-                const allFontStyles = familyFonts.map((v: any) => ({
+                // Static family: expose each variant distinctly using per-variant CSS alias to avoid weight/style collisions
+                const familyAlias = `${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}`
+                availableStylesWithWeights = familyFonts.map((v: any) => ({
                   weight: v.weight || 400,
                   styleName: v.styleName || 'Regular',
                   isItalic: Boolean(v.isItalic),
-                  font: v,
-                }))
-                const unique = new Map<string, any>()
-                for (const s of allFontStyles) {
-                  const key = `${s.weight}-${s.isItalic ? 'i' : 'n'}`
-                  if (!unique.has(key)) unique.set(key, s)
-                }
-                availableStylesWithWeights = Array.from(unique.values()).sort((a: any, b: any) => {
+                  cssFamily: `${familyAlias}__v_${shortHash(v.id || v.filename).slice(0,6)}`,
+                })).sort((a: any, b: any) => {
                   if (a.weight !== b.weight) return a.weight - b.weight
                   return a.isItalic ? 1 : -1
                 })
-                availableWeights = [...new Set(Array.from(unique.values()).map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
+                availableWeights = [...new Set(availableStylesWithWeights.map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
               }
 
               const hasItalic = familyFonts.some((v: any) => v.isItalic)
@@ -238,6 +233,7 @@ export default function FontLibrary() {
                   isItalic: v.isItalic,
                   blobUrl: v.blobUrl,
                   url: v.blobUrl,
+                  cssFamily: `${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}__v_${shortHash(v.id || v.filename).slice(0,6)}`,
                   downloadLink: v.downloadLink,
                   variableAxes: v.variableAxes,
                   openTypeFeatures: v.openTypeFeatures,
@@ -1495,7 +1491,9 @@ export default function FontLibrary() {
                   
                   return {
                     weight: defaultStyle.weight,
-                    italic: defaultStyle.isItalic
+                    italic: defaultStyle.isItalic,
+                    cssFamily: (defaultStyle as any).cssFamily,
+                    styleName: defaultStyle.styleName,
                   }
                 }
                 // Fallback for compatibility
