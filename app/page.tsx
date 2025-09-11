@@ -752,6 +752,7 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
+        onClick={() => toggleCardExpansion(fontId)}
         onFocus={() => {
           setFocusedFontId(fontId)
         }}
@@ -775,6 +776,20 @@ export default function FontLibrary() {
       }
     }
   }, [customText, textCursorPosition])
+
+  // Keep focus across expand/collapse toggles
+  useEffect(() => {
+    if (focusedFontId != null) {
+      const el = inputRefs.current[focusedFontId]
+      if (el) {
+        try {
+          el.focus()
+          const pos = Math.min(textCursorPosition, el.value.length)
+          el.setSelectionRange(pos, pos)
+        } catch {}
+      }
+    }
+  }, [expandedCards])
 
   // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
@@ -1592,13 +1607,6 @@ export default function FontLibrary() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          className="btn-sm"
-                          onClick={() => toggleCardExpansion(font.id)}
-                          title={expandedCards.has(font.id) ? 'Hide controls' : 'Show controls'}
-                        >
-                          {expandedCards.has(font.id) ? 'Hide controls' : 'Show controls'}
-                        </button>
                       {(() => {
                         // Check if any font in the family has a download link set in admin (not the blob URL)
                         const adminDownloadLink = font.downloadLink || font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink

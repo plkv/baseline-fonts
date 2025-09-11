@@ -10,6 +10,7 @@ interface ControlledTextPreviewProps {
   cursorPosition: number
   onChange: (value: string, cursorPosition: number) => void
   onCursorChange?: (cursorPosition: number) => void
+  onClick?: () => void
   onFocus?: () => void
   onBlur?: () => void
   className?: string
@@ -26,6 +27,7 @@ export const ControlledTextPreview = forwardRef<
   value,
   cursorPosition,
   onChange,
+  onClick,
   onFocus,
   onBlur,
   className = '',
@@ -87,6 +89,7 @@ export const ControlledTextPreview = forwardRef<
     onChange: handleChange,
     onSelect: handleSelect,
     onKeyUp: handleKeyUp,
+    onClick,
     onFocus: handleFocus,
     onBlur: handleBlur,
     className,
