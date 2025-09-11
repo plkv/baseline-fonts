@@ -59,9 +59,29 @@ export default function AdminManager() {
   const load = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/fonts-clean/list', { cache: 'no-store' })
+      // Use merged families (legacy + clean) so Admin shows all families the catalog sees
+      const res = await fetch('/api/families', { cache: 'no-store' })
       const data = await res.json()
-      setFonts(data.fonts || [])
+      const families = Array.isArray(data.families) ? data.families : []
+      const flat: CleanFont[] = families.flatMap((fam: any) => (fam.variants||[]).map((v: any) => ({
+        id: v.id,
+        family: fam.name,
+        filename: v.filename,
+        weight: v.weight,
+        style: v.styleName,
+        isVariable: v.isVariable,
+        variableAxes: v.variableAxes,
+        openTypeFeatures: v.openTypeFeatures,
+        foundry: fam.foundry,
+        version: fam.version,
+        license: fam.license,
+        uploadedAt: v.uploadedAt || fam.updatedAt || fam.createdAt,
+        collection: fam.collection,
+        styleTags: fam.styleTags || [],
+        languages: fam.languages || [],
+        category: fam.category || [],
+      })))
+      setFonts(flat)
     } finally {
       setLoading(false)
     }
@@ -213,7 +233,8 @@ export default function AdminManager() {
     const e = editing[fam.name]
     if (!e) return
     // apply updates to all fonts in family
-    const updates = { collection: e.collection, styleTags: e.styleTags, languages: e.languages }
+    const updates: any = { collection: e.collection, styleTags: e.styleTags, languages: e.languages }
+    if ((editing[fam.name] as any)?.category) updates.category = (editing[fam.name] as any).category
     await Promise.all(fam.fonts.map(async f => {
       const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, updates }) })
       if (!res.ok) {
@@ -222,7 +243,7 @@ export default function AdminManager() {
     }))
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
     // Optimistic local update to avoid full reload
-    setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, collection: e.collection, styleTags: e.styleTags, languages: e.languages } : f))
+    setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, collection: e.collection, styleTags: e.styleTags, languages: e.languages, category: (updates.category || (f as any).category || []) } : f))
     try { toast.success('Family updated') } catch {}
   }
 

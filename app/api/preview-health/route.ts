@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
-import { getAllKnownFonts } from '@/lib/all-fonts'
 import { buildFontCSS } from '@/lib/font-css'
 import { canonicalFamilyName } from '@/lib/font-naming'
 import { shortHash } from '@/lib/hash'
@@ -8,7 +7,7 @@ import { resolveFontUrl } from '@/lib/font-url'
 
 export async function GET() {
   try {
-    const fonts = await getAllKnownFonts()
+    const fonts = await fontStorageClean.getAllFonts()
     const byFamily = new Map<string, any[]>()
     for (const f of fonts) {
       const name = (f.family || f.name || 'Unknown').toString()

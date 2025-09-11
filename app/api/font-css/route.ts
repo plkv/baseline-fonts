@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
-import { getAllKnownFonts } from '@/lib/all-fonts'
 import type { FontFamily } from '@/lib/models/FontFamily'
 import type { FontVariant } from '@/lib/models/FontVariant'
 import { buildFontCSS } from '@/lib/font-css'
@@ -106,8 +105,8 @@ function hashString(input: string): string {
 
 export async function GET(_req: NextRequest) {
   try {
-    // Merge clean + legacy to maximize available URLs
-    const fonts = await getAllKnownFonts()
+    // Use only clean storage to generate CSS
+    const fonts = await fontStorageClean.getAllFonts()
     const families = buildFamiliesFromFonts(fonts)
     const css = buildFontCSS(families)
     const etag = hashString(css)
