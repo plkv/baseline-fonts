@@ -65,6 +65,44 @@ export default function AdminManager() {
 
   useEffect(() => { load() }, [])
 
+  // Load vocabularies from KV and merge in used tags from catalog (legacy+clean)
+  useEffect(()=>{
+    const fetchVocab = async () => {
+      const loadOne = async (type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo') => {
+        const res = await fetch(`/api/tags/vocab?type=${type}&collection=${collection}`, { cache:'no-store' })
+        const data = await res.json()
+        return Array.isArray(data.list) ? data.list : []
+      }
+      const loadUsage = async (type: 'appearance'|'category') => {
+        const res = await fetch(`/api/tags/usage?type=${type}`, { cache:'no-store' })
+        const data = await res.json()
+        return (data.usage || { Text: [], Display: [], Weirdo: [] }) as { Text: string[]; Display: string[]; Weirdo: string[] }
+      }
+      const [appText, appDisp, appWeir] = await Promise.all([
+        loadOne('appearance','Text'), loadOne('appearance','Display'), loadOne('appearance','Weirdo')
+      ])
+      const [catText, catDisp, catWeir] = await Promise.all([
+        loadOne('category','Text'), loadOne('category','Display'), loadOne('category','Weirdo')
+      ])
+      const usageApp = await loadUsage('appearance')
+      const usageCat = await loadUsage('category')
+      const merge = (curr: string[], used: string[]) => Array.from(new Set([...(curr||[]), ...(used||[])])).sort((a,b)=>a.localeCompare(b))
+      const appMerged = { Text: merge(appText, usageApp.Text), Display: merge(appDisp, usageApp.Display), Weirdo: merge(appWeir, usageApp.Weirdo) }
+      const catMerged = { Text: merge(catText, usageCat.Text), Display: merge(catDisp, usageCat.Display), Weirdo: merge(catWeir, usageCat.Weirdo) }
+      setAppearanceVocab(appMerged)
+      setCategoryVocab(catMerged)
+      // Persist merges back to KV silently
+      const persist = async (type: 'appearance'|'category', coll: 'Text'|'Display'|'Weirdo', list: string[]) => {
+        await fetch('/api/tags/vocab', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type, collection: coll, list }) })
+      }
+      await Promise.all([
+        persist('appearance','Text', appMerged.Text), persist('appearance','Display', appMerged.Display), persist('appearance','Weirdo', appMerged.Weirdo),
+        persist('category','Text', catMerged.Text), persist('category','Display', catMerged.Display), persist('category','Weirdo', catMerged.Weirdo),
+      ])
+    }
+    fetchVocab()
+  }, [])
+
   // Vocabularies persisted in KV; fallback to dataset on first load
   const [appearanceVocab, setAppearanceVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
   const [categoryVocab, setCategoryVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
