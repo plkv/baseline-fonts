@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     }
     for (const f of fonts as any[]) {
       const coll: Coll = (f.collection as Coll) || 'Text'
-      const styleTags: string[] = Array.isArray(f.styleTags) ? f.styleTags : (typeof f.styleTags === 'string' ? [f.styleTags] : [])
+      const styleSrc = (f as any).styleTags || (f as any).tags
+      const styleTags: string[] = Array.isArray(styleSrc) ? styleSrc : (typeof styleSrc === 'string' ? [styleSrc] : [])
       const categories: string[] = Array.isArray(f.category) ? f.category : (typeof f.category === 'string' ? [f.category] : [])
       styleTags.forEach((t: string) => used.appearance[coll].add(toTitleCase(t)))
       categories.forEach((t: string) => used.category[coll].add(toTitleCase(t)))

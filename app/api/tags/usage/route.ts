@@ -13,9 +13,12 @@ export async function GET(req: NextRequest) {
     for (const f of fonts as any[]) {
       const coll: Coll = (f.collection as Coll) || 'Text'
       if (type === 'category') {
-        (f.category || []).forEach((t: string) => usage[coll].add(toTitleCase(t)))
+        const cats: string[] = Array.isArray(f.category) ? f.category : (typeof f.category === 'string' ? [f.category] : [])
+        cats.forEach((t: string) => usage[coll].add(toTitleCase(t)))
       } else {
-        (f.styleTags || []).forEach((t: string) => usage[coll].add(toTitleCase(t)))
+        const tagsSrc = (f as any).styleTags || (f as any).tags
+        const tags: string[] = Array.isArray(tagsSrc) ? tagsSrc : (typeof tagsSrc === 'string' ? [tagsSrc] : [])
+        tags.forEach((t: string) => usage[coll].add(toTitleCase(t)))
       }
     }
     const out = {
@@ -32,4 +35,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-
