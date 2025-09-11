@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog'
+import { Toaster, toast } from 'sonner'
 import { canonicalFamilyName } from '@/lib/font-naming'
 import { shortHash } from '@/lib/hash'
 
@@ -213,12 +214,14 @@ export default function AdminManager() {
     await Promise.all(fam.fonts.map(f => fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id, updates }) })))
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
     await load()
+    try { toast.success('Family updated') } catch {}
   }
 
   const deleteFamily = async (fam: Family) => {
     if (!confirm(`Delete family ${fam.name} and all ${fam.fonts.length} styles?`)) return
     await Promise.all(fam.fonts.map(f => fetch('/api/fonts-clean/delete', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: f.id }) })))
     await load()
+    try { toast.success('Family deleted') } catch {}
   }
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,6 +263,7 @@ export default function AdminManager() {
 
   return (
     <main className="p-6 space-y-6">
+      <Toaster richColors position="top-right" />
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Admin — Font Manager</h1>
         <div className="flex gap-2 items-center">
@@ -315,44 +319,38 @@ export default function AdminManager() {
               <DialogFooter>
                 <DialogClose className="btn-md">Cancel</DialogClose>
                 <button className="btn-md" onClick={async()=>{
-                  // Build rename map (old -> new) and removed set for selected collection/type
-                  const current = (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection])
-                  const edited = (tagEdits.length? tagEdits : current).map(normalizeTag).filter(Boolean)
-                  // Align lengths by index; if removed, drop
-                  const renameMap: Record<string,string> = {}
-                  const keep = new Set(edited)
-                  current.forEach((old, i)=>{
-                    const neo = edited[i]
-                    if (neo && normalizeTag(old) !== neo) renameMap[old] = neo
-                  })
-                  // Apply across families
+                  // Build new ordered, normalized, de-duplicated list
+                  const base = (tagEdits.length? tagEdits : (manageType==='appearance'? appearanceVocab[manageCollection] : categoryVocab[manageCollection]))
+                  const seen = new Set<string>()
+                  const newList: string[] = []
+                  base.forEach((t)=>{ const n = normalizeTag(t); const key = n.toLowerCase(); if (n && !seen.has(key)) { seen.add(key); newList.push(n) } })
+                  const keep = new Set(newList.map(x=>x.toLowerCase()))
+                  // Apply pruning across families (no auto-rename to avoid duplicates)
                   const updates: Array<Promise<any>> = []
                   families.filter(f=>f.collection===manageCollection).forEach(f=>{
                     if (manageType==='appearance') {
-                      const curr = new Set(f.styleTags || [])
-                      Object.entries(renameMap).forEach(([o,n])=>{ if (curr.has(o)) { curr.delete(o); curr.add(n) } })
-                      Array.from(curr).forEach(t=>{ if (!keep.has(t)) curr.delete(t) })
-                      const newTags = Array.from(curr)
-                      if (JSON.stringify(newTags.sort()) !== JSON.stringify((f.styleTags||[]).slice().sort())) {
+                      const curr = (f.styleTags||[])
+                      const pruned = curr.filter(t=> keep.has((t||'').toLowerCase()))
+                      if (JSON.stringify(pruned.slice().sort()) !== JSON.stringify(curr.slice().sort())) {
                         f.fonts.forEach(font=>{
-                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: newTags } }) }))
+                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { styleTags: pruned } }) }))
                         })
                       }
                     } else {
-                      const currCat = new Set((f as any).category || [])
-                      Object.entries(renameMap).forEach(([o,n])=>{ if (currCat.has(o)) { currCat.delete(o); currCat.add(n) } })
-                      Array.from(currCat).forEach(t=>{ if (!keep.has(t)) currCat.delete(t) })
-                      const newCategories = Array.from(currCat)
-                      f.fonts.forEach(font=>{
-                        updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { category: newCategories } }) }))
-                      })
+                      const curr = ((f as any).category||[])
+                      const pruned = curr.filter((t:string)=> keep.has((t||'').toLowerCase()))
+                      if (JSON.stringify(pruned.slice().sort()) !== JSON.stringify(curr.slice().sort())) {
+                        f.fonts.forEach(font=>{
+                          updates.push(fetch('/api/fonts-clean/update', { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: font.id, updates: { category: pruned } }) }))
+                        })
+                      }
                     }
                   })
-                  // Persist vocabulary to KV
-                  await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, collection: manageCollection, list: edited }) })
+                  // Persist vocabulary order to KV
+                  await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, collection: manageCollection, list: newList }) })
                   await Promise.all(updates)
-                  setTagEdits([])
-                  setManageTagsOpen(false)
+                  setTagEdits(newList)
+                  try { toast.success('Tags saved') } catch {}
                   await load()
                   // refresh vocab
                   const res = await fetch(`/api/tags/vocab?type=${manageType}&collection=${manageCollection}`, { cache:'no-store' })
