@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getAllKnownFonts } from '@/lib/all-fonts'
+import { fontStorageClean } from '@/lib/font-storage-clean'
 import { resolveFontUrl } from '@/lib/font-url'
 
 export async function GET() {
   try {
-    const all = await getAllKnownFonts()
+    const all = await fontStorageClean.getAllFonts()
     const total = all.length
     const withUrl = all.filter((f) => !!resolveFontUrl(f)).length
     const withoutUrl = total - withUrl
@@ -14,4 +14,3 @@ export async function GET() {
     return NextResponse.json({ success: false, error: e?.message || String(e) }, { status: 500 })
   }
 }
-

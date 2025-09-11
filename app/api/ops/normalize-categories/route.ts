@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
 import { normalizeCategoryList } from '@/lib/category-utils'
-import { fontStorageClean } from '@/lib/font-storage-clean'
 
 export async function POST() {
   try {
