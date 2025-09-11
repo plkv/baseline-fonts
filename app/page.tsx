@@ -1591,6 +1591,14 @@ export default function FontLibrary() {
                           <span className="text-author">by {font.author}</span>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="btn-sm"
+                          onClick={() => toggleCardExpansion(font.id)}
+                          title={expandedCards.has(font.id) ? 'Hide controls' : 'Show controls'}
+                        >
+                          {expandedCards.has(font.id) ? 'Hide controls' : 'Show controls'}
+                        </button>
                       {(() => {
                         // Check if any font in the family has a download link set in admin (not the blob URL)
                         const adminDownloadLink = font.downloadLink || font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink
@@ -1612,6 +1620,7 @@ export default function FontLibrary() {
                         }
                         return null // Hide button if no admin download link is set
                       })()}
+                      </div>
                     </div>
                     <ControlledPreviewInput
                       value={getPreviewContent(font.name)}
