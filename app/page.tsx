@@ -458,24 +458,23 @@ export default function FontLibrary() {
     const font = fonts.find((f) => f.id === fontId)
     if (!font) return []
     
-    // Get all OpenType features from multiple sources
+    // Collect features from multiple sources and normalize
     const allFeatures = new Map<string, string>()
-    
-    // Check main font OpenType features
-    if (font.openTypeFeatures && Array.isArray(font.openTypeFeatures)) {
-      font.openTypeFeatures.forEach((feature: string) => {
-        processStyleFeature(feature, allFeatures)
-      })
+    const pushFeature = (feat: any) => {
+      let raw = ''
+      if (typeof feat === 'string') raw = feat
+      else if (feat && typeof feat === 'object') raw = (feat.tag || feat.name || feat.title || '').toString()
+      if (!raw) return
+      processStyleFeature(raw, allFeatures)
     }
+    if (Array.isArray((font as any).openTypeFeatures)) (font as any).openTypeFeatures.forEach(pushFeature)
+    if (Array.isArray((font as any).features)) (font as any).features.forEach(pushFeature)
     
     // Check family fonts if available
     if (font._familyFonts) {
       font._familyFonts.forEach(familyFont => {
-        if (familyFont.openTypeFeatures && Array.isArray(familyFont.openTypeFeatures)) {
-          familyFont.openTypeFeatures.forEach((feature: string) => {
-            processStyleFeature(feature, allFeatures)
-          })
-        }
+        if (Array.isArray((familyFont as any).openTypeFeatures)) (familyFont as any).openTypeFeatures.forEach(pushFeature)
+        if (Array.isArray((familyFont as any).features)) (familyFont as any).features.forEach(pushFeature)
       })
     }
     
@@ -485,29 +484,25 @@ export default function FontLibrary() {
   // Helper function to process stylistic features
   const processStyleFeature = (feature: string, allFeatures: Map<string, string>) => {
     // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
-    if (feature.toLowerCase().includes('stylistic set') || 
-        feature.toLowerCase().includes('stylistic alternates') ||
-        /^ss\d+$/.test(feature.toLowerCase()) ||
-        feature.match(/^ss\d+/i)) {
+    const f = feature.toLowerCase()
+    if (f.includes('stylistic set') || f.includes('stylistic alternates') || /ss\d+/.test(f)) {
       // Convert readable names to OpenType tags while preserving descriptive names
       let tag = ''
       let title = feature
       
-      if (feature.toLowerCase().includes('stylistic set 1')) tag = 'ss01'
-      else if (feature.toLowerCase().includes('stylistic set 2')) tag = 'ss02'
-      else if (feature.toLowerCase().includes('stylistic set 3')) tag = 'ss03'
-      else if (feature.toLowerCase().includes('stylistic set 4')) tag = 'ss04'
-      else if (feature.toLowerCase().includes('stylistic set 5')) tag = 'ss05'
-      else if (feature.toLowerCase().includes('stylistic set 6')) tag = 'ss06'
-      else if (feature.toLowerCase().includes('stylistic set 7')) tag = 'ss07'
-      else if (feature.toLowerCase().includes('stylistic set 8')) tag = 'ss08'
-      else if (feature.toLowerCase().includes('stylistic set 9')) tag = 'ss09'
-      else if (feature.toLowerCase().includes('stylistic set 10')) tag = 'ss10'
-      else if (feature.toLowerCase().includes('stylistic alternates')) tag = 'salt'
-      else if (/^ss\d+$/i.test(feature)) tag = feature.toLowerCase()
-      else if (feature.match(/^ss\d+/i)) {
-        // Extract ss01, ss02 etc from start of feature name
-        const match = feature.match(/^(ss\d+)/i)
+      if (f.includes('stylistic alternates')) tag = 'salt'
+      else if (f.includes('stylistic set 1')) tag = 'ss01'
+      else if (f.includes('stylistic set 2')) tag = 'ss02'
+      else if (f.includes('stylistic set 3')) tag = 'ss03'
+      else if (f.includes('stylistic set 4')) tag = 'ss04'
+      else if (f.includes('stylistic set 5')) tag = 'ss05'
+      else if (f.includes('stylistic set 6')) tag = 'ss06'
+      else if (f.includes('stylistic set 7')) tag = 'ss07'
+      else if (f.includes('stylistic set 8')) tag = 'ss08'
+      else if (f.includes('stylistic set 9')) tag = 'ss09'
+      else if (f.includes('stylistic set 10')) tag = 'ss10'
+      else if (/ss\d+/.test(f)) {
+        const match = f.match(/ss\d+/i)
         if (match) tag = match[1].toLowerCase()
       }
       
@@ -566,18 +561,16 @@ export default function FontLibrary() {
     if (!font?._familyFonts) return []
     
     // Get variable axes from font metadata
-    const allAxes = new Map()
+    const allAxes = new Map<string, { tag: string, name: string, min: number, max: number, default: number }>()
     font._familyFonts.forEach(familyFont => {
       if (familyFont.variableAxes) {
         familyFont.variableAxes.forEach((axis: any) => {
           // Use axis tag as key to avoid duplicates
-          allAxes.set(axis.axis, {
-            tag: axis.axis,
-            name: axis.name,
-            min: axis.min,
-            max: axis.max,
-            default: axis.default
-          })
+          const min = Number(axis.min)
+          const max = Number(axis.max)
+          // Filter out degenerate axes (no range)
+          if (!isFinite(min) || !isFinite(max) || max <= min) return
+          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: Number(axis.default) })
         })
       }
     })
@@ -1110,6 +1103,21 @@ export default function FontLibrary() {
         },
       }))
     }
+    // Sync italic axis to preview italic flag
+    if (axis === 'ital') {
+      const isItal = Number(value) >= 1
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
+      }))
+    }
+    if (axis === 'slnt') {
+      const isItal = Math.abs(Number(value)) > 0.01
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
+      }))
+    }
   }
 
   const getEffectiveStyle = (fontId: number) => {
@@ -1129,7 +1137,14 @@ export default function FontLibrary() {
     const weight = selectedWeights.length > 0
       ? selectedWeights[0]
       : (axesOut.wght || fontSelection.weight || 400)
-    const italic = isItalic || fontSelection.italic || false
+    // If variable italic axes present, derive italic from axes when meaningful
+    let italic = isItalic || fontSelection.italic || false
+    if (isFamilyVariable) {
+      const italVal = Number(stateAxes['ital'])
+      const slntVal = Number(stateAxes['slnt'])
+      if (isFinite(italVal)) italic = italic || italVal >= 1
+      if (isFinite(slntVal)) italic = italic || Math.abs(slntVal) > 0.01
+    }
 
     const result = { weight, italic, variableAxes: axesOut, otFeatures }
     return result
