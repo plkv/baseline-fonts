@@ -58,7 +58,7 @@
   1. `package.json` - "version" field
   2. `vercel.json` - NEXT_PUBLIC_VERSION env var  
   3. Git tag (optional)
-- Current version: **0.088**
+- Current version: **0.107**
 
 ## Deployment Process (PRODUCTION FOCUSED)
 ```bash
