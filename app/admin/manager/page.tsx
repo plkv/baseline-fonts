@@ -312,6 +312,8 @@ export default function AdminManager() {
             <option value="date">Date</option>
             <option value="alpha">A–Z</option>
           </select>
+          <button className="btn-md" onClick={async()=>{ try{ const res = await fetch('/api/fonts-clean/reparse-languages', { method:'POST' }); const j = await res.json(); toast.success(`Reparsed languages: ${j.updated||0} updated`) } catch(e){ console.error(e); } finally { await load() } }}>Reparse Languages</button>
+          <button className="btn-md" onClick={async()=>{ try{ await fetch('/api/tags/reconcile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ removeUnused: false }) }); toast.success('Tags reconciled') } catch(e){ console.error(e) } }}>Reconcile Tags</button>
           <Dialog open={manageTagsOpen} onOpenChange={(o)=>{ setManageTagsOpen(o); if(!o) setTagEdits([]) }}>
             <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
             <DialogContent>
@@ -452,6 +454,9 @@ export default function AdminManager() {
                 <button onClick={() => toggleExpand(fam.name)} className="menu-tab">
                   <span style={{ fontFamily: `"${alias}", system-ui, sans-serif`, fontWeight: 600 }}>{fam.name}</span>
                   <span style={{ color: 'var(--gray-cont-tert)', marginLeft: 8 }}>• {fam.stylesCount} styles • {new Date(fam.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                  {fam.downloadLink && (
+                    <span className="text-xs ml-2 px-2 py-0.5 rounded" style={{ border: '1px solid var(--gray-brd-prim)', color: 'var(--gray-cont-tert)' }}>Download</span>
+                  )}
                 </button>
                 <div className="flex gap-2">
                   {!ed && <button className="btn-sm" onClick={() => startEdit(fam)}>Edit</button>}
@@ -497,11 +502,26 @@ export default function AdminManager() {
                   <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Files</div>
                   <div className="text-sm" style={{ color: 'var(--gray-cont-prim)' }}>
                     {fam.fonts.map(f => (
-                      <div key={f.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 border-b border-[var(--gray-brd-prim)] py-1">
-                        <span title="Filename">{f.filename}</span>
-                        <span title="Style/Weight">{(f.isVariable ? 'Variable' : (f.style || 'Regular'))} • {f.weight || 400}</span>
+                      <div key={f.id} className="grid grid-cols-1 md:grid-cols-6 gap-2 border-b border-[var(--gray-brd-prim)] py-1 items-center">
+                        <span title="Filename" className="truncate">{f.filename}</span>
+                        <input className="btn-md" defaultValue={f.style || 'Regular'} onBlur={async (e)=>{
+                          const newStyle = e.currentTarget.value.trim()
+                          if (!newStyle || newStyle === (f.style||'Regular')) return
+                          await fetch('/api/fonts-clean/update', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, updates: { style: newStyle } }) })
+                          toast.success('Style name updated')
+                          // update local
+                          setFonts(prev=> prev.map(x=> x.id===f.id ? { ...x, style: newStyle } as any : x))
+                        }} />
+                        <span title="Weight">{f.weight || 400}{(f as any).italicStyle ? ' Italic' : ''}</span>
                         <span title="Version">{(f as any).version || '—'}</span>
                         <span title="License">{(f as any).license || '—'}</span>
+                        <button className="btn-sm" onClick={async()=>{
+                          if (!confirm(`Delete style ${f.style || 'Regular'}?`)) return
+                          await fetch('/api/fonts-clean/delete-style', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ styleId: f.id }) })
+                          toast.success('Style deleted')
+                          // Refresh list
+                          await load()
+                        }}>Delete</button>
                       </div>
                     ))}
                   </div>

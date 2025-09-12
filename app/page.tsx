@@ -85,6 +85,7 @@ export default function FontLibrary() {
   // Font Data State  
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [previewReady, setPreviewReady] = useState<Set<number>>(new Set())
   const [customText, setCustomText] = useState("")
   const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
   const [selectedPreset, setSelectedPreset] = useState("Names")
@@ -99,7 +100,7 @@ export default function FontLibrary() {
   const [textSize, setTextSize] = useState([72])
   const [lineHeight, setLineHeight] = useState([120])
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [sortBy, setSortBy] = useState("Date")
+  const [sortBy, setSortBy] = useState("Random")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
   
@@ -234,6 +235,7 @@ export default function FontLibrary() {
             }).filter(Boolean)
 
             setFonts(catalogFonts as FontData[])
+            setPreviewReady(new Set())
             console.log(`📝 Loaded ${catalogFonts.length} families from /api/families`)
             handled = true
           }
@@ -376,6 +378,7 @@ export default function FontLibrary() {
             }
           }).filter(Boolean) // Remove null entries
           setFonts(catalogFonts)
+          setPreviewReady(new Set())
           console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
           
           // Load CSS for all fonts
@@ -405,7 +408,7 @@ export default function FontLibrary() {
       if (font._familyFonts && font._familyFonts.length > 1) {
         // For families with multiple files, create @font-face for each file
         return font._familyFonts.map((fontFile: any) => {
-          const isItalic = fontFile.style?.toLowerCase().includes('italic') || fontFile.style?.toLowerCase().includes('oblique')
+          const isItalic = (fontFile.style || '').toLowerCase().includes('italic') || (fontFile.style || '').toLowerCase().includes('oblique')
           const fontWeight = fontFile.weight || 400
           
           return `
@@ -419,7 +422,7 @@ export default function FontLibrary() {
         }).join('\n')
       } else {
         // Single font file
-        const isItalic = font.style?.includes('italic') || font.style?.includes('oblique')
+        const isItalic = (font.style || '').toLowerCase().includes('italic') || (font.style || '').toLowerCase().includes('oblique')
         return `
           @font-face {
             font-family: "${font.family}";
@@ -666,6 +669,9 @@ export default function FontLibrary() {
     })
 
     // Apply sorting based on sortBy and sortDirection
+    if (sortBy === "Random") {
+      return Math.random() - 0.5
+    }
     return filtered.sort((a, b) => {
       let result = 0
       
@@ -677,9 +683,11 @@ export default function FontLibrary() {
           ignorePunctuation: false 
         })
       } else {
-        // Date sorting - use family representative font's upload date
-        const aDate = a._familyFonts?.[0]?.uploadedAt ? new Date(a._familyFonts[0].uploadedAt).getTime() : 0
-        const bDate = b._familyFonts?.[0]?.uploadedAt ? new Date(b._familyFonts[0].uploadedAt).getTime() : 0
+        // Date sorting - use newest date across family
+        const ad = Array.isArray(a._familyFonts) ? Math.max(...a._familyFonts.map((f:any)=> f.uploadedAt ? new Date(f.uploadedAt).getTime() : 0)) : 0
+        const bd = Array.isArray(b._familyFonts) ? Math.max(...b._familyFonts.map((f:any)=> f.uploadedAt ? new Date(f.uploadedAt).getTime() : 0)) : 0
+        const aDate = isFinite(ad) ? ad : 0
+        const bDate = isFinite(bd) ? bd : 0
         result = aDate - bDate // Default ascending (oldest first)
       }
       
@@ -1172,6 +1180,25 @@ export default function FontLibrary() {
     loadFonts()
   }, [loadFonts])
 
+  // Detect when each card's font family is ready in the browser
+  useEffect(() => {
+    if (typeof document === 'undefined' || !('fonts' in document)) return
+    const controller = new AbortController()
+    const current = new Set<number>()
+    const run = async () => {
+      for (const f of fonts) {
+        try {
+          // Attempt to load a sample string with this font family alias
+          await (document as any).fonts.load(`16px ${f.fontFamily.split(',')[0]}`)
+          current.add(f.id)
+          setPreviewReady(prev => new Set(prev).add(f.id))
+        } catch {}
+      }
+    }
+    run()
+    return () => { controller.abort() }
+  }, [fonts])
+
   // Client-side font load verification: sample top families and report
   useEffect(() => {
     const verify = async () => {
@@ -1227,35 +1254,6 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
-                <h3 className="text-sidebar-title mb-3">Text presets</h3>
-                <div className="flex flex-wrap gap-2">
-                  {textPresets.map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setSelectedPreset(preset)
-                        // Set appropriate text size for preset
-                        if (preset === "Paragraph") {
-                          setTextSize([20])
-                        } else {
-                          setTextSize([72])
-                        }
-                        // For "Names" preset, clear customText so each font shows its individual name
-                        if (preset === "Names") {
-                          setCustomText("")
-                        } else {
-                          setCustomText(getPresetContent(preset, fonts[0].name))
-                        }
-                      }}
-                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 <div className="segmented-control">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
@@ -1289,6 +1287,25 @@ export default function FontLibrary() {
                         Ag
                       </span>
                       <span>{mode}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Text presets</h3>
+                <div className="flex flex-wrap gap-2">
+                  {textPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setSelectedPreset(preset)
+                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
+                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
+                      }}
+                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                    >
+                      {preset}
                     </button>
                   ))}
                 </div>
@@ -1465,10 +1482,10 @@ export default function FontLibrary() {
           >
             <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
             <div className="flex gap-2">
-              <button
-                onClick={() => handleSort("Date")}
-                className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}
-              >
+              <button onClick={() => handleSort("Random")} className={`btn-sm ${sortBy === "Random" ? "active" : ""}`}>
+                Random
+              </button>
+              <button onClick={() => handleSort("Date")} className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}>
                 {sortBy === "Date" && sortDirection === "desc" ? "New" : 
                  sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
               </button>
@@ -1535,60 +1552,35 @@ export default function FontLibrary() {
                           >
                             <h2 className="text-font-name">{font.name}</h2>
                           </div>
-                          <div
-                            className="dropdown-wrap"
-                            data-disabled={font._availableStyles && font._availableStyles.length <= 1 ? "true" : undefined}
-                            onClick={() => {
-                              const isDisabled = !!(font._availableStyles && font._availableStyles.length <= 1)
-                              if (isDisabled) return
-                              const el = selectRefs.current[font.id]
-                              if (!el) return
-                              try {
-                                // Prefer native picker when available
-                                // @ts-ignore
-                                if (typeof el.showPicker === 'function') {
-                                  // @ts-ignore
-                                  el.showPicker()
-                                  return
-                                }
-                              } catch {}
-                              el.focus()
-                              // Trigger click in a tick to avoid interfering with native behavior
-                              setTimeout(() => el.click(), 0)
-                            }}
-                          >
-                            <select
-                              ref={(el) => { selectRefs.current[font.id] = el }}
-                              value={`${fontSelection.weight}-${fontSelection.italic}-${fontSelection.cssFamily || ''}`}
-                              onChange={(e) => {
-                                const [weight, italic, cssFamily] = e.target.value.split("-")
-                                console.log(`Dropdown change for font ${font.id} (${font.name}): ${weight}-${italic}`);
-                                updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
-                                // Sync variable axis (wght) to reflect dropdown selection
-                                setFontVariableAxes(prev => ({
-                                  ...prev,
-                                  [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) }
-                                }))
-                              }}
-                              disabled={font._availableStyles && font._availableStyles.length <= 1}
-                              className={`dropdown-select text-sidebar-title appearance-none ${
-                                font._availableStyles && font._availableStyles.length <= 1 ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
-                            >
-                              {font._availableStyles?.map((style, index) => (
-                                <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}-${style.isItalic}-${style.cssFamily || ''}`}>
-                                  {style.styleName}
-                                </option>
-                              ))}
-                            </select>
-                            {!(font._availableStyles && font._availableStyles.length <= 1) && (
+                          {font._availableStyles && font._availableStyles.length > 1 ? (
+                            <div className="dropdown-wrap" onClick={() => { const el = selectRefs.current[font.id]; if (!el) return; try { if (typeof (el as any).showPicker === 'function') (el as any).showPicker() } catch {}; el.focus(); setTimeout(() => el.click(), 0) }}>
+                              <select
+                                ref={(el) => { selectRefs.current[font.id] = el }}
+                                value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
+                                onChange={(e) => {
+                                  const [weight, italic, cssFamily] = e.target.value.split("|")
+                                  updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
+                                  setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
+                                }}
+                                className={`dropdown-select text-sidebar-title appearance-none`}
+                              >
+                                {font._availableStyles?.map((style, index) => (
+                                  <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
+                                    {style.styleName}
+                                  </option>
+                                ))}
+                              </select>
                               <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px" }}>expand_more</span>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="dropdown-wrap" aria-disabled>
+                              <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)', padding: '6px 10px' }}>Single Style</div>
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text-author">
-                            {font.type}, {font.styles} style{font.styles > 1 ? "s" : ""}
+                            {font.type}, {font.type === 'Variable' ? (font.availableWeights?.length || 1) : font.styles} style{(font.type === 'Variable' ? (font.availableWeights?.length || 1) : font.styles) > 1 ? "s" : ""}
                           </span>
                           <span className="text-author">by {font.author}</span>
                         </div>
@@ -1645,6 +1637,10 @@ export default function FontLibrary() {
                       onToggleExpand={() => toggleCardExpansion(font.id)}
                       fontId={font.id}
                     />
+
+                    {!previewReady.has(font.id) && (
+                      <div className="mt-2 text-sm" style={{ color: 'var(--gray-cont-tert)' }}>••••••••••••</div>
+                    )}
 
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
@@ -1713,10 +1709,22 @@ export default function FontLibrary() {
                                       <span className="text-sidebar-title flex-shrink-0 w-16">{axis.name}</span>
                                       <Slider
                                         value={[getInitialValue()]}
-                                        onValueChange={(value) => updateVariableAxis(font.id, axis.tag, value[0])}
+                                        onValueChange={(value) => {
+                                          let v = value[0]
+                                          if (axis.tag === 'slnt') {
+                                            // avoid sticky min edge on drag
+                                            if (Math.abs(v - axis.min) < 0.01) v = axis.min + 0.01
+                                          }
+                                          if (axis.tag === 'ital') {
+                                            // snap near 0 or 1 for stability
+                                            if (v < 0.1) v = 0
+                                            else if (v > 0.9) v = 1
+                                          }
+                                          updateVariableAxis(font.id, axis.tag, v)
+                                        }}
                                         min={axis.min}
                                         max={axis.max}
-                                        step={axis.tag === "wght" ? 1 : 0.1}
+                                        step={axis.tag === "wght" ? 1 : 0.5}
                                         className="flex-1"
                                       />
                                       <span
@@ -1753,7 +1761,7 @@ export default function FontLibrary() {
             >
               <div className="flex justify-between items-center w-full">
                 <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-                  © Baseline, 2025
+                  © typedump, 2025–Future
                 </span>
                 <span className="text-sm" style={{ color: "var(--gray-cont-tert)", textAlign: "right" }}>
                   Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
