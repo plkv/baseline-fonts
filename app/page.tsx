@@ -86,6 +86,11 @@ export default function FontLibrary() {
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [previewReady, setPreviewReady] = useState<Set<number>>(new Set())
+
+  const getPrimaryFamily = (ff: string) => {
+    const first = (ff || '').split(',')[0]
+    return first.replace(/^\"+|\"+$/g, '').trim()
+  }
   const [customText, setCustomText] = useState("")
   const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
   const [selectedPreset, setSelectedPreset] = useState("Names")
@@ -101,6 +106,18 @@ export default function FontLibrary() {
   const [lineHeight, setLineHeight] = useState([120])
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [sortBy, setSortBy] = useState("Random")
+  const randomSeedRef = useRef<number>(() => {
+    // stable seed per session
+    return (Date.now() % 100000) / 100000
+  }) as React.MutableRefObject<number>
+  if (typeof randomSeedRef.current !== 'number') randomSeedRef.current = (Date.now() % 100000) / 100000
+
+  const seeded = (id: number) => {
+    const seed = randomSeedRef.current || 0.123456
+    // simple deterministic hash on id + seed
+    const x = Math.sin(id * (seed * 1000 + 1)) * 10000
+    return x - Math.floor(x)
+  }
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
   
@@ -670,7 +687,7 @@ export default function FontLibrary() {
 
     // Apply sorting based on sortBy and sortDirection
     if (sortBy === "Random") {
-      return filtered.sort(() => Math.random() - 0.5)
+      return filtered.sort((a, b) => seeded(a.id) - seeded(b.id))
     }
     return filtered.sort((a, b) => {
       let result = 0
@@ -1182,22 +1199,20 @@ export default function FontLibrary() {
 
   // Detect when each card's font family is ready in the browser
   useEffect(() => {
-    if (typeof document === 'undefined' || !('fonts' in document)) return
-    const controller = new AbortController()
-    const current = new Set<number>()
-    const run = async () => {
+    if (typeof document === 'undefined' || !(document as any).fonts) return
+    let cancelled = false
+    ;(async () => {
       for (const f of fonts) {
+        if (previewReady.has(f.id)) continue
         try {
-          // Attempt to load a sample string with this font family alias
-          await (document as any).fonts.load(`16px ${f.fontFamily.split(',')[0]}`)
-          current.add(f.id)
-          setPreviewReady(prev => new Set(prev).add(f.id))
+          const fam = getPrimaryFamily(f.fontFamily)
+          await (document as any).fonts.load(`16px ${fam}`)
+          if (!cancelled) setPreviewReady(prev => new Set(prev).add(f.id))
         } catch {}
       }
-    }
-    run()
-    return () => { controller.abort() }
-  }, [fonts])
+    })()
+    return () => { cancelled = true }
+  }, [fonts, previewReady])
 
   // Client-side font load verification: sample top families and report
   useEffect(() => {
@@ -1609,7 +1624,8 @@ export default function FontLibrary() {
                       })()}
                       </div>
                     </div>
-                    <ControlledPreviewInput
+                    <div className="relative">
+                      <ControlledPreviewInput
                       value={getPreviewContent(font.name)}
                       onChangeText={(val, pos) => {
                         // Only set global customText when user actually changes text
@@ -1631,16 +1647,19 @@ export default function FontLibrary() {
                         fontWeight: effectiveStyle.weight,
                         fontStyle: effectiveStyle.italic ? "italic" : "normal",
                         color: "var(--gray-cont-prim)",
+                        opacity: previewReady.has(font.id) ? 1 : 0,
+                        transition: 'opacity 180ms ease',
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
                       onToggleExpand={() => toggleCardExpansion(font.id)}
                       fontId={font.id}
-                    />
+                      />
 
-                    {!previewReady.has(font.id) && (
-                      <div className="mt-2 text-sm" style={{ color: 'var(--gray-cont-tert)' }}>••••••••••••</div>
-                    )}
+                      {!previewReady.has(font.id) && (
+                        <div className="absolute left-0 top-0 pointer-events-none text-sm" style={{ color: 'var(--gray-cont-tert)' }}>••••••••••••</div>
+                      )}
+                    </div>
 
                     {expandedCards.has(font.id) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
