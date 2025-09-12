@@ -99,7 +99,7 @@ export default function AboutPage() {
           >
             <div className="flex justify-between items-center w-full">
               <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
-                © Baseline, 2025
+                © typedump, 2025–Future
               </span>
               <span className="text-sm" style={{ color: "var(--gray-cont-tert)", textAlign: "right" }}>
                 Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
@@ -111,4 +111,3 @@ export default function AboutPage() {
     </div>
   )
 }
-

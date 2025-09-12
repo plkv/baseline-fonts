@@ -1,4 +1,4 @@
-# Baseline Font Collection
+# typedump Font Collection
 
 Font management system with admin panel at /admin
 

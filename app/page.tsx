@@ -255,6 +255,7 @@ export default function FontLibrary() {
                   downloadLink: v.downloadLink,
                   variableAxes: v.variableAxes,
                   openTypeFeatures: v.openTypeFeatures,
+                  uploadedAt: v.uploadedAt || v.createdAt || null,
                 })),
                 _availableStyles: availableStylesWithWeights,
                 collection: family.collection || 'Text',
@@ -625,14 +626,14 @@ export default function FontLibrary() {
     }))
   }
 
-  const handleSort = (sortType: "Date" | "Alphabetical") => {
+  const handleSort = (sortType: "Random" | "Date" | "Alphabetical") => {
     if (sortBy === sortType) {
       // Toggle direction if same sort type
       setSortDirection(sortDirection === "asc" ? "desc" : "asc")
     } else {
       // Set new sort type with default direction
       setSortBy(sortType)
-      setSortDirection(sortType === "Date" ? "desc" : "asc") // Date defaults to desc (New), Alphabetical to asc (A-Z)
+      setSortDirection(sortType === "Date" ? "desc" : sortType === "Alphabetical" ? "asc" : "desc") // Date: desc, Alpha: asc, Random: desc
     }
   }
 
@@ -777,9 +778,10 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onClick={() => toggleCardExpansion(fontId)}
+        onClick={() => { if (!expandedCards.has(fontId)) toggleCardExpansion(fontId) }}
         onFocus={() => {
           setFocusedFontId(fontId)
+          if (!expandedCards.has(fontId)) toggleCardExpansion(fontId)
         }}
         className={className}
         style={style}
@@ -1282,6 +1284,25 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
+                <h3 className="text-sidebar-title mb-3">Text presets</h3>
+                <div className="flex flex-wrap gap-2">
+                  {textPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setSelectedPreset(preset)
+                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
+                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
+                      }}
+                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <div className="segmented-control">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
@@ -1320,24 +1341,7 @@ export default function FontLibrary() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-sidebar-title mb-3">Text presets</h3>
-                <div className="flex flex-wrap gap-2">
-                  {textPresets.map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setSelectedPreset(preset)
-                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
-                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
-                      }}
-                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              
 
               <div>
                 <h3 className="text-sidebar-title mb-3">Font categories</h3>
@@ -1529,8 +1533,24 @@ export default function FontLibrary() {
 
           <div className="min-h-[100vh]">
             {isLoadingFonts ? (
-              <div className="p-6 text-center">
-                <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
+              <div className="p-6">
+                <style
+                  dangerouslySetInnerHTML={{ __html: `
+                  @keyframes shimmer { 0% { background-position: -468px 0 } 100% { background-position: 468px 0 } }
+                  .skeleton { position: relative; overflow: hidden; background-color: var(--gray-surface-sec); border: 1px solid var(--gray-brd-prim); border-radius: 8px; }
+                  .skeleton::after { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.06), rgba(255,255,255,0)); background-size: 936px 100%; animation: shimmer 1.2s infinite; }
+                  .skeleton-line { height: 20px; background: var(--gray-surface-tert); border-radius: 6px; margin-bottom: 10px; }
+                  ` }}
+                />
+                <div className="space-y-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="skeleton p-4">
+                      <div className="skeleton-line" style={{ width: '40%' }}></div>
+                      <div className="skeleton-line" style={{ width: '85%', height: '48px', marginTop: '12px' }}></div>
+                      <div className="skeleton-line" style={{ width: '60%', height: '12px', marginTop: '12px' }}></div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : fonts.length === 0 ? (
               <div className="p-6 text-center">
@@ -1608,7 +1628,13 @@ export default function FontLibrary() {
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text-author">
-                            {font.type}, {font.type === 'Variable' ? (font.availableWeights?.length || 1) : font.styles} style{(font.type === 'Variable' ? (font.availableWeights?.length || 1) : font.styles) > 1 ? "s" : ""}
+                            {(() => {
+                              if (font.type === 'Variable') {
+                                const count = Math.max((font.availableWeights?.length || 0) * (font.hasItalic ? 2 : 1), 2)
+                                return `Variable, ${count} style${count !== 1 ? 's' : ''}`
+                              }
+                              return `Static, ${font.styles} style${font.styles !== 1 ? 's' : ''}`
+                            })()}
                           </span>
                           <span className="text-author">by {font.author}</span>
                         </div>

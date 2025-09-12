@@ -1,7 +1,7 @@
-# Claude Code Memory File - Baseline Font Catalog
+# Claude Code Memory File - typedump Font Catalog
 
 ## Project Overview
-- **Project Name**: Baseline Font Catalog
+- **Project Name**: typedump Font Catalog
 - **Repository**: https://github.com/plkv/baseline-fonts.git  
 - **Current Version**: 0.087 (main branch - production ready)
 - **Status**: ✅ Production stable with all critical UI issues fixed
