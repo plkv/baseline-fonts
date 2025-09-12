@@ -299,9 +299,10 @@ export default function AdminManager() {
   return (
     <main className="p-6 space-y-6">
       <Toaster richColors position="top-right" />
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Admin — Font Manager</h1>
-        <div className="flex gap-2 items-center">
+      <header className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold">Admin — Font Manager</h1>
+          <div className="flex gap-2 items-center">
           <input placeholder="Search family" value={query} onChange={e => setQuery(e.target.value)} className="btn-md" />
           <select className="btn-md" value={collectionFilter} onChange={e => setCollectionFilter(e.target.value as any)}>
             <option value="all">All</option>
@@ -313,8 +314,6 @@ export default function AdminManager() {
             <option value="date">Date</option>
             <option value="alpha">A–Z</option>
           </select>
-          <button className="btn-md" onClick={async()=>{ try{ const res = await fetch('/api/fonts-clean/reparse-languages', { method:'POST' }); const j = await res.json(); toast.success(`Reparsed languages: ${j.updated||0} updated`) } catch(e){ console.error(e); } finally { await load() } }}>Reparse Languages</button>
-          <button className="btn-md" onClick={async()=>{ try{ await fetch('/api/tags/reconcile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ removeUnused: false }) }); toast.success('Tags reconciled') } catch(e){ console.error(e) } }}>Reconcile Tags</button>
           <Dialog open={manageTagsOpen} onOpenChange={(o)=>{ setManageTagsOpen(o); if(!o) setTagEdits([]) }}>
             <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
             <DialogContent>
@@ -399,6 +398,12 @@ export default function AdminManager() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button className="btn-md" onClick={async()=>{ try{ const res = await fetch('/api/fonts-clean/reparse-languages', { method:'POST' }); const j = await res.json(); toast.success(`Reparsed languages: ${j.updated||0} updated`) } catch(e){ console.error(e); } finally { await load() } }}>Reparse Languages</button>
+          <button className="btn-md" onClick={async()=>{ try{ const res = await fetch('/api/fonts-clean/reparse-stylistic-names', { method:'POST' }); const j = await res.json(); toast.success(`Reparsed features: ${j?.stats?.updated||0} updated`) } catch(e){ console.error(e); } finally { await load() } }}>Reparse Features</button>
+          <button className="btn-md" onClick={async()=>{ try{ await fetch('/api/tags/reconcile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ removeUnused: false }) }); toast.success('Tags reconciled') } catch(e){ console.error(e) } }}>Reconcile Tags</button>
         </div>
       </header>
 

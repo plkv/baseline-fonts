@@ -50,6 +50,7 @@ export interface FontMetadata {
   }>
   openTypeFeatures: string[]
   openTypeFeatureTags?: Array<{ tag: string; title: string }>
+  openTypeFeatureTags?: Array<{ tag: string; title: string }>
   version?: string
   copyright?: string
   license?: string
@@ -241,7 +242,7 @@ class FontStorageClean {
     'family' | 'foundry' | 'downloadLink' | 'languages' | 'category' | 'weight' | 'styleTags' | 'collection' |
     'editableCreationDate' | 'editableVersion' | 'editableLicenseType' | 'isDefaultStyle' | 'familyId' |
     'version' | 'copyright' | 'license' | 'creationDate' | 'modificationDate' | 'description' | 'openTypeFeatures' |
-    'style' | 'blobUrl'
+    'openTypeFeatureTags' | 'style' | 'blobUrl'
   >>): Promise<boolean> {
     const existing = await this.getFontById(id)
     if (!existing) return false

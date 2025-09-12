@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           })
         }
         
-        if (hasUpdates) {
+        if (hasUpdates || (parsedData as any).openTypeFeatureTags) {
           console.log(`  ✨ Found improvements for ${font.family}:`)
           changes.forEach(change => {
             if (change.type === 'stylistic_improvement') {
@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
           
           // Update the font in the database
           const success = await fontStorageClean.updateFont(font.id, {
-            openTypeFeatures: newFeatures
+            openTypeFeatures: newFeatures,
+            // Persist structured tags if available
+            // @ts-ignore
+            openTypeFeatureTags: (parsedData as any).openTypeFeatureTags
           })
           
           if (success) {
