@@ -1536,7 +1536,7 @@ export default function FontLibrary() {
                             <h2 className="text-font-name">{font.name}</h2>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="dropdown-wrap" onClick={() => { const el = selectRefs.current[font.id]; if (!el) return; try { if (typeof (el as any).showPicker === 'function') (el as any).showPicker() } catch {}; el.focus(); setTimeout(() => el.click(), 0) }}>
+                            <div className="dropdown-wrap">
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
                                 value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
@@ -1553,7 +1553,7 @@ export default function FontLibrary() {
                                   </option>
                                 ))}
                               </select>
-                              <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px" }}>expand_more</span>
+                              <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
                             </div>
                           ) : (
                             <div className="dropdown-wrap" aria-disabled>
