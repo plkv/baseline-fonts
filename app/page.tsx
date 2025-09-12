@@ -670,7 +670,7 @@ export default function FontLibrary() {
 
     // Apply sorting based on sortBy and sortDirection
     if (sortBy === "Random") {
-      return Math.random() - 0.5
+      return filtered.sort(() => Math.random() - 0.5)
     }
     return filtered.sort((a, b) => {
       let result = 0
