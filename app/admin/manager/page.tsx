@@ -259,7 +259,8 @@ export default function AdminManager() {
   }
 
   const onUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
+    const inputEl = e.currentTarget
+    const files = inputEl?.files
     if (!files || files.length === 0) return
     setUploading(true)
     try {
@@ -273,7 +274,7 @@ export default function AdminManager() {
       await load()
     } finally {
       setUploading(false)
-      e.currentTarget.value = ''
+      try { if (inputEl) inputEl.value = '' } catch {}
     }
   }
 
@@ -553,10 +554,10 @@ export default function AdminManager() {
                   <div className="flex gap-2 flex-wrap items-center">
                     <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Category</div>
                     {categoryVocab[(editing[fam.name]?.collection ?? fam.collection)]?.map(t => (
-                      <button key={t} className={`btn-sm ${ ((editing[fam.name] as any)?.category ?? (fam as any).category ?? []).map((x:string)=>x.toLowerCase()).includes(t.toLowerCase()) ? 'active' : '' }`} onClick={()=>{
-                        const base = (((editing[fam.name] as any)?.category ?? (fam as any).category) || []) as string[]
-                        const has = base.map(x=>x.toLowerCase()).includes(t.toLowerCase())
-                        const next = has ? base.filter(x=>x.toLowerCase()!==t.toLowerCase()) : [...base, t]
+                      <button key={t} className={`btn-sm ${ (((editing[fam.name] as any)?.category ?? (fam as any).category ?? []) as string[]).map((x:string)=>String(x||'').toLowerCase()).includes(String(t||'').toLowerCase()) ? 'active' : '' }`} onClick={()=>{
+                        const base = ((((editing[fam.name] as any)?.category ?? (fam as any).category) || []) as string[]).map(x=>String(x||''))
+                        const has = base.map(x=>x.toLowerCase()).includes(String(t||'').toLowerCase())
+                        const next = has ? base.filter(x=>x.toLowerCase()!==String(t||'').toLowerCase()) : [...base, t]
                         if (!editing[fam.name]) startEdit(fam)
                         setEditing(p=>({ ...p, [fam.name]: { ...(p[fam.name]||{ collection: fam.collection, styleTags: fam.styleTags, languages: fam.languages }), category: next }}))
                       }}>{t}</button>
@@ -567,8 +568,8 @@ export default function AdminManager() {
                   <div className="flex gap-2 flex-wrap items-center">
                     <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Appearance</div>
                     {appearanceVocab[(editing[fam.name]?.collection ?? fam.collection)]?.map(t => (
-                      <button key={t} className={`btn-sm ${ (editing[fam.name]?.styleTags ?? fam.styleTags).map(x=>x.toLowerCase()).includes(t.toLowerCase()) ? 'active' : '' }`} onClick={()=>{
-                        const base = editing[fam.name]?.styleTags ?? fam.styleTags
+                      <button key={t} className={`btn-sm ${ (editing[fam.name]?.styleTags ?? fam.styleTags).map(x=>String(x||'').toLowerCase()).includes(String(t||'').toLowerCase()) ? 'active' : '' }`} onClick={()=>{
+                        const base = (editing[fam.name]?.styleTags ?? fam.styleTags).map(x=>String(x||''))
                         const normalized = normalizeTag(t)
                         const has = base.map(x=>x.toLowerCase()).includes(normalized.toLowerCase())
                         const next = has ? base.filter(x=>x.toLowerCase()!==normalized.toLowerCase()) : [...base, normalized]

@@ -497,7 +497,7 @@ export default function FontLibrary() {
   // Helper function to process stylistic features
   const processStyleFeature = (feature: string, allFeatures: Map<string, string>) => {
     // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
-    const f = feature.toLowerCase()
+    const f = (feature || '').toLowerCase()
     if (f.includes('stylistic set') || f.includes('stylistic alternates') || /ss\d+/.test(f)) {
       // Convert readable names to OpenType tags while preserving descriptive names
       let tag = ''
@@ -516,7 +516,7 @@ export default function FontLibrary() {
       else if (f.includes('stylistic set 10')) tag = 'ss10'
       else if (/ss\d+/.test(f)) {
         const match = f.match(/ss\d+/i)
-        if (match) tag = match[1].toLowerCase()
+        if (match) tag = (match[0] || '').toLowerCase()
       }
       
       if (tag) {
@@ -552,11 +552,11 @@ export default function FontLibrary() {
     
     const allFeatures = new Map<string, string>()
     font._familyFonts.forEach(familyFont => {
-      if (familyFont.openTypeFeatures) {
-        familyFont.openTypeFeatures.forEach((feature: string) => {
-          const lowerFeature = feature.toLowerCase()
+      if (Array.isArray((familyFont as any).openTypeFeatures)) {
+        (familyFont.openTypeFeatures as any[]).forEach((feature: any) => {
+          const lowerFeature = typeof feature === 'string' ? feature.toLowerCase() : ''
           // Skip stylistic features (handled separately)
-          if (!lowerFeature.includes('stylistic')) {
+          if (lowerFeature && !lowerFeature.includes('stylistic')) {
             const mapping = featureMapping[lowerFeature]
             if (mapping) {
               allFeatures.set(mapping.tag, mapping.title)
