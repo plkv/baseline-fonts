@@ -154,8 +154,21 @@ export default function FontLibrary() {
           const fd = await respFamilies.json()
           console.log('📋 Families API Response:', fd)
           if (fd.success && Array.isArray(fd.families)) {
-            // CSS for fonts is provided by /api/font-css via a <link> in layout.
-            // Do not attempt to import server-only CSS builders in the client.
+            // Inject CSS directly from normalized families
+            try {
+              const { buildFontCSS } = await import('@/lib/font-css')
+              const css = buildFontCSS(fd.families)
+              const existing = document.querySelector('style[data-font-css]')
+              if (existing) existing.remove()
+              if (css) {
+                const el = document.createElement('style')
+                el.setAttribute('data-font-css', 'true')
+                el.textContent = css
+                document.head.appendChild(el)
+              }
+            } catch (e) {
+              console.warn('Failed to build font CSS from families:', e)
+            }
             const catalogFonts: FontData[] = fd.families.map((family: any, index: number) => {
               const familyFonts = family.variants || []
               const representativeFont =
