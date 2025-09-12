@@ -470,8 +470,17 @@ export default function FontLibrary() {
   const getStyleAlternates = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
     if (!font) return []
-    
-    // Collect features from multiple sources and normalize
+    // Prefer server-parsed structured tags if available
+    const tagList: Array<{ tag: string; title: string }> = []
+    const pushTags = (ff: any) => {
+      const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+    }
+    pushTags(font)
+    font._familyFonts?.forEach(pushTags)
+    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+
+    // Fallback: parse from strings heuristically
     const allFeatures = new Map<string, string>()
     const pushFeature = (feat: any) => {
       let raw = ''
@@ -482,15 +491,12 @@ export default function FontLibrary() {
     }
     if (Array.isArray((font as any).openTypeFeatures)) (font as any).openTypeFeatures.forEach(pushFeature)
     if (Array.isArray((font as any).features)) (font as any).features.forEach(pushFeature)
-    
-    // Check family fonts if available
     if (font._familyFonts) {
       font._familyFonts.forEach(familyFont => {
         if (Array.isArray((familyFont as any).openTypeFeatures)) (familyFont as any).openTypeFeatures.forEach(pushFeature)
         if (Array.isArray((familyFont as any).features)) (familyFont as any).features.forEach(pushFeature)
       })
     }
-    
     return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
   }
   
@@ -550,12 +556,20 @@ export default function FontLibrary() {
       'oldstyle figures': { tag: 'onum', title: 'Oldstyle Figures' }
     }
     
+    // Prefer structured tags first
+    const tagList: Array<{ tag: string; title: string }> = []
+    const pushTags = (ff: any) => {
+      const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (!/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+    }
+    font._familyFonts?.forEach(pushTags)
+    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+
     const allFeatures = new Map<string, string>()
     font._familyFonts.forEach(familyFont => {
       if (Array.isArray((familyFont as any).openTypeFeatures)) {
         (familyFont.openTypeFeatures as any[]).forEach((feature: any) => {
           const lowerFeature = typeof feature === 'string' ? feature.toLowerCase() : ''
-          // Skip stylistic features (handled separately)
           if (lowerFeature && !lowerFeature.includes('stylistic')) {
             const mapping = featureMapping[lowerFeature]
             if (mapping) {
@@ -565,7 +579,6 @@ export default function FontLibrary() {
         })
       }
     })
-    
     return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
   }
 

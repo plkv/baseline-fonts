@@ -49,6 +49,7 @@ export interface FontMetadata {
     default: number
   }>
   openTypeFeatures: string[]
+  openTypeFeatureTags?: Array<{ tag: string; title: string }>
   version?: string
   copyright?: string
   license?: string
@@ -145,6 +146,7 @@ class FontStorageClean {
           availableStyles: parsedData.availableStyles || [parsedData.style || 'Regular'],
           variableAxes: parsedData.variableAxes,
           openTypeFeatures: parsedData.openTypeFeatures || ['Standard Ligatures', 'Kerning'],
+          openTypeFeatureTags: (parsedData as any).openTypeFeatureTags,
           // Comprehensive metadata extraction
           version: parsedData.version,
           copyright: parsedData.copyright,

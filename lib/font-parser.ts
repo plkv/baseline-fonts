@@ -27,6 +27,7 @@ export interface FontMetadata {
     default: number
   }>
   openTypeFeatures: string[]
+  openTypeFeatureTags?: Array<{ tag: string; title: string }>
   languages: string[]
   foundry?: string
   // Publishing status
@@ -161,6 +162,13 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     
     // Extract custom stylistic set names from the name table
     const customStylisticNames: { [key: string]: string } = {}
+    // Also try reading GSUB FeatureParams UINameID for ss01–ss20
+    try {
+      const ssNames = extractStylisticSetNamesFromGSUB(buffer)
+      Object.assign(customStylisticNames, ssNames)
+    } catch (e) {
+      console.warn('GSUB FeatureParams parse failed (non-fatal):', e)
+    }
     if (font.names) {
       // Stylistic set names are typically stored in name IDs 256+ (ss01 = 256, ss02 = 257, etc.)
       // Some fonts also use different ranges, so we'll check various approaches
@@ -539,6 +547,11 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       }
     }
 
+    // Ensure stylistic set titles discovered via GSUB are present
+    Object.entries(customStylisticNames).forEach(([tag, title]) => {
+      if (title && !openTypeFeatures.includes(title)) openTypeFeatures.push(title)
+    })
+
     // Enhanced language support detection
     const languages: string[] = ['Latin'] // Default
     if (font.tables?.os2) {
@@ -730,6 +743,7 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       availableWeights: availableWeights.filter(w => typeof w === 'number' && !isNaN(w)),
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
       openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
+      openTypeFeatureTags: Object.entries(customStylisticNames).map(([tag, title]) => ({ tag, title })) ,
       languages: languages.filter(l => typeof l === 'string'),
       foundry: String(foundry || 'Unknown'),
       published: true, // New fonts are published by default
@@ -810,4 +824,80 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error'
     throw new Error(`Font parsing failed: ${errorMessage}. The file might be corrupted or use an unsupported font format variant.`)
   }
+}
+
+// --- Internal: GSUB + name parsing for Stylistic Set UI names ---
+function extractStylisticSetNamesFromGSUB(buffer: ArrayBuffer): Record<string, string> {
+  const dv = new DataView(buffer)
+  const tagAt = (off: number) => String.fromCharCode(dv.getUint8(off), dv.getUint8(off+1), dv.getUint8(off+2), dv.getUint8(off+3))
+  // SFNT header
+  const numTables = dv.getUint16(4)
+  let gsubOff = 0
+  let nameOff = 0
+  for (let i = 0; i < numTables; i++) {
+    const rec = 12 + i * 16
+    const tag = tagAt(rec)
+    const offset = dv.getUint32(rec + 8)
+    if (tag === 'GSUB') gsubOff = offset
+    if (tag === 'name') nameOff = offset
+  }
+  if (!gsubOff || !nameOff) return {}
+  const readName = buildNameReader(dv, nameOff)
+  const res: Record<string,string> = {}
+  // GSUB header: Version(4), ScriptList(2), FeatureList(2), LookupList(2)
+  const featureListOffset = dv.getUint16(gsubOff + 6)
+  if (!featureListOffset) return {}
+  const flOff = gsubOff + featureListOffset
+  const featureCount = dv.getUint16(flOff)
+  let p = flOff + 2
+  for (let i = 0; i < featureCount; i++) {
+    const tag = tagAt(p)
+    const featOff = dv.getUint16(p + 4)
+    const ftBase = gsubOff + featOff
+    const featureParams = dv.getUint16(ftBase)
+    if (/^ss\d\d$/.test(tag) && featureParams) {
+      const params = ftBase + featureParams
+      const version = dv.getUint16(params)
+      const uiNameID = dv.getUint16(params + 2)
+      if (uiNameID) {
+        const label = readName(uiNameID)
+        if (label) res[tag] = label
+      }
+    }
+    p += 6
+  }
+  return res
+}
+
+function buildNameReader(dv: DataView, nameOff: number) {
+  const format = dv.getUint16(nameOff)
+  const count = dv.getUint16(nameOff + 2)
+  const stringOffset = dv.getUint16(nameOff + 4)
+  const records = nameOff + 6
+  // Prefer platform 3 entries, but accept first seen
+  const map = new Map<number, string>()
+  const decodeUTF16BE = (bytes: Uint8Array) => {
+    let s = ''
+    for (let i = 0; i + 1 < bytes.length; i += 2) s += String.fromCharCode((bytes[i] << 8) | bytes[i+1])
+    return s
+  }
+  const readStr = (platformID: number, length: number, offset: number) => {
+    const start = nameOff + stringOffset + offset
+    const bytes = new Uint8Array(dv.buffer, start, length)
+    return platformID === 3 ? decodeUTF16BE(bytes) : new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+  }
+  for (let i = 0; i < count; i++) {
+    const o = records + i * 12
+    const platformID = dv.getUint16(o)
+    const encodingID = dv.getUint16(o + 2)
+    const languageID = dv.getUint16(o + 4)
+    const nameID = dv.getUint16(o + 6)
+    const length = dv.getUint16(o + 8)
+    const offset = dv.getUint16(o + 10)
+    if (length === 0) continue
+    const val = readStr(platformID, length, offset).trim()
+    if (!val) continue
+    if (!map.has(nameID) || platformID === 3) map.set(nameID, val)
+  }
+  return (id: number) => map.get(id) || ''
 }
