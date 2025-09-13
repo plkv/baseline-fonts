@@ -231,18 +231,23 @@ export default function AdminManager() {
     if ((editing[fam.name] as any)?.foundry !== undefined) updates.foundry = (editing[fam.name] as any).foundry
     if ((editing[fam.name] as any)?.downloadLink !== undefined) updates.downloadLink = (editing[fam.name] as any).downloadLink
     const targetName = (editing[fam.name] as any)?.name || fam.name
+    let failed = 0
     await Promise.all(fam.fonts.map(async f => {
       const body: any = { id: f.id, updates: { ...updates } }
       if (targetName && targetName !== fam.name) body.updates.family = targetName
-      const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      if (!res.ok) {
-        // ignore legacy-only variants for now
+      try {
+        const res = await fetch('/api/fonts-clean/update', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        if (!res.ok) failed++
+      } catch {
+        failed++
       }
     }))
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
     // Optimistic local update to avoid full reload
     setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, family: targetName, foundry: updates.foundry ?? f.foundry, collection: e.collection, styleTags: e.styleTags, languages: e.languages, category: (updates.category || (f as any).category || []), downloadLink: updates.downloadLink ?? (f as any).downloadLink } : f))
-    try { toast.success('Family updated') } catch {}
+    if (failed > 0) { try { toast.error(`Some items failed to save (${failed})`) } catch {} }
+    else { try { toast.success('Family updated') } catch {} }
+    await load()
   }
 
   const deleteFamily = async (fam: Family) => {
@@ -513,10 +518,15 @@ export default function AdminManager() {
                         <input className="btn-md" defaultValue={f.style || 'Regular'} onBlur={async (e)=>{
                           const newStyle = e.currentTarget.value.trim()
                           if (!newStyle || newStyle === (f.style||'Regular')) return
-                          await fetch('/api/fonts-clean/update', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, updates: { style: newStyle } }) })
-                          toast.success('Style name updated')
-                          // update local
-                          setFonts(prev=> prev.map(x=> x.id===f.id ? { ...x, style: newStyle } as any : x))
+                          try {
+                            const resp = await fetch('/api/fonts-clean/update', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: f.id, updates: { style: newStyle } }) })
+                            if (!resp.ok) throw new Error('Update failed')
+                            toast.success('Style name updated')
+                            setFonts(prev=> prev.map(x=> x.id===f.id ? { ...x, style: newStyle } as any : x))
+                            await load()
+                          } catch {
+                            toast.error('Failed to update style name')
+                          }
                         }} />
                         <span title="Weight">{f.weight || 400}{(f as any).italicStyle ? ' Italic' : ''}</span>
                         <span title="Version">{(f as any).version || '—'}</span>
