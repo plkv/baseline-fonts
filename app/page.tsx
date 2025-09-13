@@ -76,11 +76,28 @@
   }
 
   const updateVariableAxis = (fontId: number, axis: string, value: number) => {
+    // Clamp and snap values for stability
+    let v = Number(value)
+    if (!isFinite(v)) v = 0
+    // Read axis bounds if we have them in state via getVariableAxes
+    const axes = getVariableAxes(fontId)
+    const meta = axes.find(a => a.tag === axis)
+    if (meta) {
+      const min = Number(meta.min), max = Number(meta.max)
+      if (isFinite(min) && isFinite(max)) {
+        v = Math.max(min, Math.min(max, v))
+      }
+      if (axis === 'slnt' && Math.abs(v - (meta.min ?? v)) < 0.01) v = (meta.min ?? v) + 0.01
+      if (axis === 'ital') {
+        if (v < 0.1) v = 0
+        else if (v > 0.9) v = 1
+      }
+    }
     setFontVariableAxes((prev) => ({
       ...prev,
       [fontId]: {
         ...prev[fontId],
-        [axis]: value,
+        [axis]: v,
       },
     }))
     
@@ -90,20 +107,20 @@
         ...prev,
         [fontId]: {
           ...(prev[fontId] || { weight: 400, italic: false }),
-          weight: Math.round(value), // Round to nearest integer for weight
+          weight: Math.round(v), // Round to nearest integer for weight
         },
       }))
     }
     // Sync italic axis to preview italic flag
     if (axis === 'ital') {
-      const isItal = Number(value) >= 1
+      const isItal = Number(v) >= 1
       setFontWeightSelections((prev) => ({
         ...prev,
         [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
       }))
     }
     if (axis === 'slnt') {
-      const isItal = Math.abs(Number(value)) > 0.01
+      const isItal = Math.abs(Number(v)) > 0.01
       setFontWeightSelections((prev) => ({
         ...prev,
         [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
@@ -669,7 +686,7 @@
                                         }}
                                         min={axis.min}
                                         max={axis.max}
-                                        step={axis.tag === "wght" ? 1 : 0.5}
+                                        step={axis.tag === "wght" ? 1 : (axis.tag === 'ital' ? 0.1 : 0.5)}
                                         className="flex-1"
                                       />
                                       <span
