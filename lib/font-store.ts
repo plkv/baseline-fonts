@@ -540,7 +540,7 @@ function convertToFamilies(fonts: any[]): FontFamily[] {
   return Array.from(fontsByFamily.entries()).map(([familyName, familyFonts]) => {
     // Choose representative font for family settings
     const representative = familyFonts.find(f => f.isDefaultStyle) ||
-                          familyFonts.find(f => !f.style?.toLowerCase().includes('italic')) ||
+                          familyFonts.find(f => !String(f.style||'').toLowerCase().includes('italic')) ||
                           familyFonts[0]
     
     // Create variants from all fonts in family
@@ -549,7 +549,7 @@ function convertToFamilies(fonts: any[]): FontFamily[] {
       familyId: familyName,
       filename: font.filename,
       weight: font.weight || 400,
-      isItalic: font.style?.toLowerCase().includes('italic') || false,
+      isItalic: String(font.style||'').toLowerCase().includes('italic') || false,
       styleName: font.style || 'Regular',
       blobUrl: font.url || font.blobUrl,
       fileSize: font.fileSize || 0,
