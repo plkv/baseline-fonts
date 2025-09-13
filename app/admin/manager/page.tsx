@@ -189,9 +189,30 @@ export default function AdminManager() {
       const stylesCount = list.length
       const representative = list[0]
       const collection = (representative.collection as any) || 'Text'
-      const styleTags = representative.styleTags || []
-      const languages = representative.languages || ['Latin']
-      const category = (representative.category as any) || []
+      // Aggregate styleTags from all fonts in family (like catalog does)
+      const allStyleTags = new Set<string>()
+      list.forEach(f => {
+        if (Array.isArray(f.styleTags)) {
+          f.styleTags.forEach(tag => allStyleTags.add(tag))
+        }
+      })
+      const styleTags = Array.from(allStyleTags)
+      // Aggregate languages from all fonts in family
+      const allLanguages = new Set<string>()
+      list.forEach(f => {
+        if (Array.isArray(f.languages)) {
+          f.languages.forEach(lang => allLanguages.add(lang))
+        }
+      })
+      const languages = Array.from(allLanguages.size ? allLanguages : new Set(['Latin']))
+      // Aggregate categories from all fonts in family
+      const allCategories = new Set<string>()
+      list.forEach(f => {
+        if (Array.isArray(f.category)) {
+          f.category.forEach(cat => allCategories.add(cat))
+        }
+      })
+      const category = Array.from(allCategories)
       const foundry = representative.foundry
       // Assume family-level download link shared across variants
       const downloadLink = (list.find(f => (f as any).downloadLink)?.downloadLink as any) || undefined
