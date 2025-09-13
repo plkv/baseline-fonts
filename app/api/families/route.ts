@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
 import type { FontFamily } from '@/lib/models/FontFamily'
 import type { FontVariant } from '@/lib/models/FontVariant'
@@ -36,7 +36,7 @@ function toVariant(font: any, familyId: string): FontVariant {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const fonts = await fontStorageClean.getAllFonts()
 
@@ -176,12 +176,14 @@ export async function GET() {
       return family
     })
 
+    const url = new URL(req.url)
+    const noCache = url.searchParams.get('noCache') === '1'
     return NextResponse.json(
       { success: true, families, totalFamilies: families.length, totalFiles: fonts.length },
       {
-        headers: {
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
-        }
+        headers: noCache
+          ? { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+          : { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' }
       }
     )
   } catch (error) {
