@@ -25,6 +25,8 @@ function toVariant(font: any, familyId: string): FontVariant {
       : Array.isArray((font as any).features)
         ? (font as any).features
         : [],
+    // @ts-ignore propagate structured feature tags when present
+    openTypeFeatureTags: (font as any).openTypeFeatureTags || [],
     fontMetrics: font.fontMetrics,
     glyphCount: font.glyphCount,
     uploadedAt: font.uploadedAt || new Date().toISOString(),
@@ -142,13 +144,19 @@ export async function GET() {
         const c = (ff.collection as 'Text'|'Display'|'Weirdo') || 'Text'
         collCounts[c]++
       }
-      const resolvedCollection = (['Text','Display','Weirdo'] as const)
-        .reduce((best, curr) => (collCounts[curr] > collCounts[best] ? curr : best), 'Text' as const)
+      // Choose majority; on ties prefer representative collection, then non-Text, else Text
+      const maxCount = Math.max(collCounts.Text, collCounts.Display, collCounts.Weirdo)
+      const candidates = (['Text','Display','Weirdo'] as const).filter(k => collCounts[k] === maxCount)
+      let resolvedCollection = candidates[0]
+      const repColl = (representative?.collection as any) as 'Text'|'Display'|'Weirdo' | undefined
+      if (repColl && candidates.includes(repColl)) resolvedCollection = repColl
+      else if (candidates.includes('Display' as any)) resolvedCollection = 'Display'
+      else if (candidates.includes('Weirdo' as any)) resolvedCollection = 'Weirdo'
 
       const family: FontFamily = {
         id: familyId,
         name: familyName,
-        collection: resolvedCollection || representative?.collection || 'Text',
+        collection: resolvedCollection || repColl || 'Text',
         styleTags: Array.from(union.styleTags),
         languages: Array.from(union.languages.size ? union.languages : new Set(['Latin'])),
         category: Array.from(union.categories.size ? union.categories : new Set(['Sans'])),
