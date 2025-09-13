@@ -143,7 +143,7 @@ export default function FontLibrary() {
       // Prefer normalized families endpoint; fallback to legacy list
       let handled = false
       try {
-        const respFamilies = await fetch('/api/families')
+        const respFamilies = await fetch(`/api/families?t=${Date.now()}`)
         if (respFamilies.ok) {
           const fd = await respFamilies.json()
           console.log('📋 Families API Response:', fd)
