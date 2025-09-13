@@ -1,34 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { styleId } = await request.json()
-    
+    const { styleId } = await req.json()
     if (!styleId) {
-      return NextResponse.json({ 
-        error: 'Style ID is required' 
-      }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'styleId required' }, { status: 400 })
     }
-
-    const success = await fontStorageClean.deleteStyleFromFamily(styleId)
-    
-    if (!success) {
-      return NextResponse.json({ 
-        error: 'Failed to delete style or style not found' 
-      }, { status: 404 })
-    }
-
-    return NextResponse.json({ 
-      success: true,
-      message: 'Style deleted successfully' 
-    })
-
-  } catch (error) {
-    console.error('Delete style error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to delete style',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    const ok = await fontStorageClean.deleteStyleFromFamily(String(styleId))
+    return NextResponse.json({ success: ok })
+  } catch (e: any) {
+    return NextResponse.json({ success: false, error: e?.message || 'DELETE_STYLE_FAILED' }, { status: 500 })
   }
 }
+
