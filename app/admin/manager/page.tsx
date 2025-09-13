@@ -64,7 +64,7 @@ export default function AdminManager() {
     setLoading(true)
     try {
       // Use merged families (legacy + clean) so Admin shows all families the catalog sees
-      const res = await fetch('/api/families', { cache: 'no-store' })
+      const res = await fetch(`/api/families?t=${Date.now()}`, { cache: 'no-store' })
       const data = await res.json()
       const families = Array.isArray(data.families) ? data.families : []
       const flat: CleanFont[] = families.flatMap((fam: any) => (fam.variants||[]).map((v: any) => ({
