@@ -557,6 +557,9 @@ function convertToFamilies(fonts: any[]): FontFamily[] {
       isVariable: font.isVariable || false,
       variableAxes: font.variableAxes || [],
       openTypeFeatures: font.openTypeFeatures || [],
+      // pass structured feature tags if present
+      // @ts-ignore
+      openTypeFeatureTags: font.openTypeFeatureTags || [],
       fontMetrics: font.fontMetrics,
       glyphCount: font.glyphCount,
       uploadedAt: font.uploadedAt || new Date().toISOString(),

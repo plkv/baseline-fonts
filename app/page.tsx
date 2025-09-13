@@ -258,6 +258,7 @@ export default function FontLibrary() {
                   downloadLink: v.downloadLink,
                   variableAxes: v.variableAxes,
                   openTypeFeatures: v.openTypeFeatures,
+                  openTypeFeatureTags: (v as any).openTypeFeatureTags,
                   uploadedAt: v.uploadedAt || v.createdAt || null,
                 })),
                 _availableStyles: availableStylesWithWeights,
@@ -384,7 +385,7 @@ export default function FontLibrary() {
             
             const finalType = isVariable ? "Variable" : "Static"
             
-            return {
+              return {
               id: index + 1,
               name: familyName,
               family: familyName,
@@ -404,7 +405,10 @@ export default function FontLibrary() {
               variableAxes: representativeFont.variableAxes,
               openTypeFeatures: representativeFont.openTypeFeatures,
               // Store family fonts data for style selection
-              _familyFonts: familyFonts,
+              _familyFonts: familyFonts.map((f:any)=>({
+                ...f,
+                openTypeFeatureTags: (f as any).openTypeFeatureTags || (f as any).openTypeFeatureTagsParsed || undefined
+              })),
               // Store structured style data for proper style selection
               _availableStyles: availableStylesWithWeights,
               // Add collection and style tags for filtering
