@@ -193,7 +193,8 @@ export default function FontLibrary() {
                   styleName: getStyleNameFromWeight(weight, false),
                   isItalic: false,
                 }))
-                const hasItalic = familyFonts.some((v: any) => v.isItalic)
+                const hasItalic = familyFonts.some((v: any) => v.isItalic) ||
+                  familyFonts.some((v: any) => Array.isArray(v.variableAxes) && v.variableAxes.some((a: any) => a.axis === 'ital' || a.axis === 'slnt'))
                 if (hasItalic) {
                   availableStylesWithWeights = [
                     ...availableStylesWithWeights,
@@ -204,6 +205,14 @@ export default function FontLibrary() {
                     })),
                   ]
                 }
+                // Dedupe by weight+italic
+                const seen = new Set<string>()
+                availableStylesWithWeights = availableStylesWithWeights.filter((s:any)=>{
+                  const k = `${s.weight}|${s.isItalic?1:0}`
+                  if (seen.has(k)) return false
+                  seen.add(k)
+                  return true
+                })
               } else {
                 // Static family: expose each variant distinctly using per-variant CSS alias to avoid weight/style collisions
                 const familyAlias = `${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}`
@@ -228,7 +237,7 @@ export default function FontLibrary() {
                 family: family.name,
                 style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
                 category: Array.isArray(family.category) ? (family.category[0] || 'Sans') : (family.category || 'Sans'),
-                styles: familyFonts.length,
+                styles: availableStylesWithWeights.length || familyFonts.length,
                 type: finalType,
                 author: family.foundry || 'Unknown',
                 fontFamily: `"${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}", system-ui, sans-serif`,
@@ -347,6 +356,14 @@ export default function FontLibrary() {
                 }))
                 availableStylesWithWeights = [...availableStylesWithWeights, ...italicStyles]
               }
+              // Dedupe by weight+italic
+              const seen = new Set<string>()
+              availableStylesWithWeights = availableStylesWithWeights.filter((s:any)=>{
+                const k = `${s.weight}|${s.isItalic?1:0}`
+                if (seen.has(k)) return false
+                seen.add(k)
+                return true
+              })
             } else {
               // Static family: expose each variant distinctly using per-variant CSS alias to avoid collisions
               const familyAlias = `${canonicalFamilyName(familyName)}-${shortHash(canonicalFamilyName(familyName)).slice(0,6)}`
@@ -1577,11 +1594,8 @@ export default function FontLibrary() {
                         <div className="flex items-center gap-4">
                           <span className="text-author">
                             {(() => {
-                              if (font.type === 'Variable') {
-                                const count = Math.max((font.availableWeights?.length || 0) * (font.hasItalic ? 2 : 1), 2)
-                                return `Variable, ${count} style${count !== 1 ? 's' : ''}`
-                              }
-                              return `Static, ${font.styles} style${font.styles !== 1 ? 's' : ''}`
+                              const count = (font._availableStyles?.length || font.styles || 1)
+                              return `${font.type}, ${count} style${count !== 1 ? 's' : ''}`
                             })()}
                           </span>
                           <span className="text-author">by {font.author}</span>
