@@ -6,6 +6,8 @@
 import { kv } from '@vercel/kv'
 import { put as blobPut, del as blobDel } from '@vercel/blob'
 import crypto from 'crypto'
+import { FontFamily } from './models/FontFamily'
+import { FontVariant } from './models/FontVariant'
 
 export interface FontMetadata {
   id: string
@@ -480,13 +482,241 @@ class FontStorageClean {
   }
   
   /**
-   * Get all unique font families
+   * Get all unique font families (legacy method)
    */
   async getAllFamilies(): Promise<string[]> {
     const allFonts = await this.getAllFonts()
     const families = new Set<string>()
     allFonts.forEach(font => families.add(font.family))
     return Array.from(families).sort()
+  }
+
+  // =====================================
+  // FAMILY-FIRST STORAGE OPERATIONS
+  // =====================================
+
+  /**
+   * Create a new font family
+   */
+  async createFamily(familyData: Omit<FontFamily, 'id' | 'createdAt' | 'updatedAt' | 'variants'>): Promise<FontFamily> {
+    const familyId = `family_${familyData.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
+    const now = new Date().toISOString()
+
+    const family: FontFamily = {
+      ...familyData,
+      id: familyId,
+      variants: [],
+      createdAt: now,
+      updatedAt: now
+    }
+
+    await kv.set(`family:${familyId}`, family)
+    await this.addToFamilyIndex(familyId)
+
+    return family
+  }
+
+  /**
+   * Get font family by ID
+   */
+  async getFamily(familyId: string): Promise<FontFamily | null> {
+    return await kv.get<FontFamily>(`family:${familyId}`)
+  }
+
+  /**
+   * Get all font families
+   */
+  async getAllFamiliesV2(): Promise<FontFamily[]> {
+    const familyIndex = await kv.get<string[]>('family_index') || []
+    const families: FontFamily[] = []
+
+    for (const familyId of familyIndex) {
+      const family = await kv.get<FontFamily>(`family:${familyId}`)
+      if (family) {
+        families.push(family)
+      }
+    }
+
+    return families.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  }
+
+  /**
+   * Update font family metadata
+   */
+  async updateFamily(familyId: string, updates: Partial<Omit<FontFamily, 'id' | 'variants' | 'createdAt'>>): Promise<boolean> {
+    const existing = await this.getFamily(familyId)
+    if (!existing) return false
+
+    const updated: FontFamily = {
+      ...existing,
+      ...updates,
+      updatedAt: new Date().toISOString()
+    }
+
+    await kv.set(`family:${familyId}`, updated)
+    return true
+  }
+
+  /**
+   * Delete font family and all its variants
+   */
+  async deleteFamily(familyId: string): Promise<boolean> {
+    const family = await this.getFamily(familyId)
+    if (!family) return false
+
+    // Delete all variants
+    for (const variant of family.variants) {
+      await this.deleteFont(variant.id)
+    }
+
+    // Delete family record
+    await kv.del(`family:${familyId}`)
+    await this.removeFromFamilyIndex(familyId)
+
+    return true
+  }
+
+  /**
+   * Add variant to family
+   */
+  async addVariantToFamily(familyId: string, variantData: Omit<FontVariant, 'id' | 'familyId'>): Promise<boolean> {
+    const family = await this.getFamily(familyId)
+    if (!family) return false
+
+    const variantId = `variant_${familyId}_${Date.now()}`
+    const variant: FontVariant = {
+      ...variantData,
+      id: variantId,
+      familyId
+    }
+
+    // Store variant
+    await kv.set(`variant:${variantId}`, variant)
+
+    // Add to family
+    const updatedFamily: FontFamily = {
+      ...family,
+      variants: [...family.variants, variant],
+      updatedAt: new Date().toISOString()
+    }
+
+    await kv.set(`family:${familyId}`, updatedFamily)
+    return true
+  }
+
+  /**
+   * Remove variant from family
+   */
+  async removeVariantFromFamily(familyId: string, variantId: string): Promise<boolean> {
+    const family = await this.getFamily(familyId)
+    if (!family) return false
+
+    // Remove from family variants
+    const updatedFamily: FontFamily = {
+      ...family,
+      variants: family.variants.filter(v => v.id !== variantId),
+      updatedAt: new Date().toISOString()
+    }
+
+    await kv.set(`family:${familyId}`, updatedFamily)
+
+    // Delete variant record
+    await kv.del(`variant:${variantId}`)
+
+    return true
+  }
+
+  /**
+   * Migrate existing file-first data to family-first structure
+   */
+  async migrateToFamilyFirst(): Promise<{ families: number, variants: number }> {
+    const existingFonts = await this.getAllFonts()
+
+    // Group fonts by family name
+    const familyGroups = new Map<string, FontMetadata[]>()
+    for (const font of existingFonts) {
+      const familyName = font.family || 'Unknown'
+      if (!familyGroups.has(familyName)) {
+        familyGroups.set(familyName, [])
+      }
+      familyGroups.get(familyName)!.push(font)
+    }
+
+    let familyCount = 0
+    let variantCount = 0
+
+    // Create families from groups
+    for (const [familyName, fonts] of familyGroups) {
+      const representative = fonts[0]
+
+      // Aggregate family metadata
+      const allStyleTags = new Set<string>()
+      const allLanguages = new Set<string>()
+      const allCategories = new Set<string>()
+
+      fonts.forEach(font => {
+        if (Array.isArray(font.styleTags)) font.styleTags.forEach(tag => allStyleTags.add(tag))
+        if (Array.isArray(font.languages)) font.languages.forEach(lang => allLanguages.add(lang))
+        if (Array.isArray(font.category)) font.category.forEach(cat => allCategories.add(cat))
+      })
+
+      // Create family
+      const family = await this.createFamily({
+        name: familyName,
+        collection: representative.collection || 'Text',
+        styleTags: Array.from(allStyleTags),
+        languages: Array.from(allLanguages.size ? allLanguages : new Set(['Latin'])),
+        category: Array.from(allCategories.size ? allCategories : new Set(['Sans'])),
+        foundry: representative.foundry || 'Unknown',
+        isVariable: fonts.some(f => f.isVariable),
+        published: true,
+        downloadLink: representative.downloadLink
+      })
+
+      familyCount++
+
+      // Convert fonts to variants
+      for (const font of fonts) {
+        const variant: Omit<FontVariant, 'id' | 'familyId'> = {
+          filename: font.filename,
+          originalFilename: font.originalFilename,
+          blobUrl: font.blobUrl,
+          weight: font.weight,
+          styleName: font.style || 'Regular',
+          isItalic: font.style?.toLowerCase().includes('italic') || false,
+          isVariable: font.isVariable,
+          variableAxes: font.variableAxes || [],
+          openTypeFeatures: font.openTypeFeatures || [],
+          openTypeFeatureTags: (font as any).openTypeFeatureTags || [],
+          isDefaultStyle: (font as any).isDefaultStyle || false,
+          uploadedAt: font.uploadedAt,
+          fileSize: font.fileSize,
+          checksum: font.checksum
+        }
+
+        await this.addVariantToFamily(family.id, variant)
+        variantCount++
+      }
+    }
+
+    return { families: familyCount, variants: variantCount }
+  }
+
+  /**
+   * Family index management
+   */
+  private async addToFamilyIndex(familyId: string): Promise<void> {
+    const index = await kv.get<string[]>('family_index') || []
+    if (!index.includes(familyId)) {
+      index.push(familyId)
+      await kv.set('family_index', index)
+    }
+  }
+
+  private async removeFromFamilyIndex(familyId: string): Promise<void> {
+    const index = await kv.get<string[]>('family_index') || []
+    const updated = index.filter(id => id !== familyId)
+    await kv.set('family_index', updated)
   }
 }
 
