@@ -778,7 +778,7 @@ export default function FontLibrary() {
   }
 
   // Small wrapper to use ControlledTextPreview with safe focus/cursor handling
-  function ControlledPreviewInput({
+  const ControlledPreviewInput = ({
     value,
     cursorPosition,
     onChangeText,
@@ -794,7 +794,7 @@ export default function FontLibrary() {
     style?: React.CSSProperties
     onToggleExpand?: () => void
     fontId: number
-  }) {
+  }) => {
     const localRef = useRef<HTMLInputElement | null>(null)
     useEffect(() => { inputRefs.current[fontId] = localRef.current }, [fontId])
     return (
