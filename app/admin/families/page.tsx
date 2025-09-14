@@ -13,7 +13,7 @@ export default function FamilyAdmin() {
   const loadFamilies = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/families-v2', { cache: 'no-store' })
+      const res = await fetch(`/api/families-v2?t=${Date.now()}`, { cache: 'no-store' })
       const data = await res.json()
       if (data.success) {
         setFamilies(data.families)
