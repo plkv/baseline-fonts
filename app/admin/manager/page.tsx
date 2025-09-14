@@ -480,9 +480,22 @@ export default function AdminManager() {
               <div className="flex items-center justify-between">
                 <button onClick={() => toggleExpand(fam.name)} className="menu-tab">
                   <span style={{ fontFamily: `"${alias}", system-ui, sans-serif`, fontWeight: 600 }}>{fam.name}</span>
-                  <span style={{ color: 'var(--gray-cont-tert)', marginLeft: 8 }}>• {fam.stylesCount} styles • {new Date(fam.uploadedAt || Date.now()).toLocaleDateString()}</span>
+                  <span style={{ color: 'var(--gray-cont-tert)', marginLeft: 8 }}>
+                    • {fam.stylesCount} styles • {new Date(fam.uploadedAt || Date.now()).toLocaleDateString()}
+                    {fam.foundry && (
+                      <span> • {fam.foundry.length > 16 ? fam.foundry.substring(0, 16) + '...' : fam.foundry}</span>
+                    )}
+                  </span>
                   {fam.downloadLink && (
-                    <span className="text-xs ml-2 px-2 py-0.5 rounded" style={{ border: '1px solid var(--gray-brd-prim)', color: 'var(--gray-cont-tert)' }}>Download</span>
+                    <span className="text-xs ml-2 px-2 py-0.5 rounded" style={{ border: '1px solid var(--gray-brd-prim)', color: 'var(--gray-cont-tert)' }}>
+                      {(() => {
+                        try {
+                          return new URL(fam.downloadLink).hostname.replace(/^www\./, '')
+                        } catch {
+                          return 'Download'
+                        }
+                      })()}
+                    </span>
                   )}
                 </button>
                 <div className="flex gap-2">
