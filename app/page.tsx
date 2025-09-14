@@ -98,6 +98,23 @@ export default function FontLibrary() {
   )
   const [textSize, setTextSize] = useState([72])
   const [lineHeight, setLineHeight] = useState([120])
+
+  // Color Theme State
+  const [currentColorTheme, setCurrentColorTheme] = useState(0) // 0 = default B&W theme
+
+  // Color themes based on Spotify brand image
+  const colorThemes = [
+    { name: 'Default', bg: 'var(--gray-surface-prim)', fg: 'var(--gray-cont-prim)' }, // Default B&W
+    { name: 'Pink', bg: '#FF6B9D', fg: '#2D1B32' }, // Pink background, dark foreground
+    { name: 'Orange', bg: '#FF8C42', fg: '#2D1B32' }, // Orange background, dark foreground
+    { name: 'Blue', bg: '#4A9EFF', fg: '#FFFFFF' }, // Blue background, light foreground
+    { name: 'Red', bg: '#FF3B3B', fg: '#FFFFFF' }, // Red background, light foreground
+    { name: 'Purple', bg: '#6B46C1', fg: '#FFFFFF' }, // Purple background, light foreground
+    { name: 'Yellow', bg: '#FFD93D', fg: '#D73502' }, // Yellow background, red foreground
+    { name: 'Navy', bg: '#1E3A5F', fg: '#FF6B9D' }, // Navy background, pink foreground
+    { name: 'Maroon', bg: '#8B2635', fg: '#FFFFFF' }, // Maroon background, light foreground
+    { name: 'Green', bg: '#22C55E', fg: '#FFFFFF' } // Green background, light foreground
+  ]
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [sortBy, setSortBy] = useState("Random")
   const randomSeedRef = useRef<number>(() => {
@@ -114,6 +131,17 @@ export default function FontLibrary() {
   }
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
+
+  // Color theme functions
+  const cycleColorTheme = () => {
+    setCurrentColorTheme((prev) => (prev + 1) % colorThemes.length)
+  }
+
+  const resetToBlackAndWhite = () => {
+    setCurrentColorTheme(0)
+  }
+
+  const getCurrentTheme = () => colorThemes[currentColorTheme]
   
   // Stable preview font per collection (don't change during session)
   const previewFontsRef = useRef<Record<'Text'|'Display'|'Weirdo', string>>({ Text: '', Display: '', Weirdo: '' })
@@ -1241,21 +1269,21 @@ export default function FontLibrary() {
   // Removed special font readiness and reporting; render normally
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "var(--gray-surface-prim)" }}>
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: getCurrentTheme().bg, color: getCurrentTheme().fg }}>
       {/* Dynamic font loading and fallback character styles */}
       <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
       {sidebarOpen && (
         <aside
           className="w-[280px] flex-shrink-0 flex flex-col h-full"
-          style={{ backgroundColor: "var(--gray-surface-prim)", borderRight: "1px solid var(--gray-brd-prim)" }}
+          style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
         >
           <div
             className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
-            style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
+            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
           >
             <button onClick={() => setSidebarOpen(false)} className="icon-btn">
               <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                side_navigation
+                tune
               </span>
             </button>
             <button onClick={resetFilters} className="icon-btn">
@@ -1323,6 +1351,29 @@ export default function FontLibrary() {
                       {preset}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Color themes</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={cycleColorTheme}
+                    className="btn-sm"
+                    style={{
+                      backgroundColor: getCurrentTheme().bg !== 'var(--gray-surface-prim)' ? getCurrentTheme().bg : undefined,
+                      color: getCurrentTheme().fg !== 'var(--gray-cont-prim)' ? getCurrentTheme().fg : undefined,
+                      border: getCurrentTheme().bg !== 'var(--gray-surface-prim)' ? `1px solid ${getCurrentTheme().fg}` : undefined
+                    }}
+                  >
+                    Add color
+                  </button>
+                  <button
+                    onClick={resetToBlackAndWhite}
+                    className={`btn-sm ${currentColorTheme === 0 ? 'active' : ''}`}
+                  >
+                    B&W
+                  </button>
                 </div>
               </div>
 
@@ -1442,7 +1493,7 @@ export default function FontLibrary() {
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <header
           className="sticky top-0 z-10 p-4 flex-shrink-0"
-          style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
+          style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1450,7 +1501,7 @@ export default function FontLibrary() {
                 <div className="w-[32px] h-[32px] flex items-center justify-center">
                   <button onClick={() => setSidebarOpen(true)} className="icon-btn">
                     <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      side_navigation
+                      tune
                     </span>
                   </button>
                 </div>
@@ -1465,7 +1516,7 @@ export default function FontLibrary() {
                   fontWeight: 900,
                   lineHeight: "100%",
                   textTransform: "lowercase",
-                  color: "var(--gray-cont-prim)"
+                  color: getCurrentTheme().fg
                 }}
                 onClick={() => window.location.href = '/'}
               >
@@ -1493,7 +1544,7 @@ export default function FontLibrary() {
         <main className="flex-1 overflow-y-auto pb-16">
           <div
             className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
-            style={{ backgroundColor: "var(--gray-surface-prim)", borderBottom: "1px solid var(--gray-brd-prim)" }}
+            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
           >
             <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
             <div className="flex gap-2">
