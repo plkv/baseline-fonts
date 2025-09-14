@@ -279,7 +279,7 @@ export default function FontLibrary() {
       }
 
       if (!handled) {
-        const response = await fetch('/api/fonts-clean/list')
+        const response = await fetch(`/api/fonts-clean/list?t=${Date.now()}`)
         if (response.ok) {
           const data = await response.json()
           console.log('📋 API Response:', data)
