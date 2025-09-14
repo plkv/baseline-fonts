@@ -1269,25 +1269,6 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
-                <h3 className="text-sidebar-title mb-3">Text presets</h3>
-                <div className="flex flex-wrap gap-2">
-                  {textPresets.map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setSelectedPreset(preset)
-                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
-                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
-                      }}
-                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
                 <div className="segmented-control">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
@@ -1326,7 +1307,58 @@ export default function FontLibrary() {
                 </div>
               </div>
 
-              
+              <div>
+                <h3 className="text-sidebar-title mb-3">Text presets</h3>
+                <div className="flex flex-wrap gap-2">
+                  {textPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setSelectedPreset(preset)
+                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
+                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
+                      }}
+                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Text size</h3>
+                  <Slider
+                    value={textSize}
+                    onValueChange={setTextSize}
+                    max={200}
+                    min={12}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {textSize[0]}px
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Line height</h3>
+                  <Slider
+                    value={lineHeight}
+                    onValueChange={setLineHeight}
+                    max={160}
+                    min={90}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {lineHeight[0]}%
+                  </span>
+                </div>
+              </div>
 
               <div>
                 <h3 className="text-sidebar-title mb-3">Font categories</h3>
@@ -1380,40 +1412,6 @@ export default function FontLibrary() {
                   )) : (
                     <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available in {displayMode} collection</span>
                   )}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sidebar-title flex-shrink-0">Text size</h3>
-                  <Slider
-                    value={textSize}
-                    onValueChange={setTextSize}
-                    max={200}
-                    min={12}
-                    step={1}
-                    className="flex-1"
-                  />
-                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
-                    {textSize[0]}px
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-sidebar-title flex-shrink-0">Line height</h3>
-                  <Slider
-                    value={lineHeight}
-                    onValueChange={setLineHeight}
-                    max={160}
-                    min={90}
-                    step={10}
-                    className="flex-1"
-                  />
-                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
-                    {lineHeight[0]}%
-                  </span>
                 </div>
               </div>
 
