@@ -1354,6 +1354,7 @@ export default function FontLibrary() {
                 </div>
               </div>
 
+              {/* Hidden for now - will work on color themes later
               <div>
                 <h3 className="text-sidebar-title mb-3">Color themes</h3>
                 <div className="flex gap-2">
@@ -1376,6 +1377,7 @@ export default function FontLibrary() {
                   </button>
                 </div>
               </div>
+              */}
 
               <div>
                 <div className="flex items-center gap-3">
