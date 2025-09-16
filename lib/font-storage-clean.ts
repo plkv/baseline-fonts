@@ -206,27 +206,59 @@ class FontStorageClean {
     // Store metadata in KV
     await kv.set(id, fullMetadata)
     await kv.set(`checksum:${checksum}`, id)
-    
+
     // Add to index
     await this.addToIndex(id)
+
+    // Invalidate cache
+    await this.invalidateCache()
     
     return fullMetadata
   }
 
   /**
-   * Get all fonts
+   * Get all fonts with caching to reduce KV calls
    */
   async getAllFonts(): Promise<FontMetadata[]> {
+    try {
+      // Try to get cached fonts first
+      const cached = await kv.get<FontMetadata[]>('fonts_cache')
+      if (cached && Array.isArray(cached) && cached.length > 0) {
+        return cached.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+      }
+    } catch (error) {
+      console.warn('Cache read failed, falling back to individual reads')
+    }
+
     const keys = await this.getAllFontKeys()
     const fonts: FontMetadata[] = []
-    
-    for (const key of keys) {
-      const metadata = await kv.get<FontMetadata>(key)
-      if (metadata) {
-        fonts.push(metadata)
+
+    // Batch read in smaller chunks to avoid overwhelming KV
+    const chunkSize = 10
+    for (let i = 0; i < keys.length; i += chunkSize) {
+      const chunk = keys.slice(i, i + chunkSize)
+
+      try {
+        const promises = chunk.map(key => kv.get<FontMetadata>(key))
+        const results = await Promise.all(promises)
+
+        results.forEach(metadata => {
+          if (metadata) {
+            fonts.push(metadata)
+          }
+        })
+      } catch (error) {
+        console.warn(`Failed to read chunk ${i}-${i + chunkSize}:`, error)
       }
     }
-    
+
+    // Cache the result for 5 minutes to reduce future KV calls
+    try {
+      await kv.set('fonts_cache', fonts, { ex: 300 })
+    } catch (error) {
+      console.warn('Failed to cache fonts:', error)
+    }
+
     return fonts.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
   }
 
@@ -251,6 +283,7 @@ class FontStorageClean {
     
     const updated = { ...existing, ...updates }
     await kv.set(id, updated)
+    await this.invalidateCache()
     return true
   }
 
@@ -269,7 +302,10 @@ class FontStorageClean {
     
     // Remove from index
     await this.removeFromIndex(id)
-    
+
+    // Invalidate cache
+    await this.invalidateCache()
+
     return true
   }
 
@@ -717,6 +753,17 @@ class FontStorageClean {
     const index = await kv.get<string[]>('family_index') || []
     const updated = index.filter(id => id !== familyId)
     await kv.set('family_index', updated)
+  }
+
+  /**
+   * Invalidate fonts cache when data changes
+   */
+  private async invalidateCache(): Promise<void> {
+    try {
+      await kv.del('fonts_cache')
+    } catch (error) {
+      console.warn('Failed to invalidate cache:', error)
+    }
   }
 }
 
