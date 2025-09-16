@@ -1575,10 +1575,7 @@ export default function FontLibrary() {
             ) : fonts.length === 0 ? (
               <div className="p-6 text-center">
                 <div style={{ color: "var(--gray-cont-tert)" }}>
-                  No fonts uploaded yet. 
-                  <a href="/admin-simple" className="text-blue-500 hover:underline ml-1">
-                    Upload your first font
-                  </a>
+                  Temporary maintenance in progress. Font catalog will be restored shortly.
                 </div>
               </div>
             ) : (
