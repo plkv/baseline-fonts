@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Space_Grotesk, Space_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/react"
 import "./globals.css"
 
 const inter = Inter({
@@ -93,10 +92,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans antialiased">
-        {children}
-        <Analytics />
-      </body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }
