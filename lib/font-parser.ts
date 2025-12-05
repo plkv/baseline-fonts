@@ -552,22 +552,58 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       if (title && !openTypeFeatures.includes(title)) openTypeFeatures.push(title)
     })
 
-    // Enhanced language support detection
-    const languages: string[] = ['Latin'] // Default
-    if (font.tables?.os2) {
-      const os2 = font.tables.os2
-      // Unicode range analysis for language support
-      if (os2.ulUnicodeRange2 & 0x00000001) languages.push('Cyrillic')
-      if (os2.ulUnicodeRange1 & 0x00000080) languages.push('Greek')  
-      if (os2.ulUnicodeRange1 & 0x00000100) languages.push('Armenian')
-      if (os2.ulUnicodeRange1 & 0x00000200) languages.push('Hebrew')
-      if (os2.ulUnicodeRange1 & 0x00000400) languages.push('Arabic')
-      if (os2.ulUnicodeRange1 & 0x00020000) languages.push('Thai')
-      if (os2.ulUnicodeRange1 & 0x00100000) languages.push('Chinese')
-      if (os2.ulUnicodeRange2 & 0x00000004) languages.push('Japanese')
-      if (os2.ulUnicodeRange2 & 0x00000008) languages.push('Korean')
-      if (os2.ulUnicodeRange1 & 0x01000000) languages.push('Vietnamese')
+    // Enhanced language support detection with actual glyph checking
+    const languages: string[] = []
+
+    // Helper function to check if font has specific characters
+    const hasChars = (chars: string[]): boolean => {
+      if (!font.glyphs) return false
+      return chars.every(char => {
+        const codePoint = char.codePointAt(0)
+        if (codePoint === undefined) return false
+        try {
+          const glyph = font.charToGlyph(String.fromCodePoint(codePoint))
+          // Check if glyph exists and is not .notdef (index 0)
+          return glyph && glyph.index !== undefined && glyph.index !== 0
+        } catch {
+          return false
+        }
+      })
     }
+
+    // Define characteristic characters for each language
+    const languageTests = {
+      'Latin': ['A', 'a', 'E', 'e'], // Basic Latin
+      'Cyrillic': ['А', 'Б', 'В', 'а', 'б', 'в'], // А, Б, В (Cyrillic)
+      'Greek': ['Α', 'Β', 'Γ', 'α', 'β', 'γ'], // Alpha, Beta, Gamma
+      'Arabic': ['ا', 'ب', 'ت', 'ث'], // Alef, Ba, Ta, Tha
+      'Hebrew': ['א', 'ב', 'ג', 'ד'], // Alef, Bet, Gimel, Dalet
+      'Chinese': ['中', '文', '字'], // Common Chinese characters
+      'Japanese': ['あ', 'い', 'カ', 'キ'], // Hiragana + Katakana
+      'Korean': ['가', '나', '다'], // Hangul syllables
+      'Thai': ['ก', 'ข', 'ค'], // Thai consonants
+      'Vietnamese': ['ă', 'â', 'đ', 'ơ', 'ư'], // Vietnamese diacritics
+      'Armenian': ['Ա', 'Բ', 'Գ'], // Armenian letters
+      'Georgian': ['ა', 'ბ', 'გ'], // Georgian letters
+      'Devanagari': ['क', 'ख', 'ग'], // Hindi/Sanskrit
+      'Bengali': ['ক', 'খ', 'গ'], // Bengali
+    }
+
+    // Check each language by testing for characteristic glyphs
+    for (const [lang, testChars] of Object.entries(languageTests)) {
+      if (hasChars(testChars)) {
+        languages.push(lang)
+        console.log(`✅ Language detected: ${lang} (verified glyphs)`)
+      }
+    }
+
+    // Fallback to Latin if no languages detected (shouldn't happen for valid fonts)
+    if (languages.length === 0) {
+      console.warn('⚠️ No language support detected, defaulting to Latin')
+      languages.push('Latin')
+    }
+
+    console.log(`🌍 Final language support:`, languages)
     
     // Extract additional comprehensive metadata
     let version: string | undefined
