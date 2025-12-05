@@ -1781,8 +1781,10 @@ export default function FontLibrary() {
                                         onValueChange={(value) => {
                                           let v = value[0]
                                           if (axis.tag === 'slnt') {
-                                            // avoid sticky min edge on drag
-                                            if (Math.abs(v - axis.min) < 0.01) v = axis.min + 0.01
+                                            // Snap to default when close (within 0.5 degrees)
+                                            if (Math.abs(v - axis.default) < 0.5) {
+                                              v = axis.default
+                                            }
                                           }
                                           if (axis.tag === 'ital') {
                                             // snap near 0 or 1 for stability
@@ -1793,7 +1795,7 @@ export default function FontLibrary() {
                                         }}
                                         min={axis.min}
                                         max={axis.max}
-                                        step={axis.tag === "wght" ? 1 : 0.5}
+                                        step={axis.tag === "wght" ? 1 : (axis.tag === "slnt" ? 0.1 : 0.5)}
                                         className="flex-1"
                                       />
                                       <span
