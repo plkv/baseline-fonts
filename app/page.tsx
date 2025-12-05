@@ -116,7 +116,7 @@ export default function FontLibrary() {
     { name: 'Green', bg: '#22C55E', fg: '#FFFFFF' } // Green background, light foreground
   ]
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-  const [sortBy, setSortBy] = useState("Random")
+  const [sortBy, setSortBy] = useState("Date")
   const randomSeedRef = useRef<number>(() => {
     // stable seed per session
     return (Date.now() % 100000) / 100000
