@@ -1,195 +1,1846 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { usePathname } from "next/navigation"
+import { Slider } from "@/components/ui/slider"
+import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
+import { canonicalFamilyName } from "@/lib/font-naming"
+import { shortHash } from "@/lib/hash"
 
+// Font interface for our API data
 interface FontData {
   id: number
   name: string
   family: string
   style: string
   category: string
-  foundry: string
-  collection: 'Text' | 'Display' | 'Weirdo'
-  styleTags: string[]
+  styles: number
+  type: "Variable" | "Static"
+  author: string
+  fontFamily: string
+  availableWeights: number[]
+  hasItalic: boolean
+  filename: string
   url?: string
   downloadLink?: string
-  isVariable: boolean
-  availableWeights: number[]
+  variableAxes?: Array<{
+    name: string
+    axis: string
+    min: number
+    max: number
+    default: number
+  }>
+  openTypeFeatures?: string[]
+  _familyFonts?: any[] // Store original font data for style selection
+  _availableStyles?: Array<{
+    weight: number
+    styleName: string
+    isItalic: boolean
+    font?: any // Reference to original font for static fonts
+  }> // Structured style data for style selection
+  collection: 'Text' | 'Display' | 'Weirdo'
+  styleTags: string[]
+  categories: string[]
 }
 
-export default function V2Page() {
-  const [fonts, setFonts] = useState<FontData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedCollection, setSelectedCollection] = useState<'Text' | 'Display' | 'Weirdo'>('Text')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [previewText, setPreviewText] = useState('Grotesk')
+const textPresets = ["Names", "Key Glyphs", "Basic", "Paragraph", "Brands"]
+// Languages will be dynamically generated from current collection
+const weights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
-  useEffect(() => {
-    const loadFonts = async () => {
-      try {
-        const response = await fetch('/api/fonts-clean/list', { cache: 'no-store' })
-        const data = await response.json()
-        if (data.success && Array.isArray(data.fonts)) {
-          setFonts(data.fonts)
-        }
-      } catch (error) {
-        console.error('Failed to load fonts:', error)
-      } finally {
-        setIsLoading(false)
+const getPresetContent = (preset: string, fontName: string) => {
+  switch (preset) {
+    case "Names":
+      return fontName
+    case "Key Glyphs":
+      return 'RKFJIGCQ aueoyrgsltf 0123469 ≪"(@&?;€$© ->…'
+    case "Basic":
+      return "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*()_+-=[]{}|;':\",./<>?"
+    case "Paragraph":
+      const paragraphs = [
+        "Balenciaga, Our Legacy, and Acne Studios continue to redefine avant-garde style, pushing silhouettes beyond conventional logic. Designers like Demna and Jonny Johansson layer irony with tailoring, mixing XXL coats, micro-bags, raw denim, and surreal proportions. Runway shows in Paris, Milan, and New York thrive on spectacle: flashing lights, fragmented beats, and cryptic slogans. What once felt absurd now becomes street uniform, merging couture with hoodie culture. Numbers matter too: limited drops of 500 units, resale prices soaring +300%, collectors chasing hype like traders. Fashion turns volatility into its core language.",
+        "The global market trades on symbols: AAPL at $212.45, ETH climbing +5.6%, EUR/USD swinging. Every decimal moves billions. Exchanges speak a secret dialect of IPO, ETF, CAGR, ROI. Investors chase 12% annual yield, hedge funds leverage ×10, while regulators warn of bubbles. Platforms like Robinhood and Revolut blur banking and gaming, reducing risk to a tap, turning volatility into entertainment. Graphs spike red → green → red, headlines shout \"RECORD CLOSE!\" and algorithms decide faster than humans blink. Finance becomes performance, a theater of numbers where % defines power more than words.",
+        "Every startup dreams of unicorn status: $1B valuation, growth curve slashing up at 45°. Founders pitch \"AI-powered SaaS\" or \"climate-tech with blockchain backbone,\" their decks filled with KPIs, TAM, CAC vs LTV. Venture capitalists reply with buzz: pre-seed, Series A, ARR, burn rate. Acceleration feels like survival; one quarter without +20% and the board panics. Yet behind the charts are restless teams in coworking hubs, 3 a.m. Slack pings, endless beta launches. Success is both hype and math, a fragile balance between story and spreadsheet, where a single slide decides millions wired.",
+        "Barcelona glows with contradictions: Gaudí's Sagrada Família still climbing skyward since 1882, while Torre Glòries mirrors LED grids in real time. Eixample blocks form geometric order, yet life spills chaotic with scooters, cava bottles, and late-night vermut. Remote workers fill cafés, toggling between Figma boards and Zoom calls, chasing deadlines across GMT+1. The port counts containers and cruise ships, the beach counts sunsets and tourists. Art, sport, fintech, and fashion overlap in one Mediterranean arena. Every corner feels alive with accents, from Passeig de Gràcia boutiques to hidden tapas bars in El Raval."
+      ]
+      return paragraphs[Math.floor(Math.random() * paragraphs.length)]
+    case "Brands":
+      const brandSets = [
+        "Maison Margiela • Off-White • Y/Project • Rimowa • A-Cold-Wall* • Figma • Balenciaga • OpenAI • Byredo",
+        "Figma • Arc'teryx • Rimowa • Aimé Leon Dore • Balenciaga • Klarna • Off-White • SpaceX • Notion",
+        "OpenAI • Arc'teryx • Maison Margiela • A-Cold-Wall* • Y/Project • Klarna • Byredo • Balenciaga • SpaceX",
+        "Byredo • Maison Margiela • Notion • Figma • Off-White • Rimowa • OpenAI • Balenciaga • Arc'teryx"
+      ]
+      return brandSets[Math.floor(Math.random() * brandSets.length)]
+    default:
+      return fontName
+  }
+}
+
+export default function FontLibrary() {
+  const pathname = usePathname()
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
+  
+  // Font Data State  
+  const [fonts, setFonts] = useState<FontData[]>([])
+  const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [customText, setCustomText] = useState("")
+  const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
+  const [selectedPreset, setSelectedPreset] = useState("Names")
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([])
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
+  const [selectedWeights, setSelectedWeights] = useState<number[]>([])
+  const [isItalic, setIsItalic] = useState(false)
+  const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
+    {},
+  )
+  const [textSize, setTextSize] = useState([72])
+  const [lineHeight, setLineHeight] = useState([120])
+
+  // Color Theme State
+  const [currentColorTheme, setCurrentColorTheme] = useState(0) // 0 = default B&W theme
+
+  // Color themes based on Spotify brand image
+  const colorThemes = [
+    { name: 'Default', bg: 'var(--gray-surface-prim)', fg: 'var(--gray-cont-prim)' }, // Default B&W
+    { name: 'Pink', bg: '#FF6B9D', fg: '#2D1B32' }, // Pink background, dark foreground
+    { name: 'Orange', bg: '#FF8C42', fg: '#2D1B32' }, // Orange background, dark foreground
+    { name: 'Blue', bg: '#4A9EFF', fg: '#FFFFFF' }, // Blue background, light foreground
+    { name: 'Red', bg: '#FF3B3B', fg: '#FFFFFF' }, // Red background, light foreground
+    { name: 'Purple', bg: '#6B46C1', fg: '#FFFFFF' }, // Purple background, light foreground
+    { name: 'Yellow', bg: '#FFD93D', fg: '#D73502' }, // Yellow background, red foreground
+    { name: 'Navy', bg: '#1E3A5F', fg: '#FF6B9D' }, // Navy background, pink foreground
+    { name: 'Maroon', bg: '#8B2635', fg: '#FFFFFF' }, // Maroon background, light foreground
+    { name: 'Green', bg: '#22C55E', fg: '#FFFFFF' } // Green background, light foreground
+  ]
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
+  const [sortBy, setSortBy] = useState("Random")
+  const randomSeedRef = useRef<number>(() => {
+    // stable seed per session
+    return (Date.now() % 100000) / 100000
+  }) as React.MutableRefObject<number>
+  if (typeof randomSeedRef.current !== 'number') randomSeedRef.current = (Date.now() % 100000) / 100000
+
+  const seeded = (id: number) => {
+    const seed = randomSeedRef.current || 0.123456
+    // simple deterministic hash on id + seed
+    const x = Math.sin(id * (seed * 1000 + 1)) * 10000
+    return x - Math.floor(x)
+  }
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc") // New = desc, Old = asc
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
+
+  // Color theme functions
+  const cycleColorTheme = () => {
+    setCurrentColorTheme((prev) => (prev + 1) % colorThemes.length)
+  }
+
+  const resetToBlackAndWhite = () => {
+    setCurrentColorTheme(0)
+  }
+
+  const getCurrentTheme = () => colorThemes[currentColorTheme]
+  
+  // Stable preview font per collection (don't change during session)
+  const previewFontsRef = useRef<Record<'Text'|'Display'|'Weirdo', string>>({ Text: '', Display: '', Weirdo: '' })
+  const getStablePreviewFontForCollection = (collection: "Text" | "Display" | "Weirdo") => {
+    if (!previewFontsRef.current[collection]) {
+      const candidates = fonts.filter(f => f.collection === collection)
+      if (candidates.length) {
+        const pick = candidates[Math.floor(Math.random() * candidates.length)]
+        previewFontsRef.current[collection] = pick?.fontFamily || "Inter Variable, system-ui, sans-serif"
       }
     }
+    return previewFontsRef.current[collection] || "Inter Variable, system-ui, sans-serif"
+  }
+  const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
+  const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
+  const inputRefs = useRef<Record<number, HTMLInputElement | null>>({})
+  const [focusedFontId, setFocusedFontId] = useState<number | null>(null)
 
-    loadFonts()
+  const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
+  const [textCursorPosition, setTextCursorPosition] = useState(0)
+
+  // Load fonts from our API
+  const loadFonts = useCallback(async () => {
+    try {
+      setIsLoadingFonts(true)
+      console.log('🔄 Loading fonts from API...')
+      // Prefer normalized families endpoint; fallback to legacy list
+      let handled = false
+      try {
+        const respFamilies = await fetch(`/api/families?t=${Date.now()}`)
+        if (respFamilies.ok) {
+          const fd = await respFamilies.json()
+          console.log('📋 Families API Response:', fd)
+          if (fd.success && Array.isArray(fd.families)) {
+            // Inject CSS directly from normalized families
+            try {
+              const { buildFontCSS } = await import('@/lib/font-css')
+              const css = buildFontCSS(fd.families)
+              const existing = document.querySelector('style[data-font-css]')
+              if (existing) existing.remove()
+              if (css) {
+                const el = document.createElement('style')
+                el.setAttribute('data-font-css', 'true')
+                el.textContent = css
+                document.head.appendChild(el)
+              }
+            } catch (e) {
+              console.warn('Failed to build font CSS from families:', e)
+            }
+            const catalogFonts: FontData[] = fd.families.map((family: any, index: number) => {
+              const familyFonts = family.variants || []
+              const representativeFont =
+                familyFonts.find((v: any) => v.isDefaultStyle) ||
+                familyFonts.find((v: any) => !v.isItalic) ||
+                familyFonts[0]
+              if (!representativeFont) return null
+
+              const isVariable = Boolean(family.isVariable) || familyFonts.some((v: any) => v.isVariable)
+              let availableWeights: number[] = []
+              let availableStylesWithWeights: any[] = []
+
+              if (isVariable) {
+                const weightAxes = familyFonts
+                  .filter((v: any) => v.variableAxes?.some((a: any) => a.axis === 'wght'))
+                  .map((v: any) => v.variableAxes?.find((a: any) => a.axis === 'wght'))
+                  .filter(Boolean)
+                if (weightAxes.length > 0) {
+                  const minWeight = Math.min(...weightAxes.map((axis: any) => axis.min))
+                  const maxWeight = Math.max(...weightAxes.map((axis: any) => axis.max))
+                  availableWeights = [100,200,300,400,500,600,700,800,900].filter(w => w >= minWeight && w <= maxWeight)
+                } else {
+                  // If axis data missing, expose full common range
+                  availableWeights = [100,200,300,400,500,600,700,800,900]
+                }
+                availableStylesWithWeights = availableWeights.map((weight) => ({
+                  weight,
+                  styleName: getStyleNameFromWeight(weight, false),
+                  isItalic: false,
+                }))
+                const hasItalic = familyFonts.some((v: any) => v.isItalic) ||
+                  familyFonts.some((v: any) => Array.isArray(v.variableAxes) && v.variableAxes.some((a: any) => a.axis === 'ital' || a.axis === 'slnt'))
+                if (hasItalic) {
+                  availableStylesWithWeights = [
+                    ...availableStylesWithWeights,
+                    ...availableWeights.map((weight) => ({
+                      weight,
+                      styleName: getStyleNameFromWeight(weight, true),
+                      isItalic: true,
+                    })),
+                  ]
+                }
+                // Dedupe by weight+italic
+                const seen = new Set<string>()
+                availableStylesWithWeights = availableStylesWithWeights.filter((s:any)=>{
+                  const k = `${s.weight}|${s.isItalic?1:0}`
+                  if (seen.has(k)) return false
+                  seen.add(k)
+                  return true
+                })
+              } else {
+                // Static family: expose each variant distinctly using per-variant CSS alias to avoid weight/style collisions
+                const familyAlias = `${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}`
+                availableStylesWithWeights = familyFonts.map((v: any) => ({
+                  weight: v.weight || 400,
+                  styleName: v.styleName || 'Regular',
+                  isItalic: Boolean(v.isItalic),
+                  cssFamily: `${familyAlias}__v_${shortHash(v.id || v.filename).slice(0,6)}`,
+                })).sort((a: any, b: any) => {
+                  if (a.weight !== b.weight) return a.weight - b.weight
+                  return a.isItalic ? 1 : -1
+                })
+                availableWeights = [...new Set(availableStylesWithWeights.map((s: any) => s.weight))].sort((a: number, b: number) => a - b)
+              }
+
+              const hasItalic = familyFonts.some((v: any) => v.isItalic)
+              const finalType = isVariable ? 'Variable' : 'Static'
+
+              return {
+                id: index + 1,
+                name: family.name,
+                family: family.name,
+                style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
+                category: Array.isArray(family.category) ? (family.category[0] || 'Sans') : (family.category || 'Sans'),
+                styles: availableStylesWithWeights.length || familyFonts.length,
+                type: finalType,
+                author: family.foundry || 'Unknown',
+                fontFamily: `"${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}", system-ui, sans-serif`,
+                availableWeights,
+                hasItalic,
+                filename: representativeFont.originalFilename || representativeFont.filename,
+                url: representativeFont.blobUrl,
+                downloadLink: family.downloadLink,
+                variableAxes: representativeFont.variableAxes,
+                openTypeFeatures: representativeFont.openTypeFeatures,
+                _familyFonts: familyFonts.map((v: any) => ({
+                  weight: v.weight,
+                  style: v.styleName,
+                  isItalic: v.isItalic,
+                  blobUrl: v.blobUrl,
+                  url: v.blobUrl,
+                  cssFamily: `${canonicalFamilyName(family.name)}-${shortHash(canonicalFamilyName(family.name)).slice(0,6)}__v_${shortHash(v.id || v.filename).slice(0,6)}`,
+                  downloadLink: v.downloadLink,
+                  variableAxes: v.variableAxes,
+                  openTypeFeatures: v.openTypeFeatures,
+                  openTypeFeatureTags: (v as any).openTypeFeatureTags,
+                  uploadedAt: v.uploadedAt || v.createdAt || null,
+                })),
+                _availableStyles: availableStylesWithWeights,
+                collection: family.collection || 'Text',
+                styleTags: family.styleTags || [],
+                languages: Array.isArray(family.languages) ? family.languages : ['Latin'],
+                categories: Array.isArray(family.category) ? family.category : [family.category || 'Sans'],
+              } as FontData
+            }).filter(Boolean)
+
+            setFonts(catalogFonts as FontData[])
+            console.log(`📝 Loaded ${catalogFonts.length} families from /api/families`)
+            handled = true
+          }
+        }
+      } catch (e) {
+        console.warn('Families endpoint not available, falling back:', e)
+      }
+
+      if (!handled) {
+        const response = await fetch(`/api/fonts-clean/list?t=${Date.now()}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📋 API Response:', data)
+          if (data.success && data.fonts) {
+          // Group fonts by family name to avoid duplicates
+          const fontsByFamily = new Map<string, any[]>()
+          data.fonts.forEach((font: any) => {
+            const familyName = font.family || font.name
+            if (!fontsByFamily.has(familyName)) {
+              fontsByFamily.set(familyName, [])
+            }
+            fontsByFamily.get(familyName)!.push(font)
+          })
+
+          // Transform grouped families to catalog UI format
+            const catalogFonts: FontData[] = Array.from(fontsByFamily.entries()).map(([familyName, familyFonts], index) => {
+            try {
+            // Choose the best representative font: 
+            // 1. Font marked as default style
+            // 2. Non-italic font (regular/normal)
+            // 3. First font as fallback
+            const representativeFont = familyFonts?.find((f: any) => f.isDefaultStyle) ||
+              familyFonts?.find((f: any) => !f.style?.toLowerCase().includes('italic') && !f.style?.toLowerCase().includes('oblique')) ||
+              familyFonts?.[0]
+            
+            if (!representativeFont) {
+              console.warn(`No representative font found for family: ${familyName}`)
+              return null
+            }
+            
+            console.log(`Processing family: ${familyName}, fonts: ${familyFonts.length}`);
+            
+            // Analyze available weight+style combinations
+            const regularFonts = familyFonts.filter(f => !f.style?.toLowerCase().includes('italic'))
+            const italicFonts = familyFonts.filter(f => f.style?.toLowerCase().includes('italic'))
+            const hasItalic = italicFonts.length > 0
+            const isVariable = familyFonts.some(f => f.isVariable)
+            
+            // Calculate available weights and styles for both variable and static fonts
+            let availableWeights
+            let availableStylesWithWeights = []
+            
+              if (isVariable) {
+                // For variable fonts, use weight axis range or common weight stops
+                const weightAxes = familyFonts
+                  .filter(f => f.variableAxes?.some(axis => axis.axis === 'wght'))
+                  .map(f => f.variableAxes?.find(axis => axis.axis === 'wght'))
+                  .filter(Boolean)
+                
+                if (weightAxes.length > 0) {
+                  // Use weight range from variable axis
+                  const minWeight = Math.min(...weightAxes.map(axis => axis.min))
+                  const maxWeight = Math.max(...weightAxes.map(axis => axis.max))
+                  // Common weight stops within the range
+                  availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                    .filter(w => w >= minWeight && w <= maxWeight)
+                } else {
+                // Fallback for variable fonts without clear weight axis
+                availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
+                }
+              
+              // For variable fonts, generate style names from weights
+              availableStylesWithWeights = availableWeights.map(weight => ({
+                weight,
+                styleName: getStyleNameFromWeight(weight, false),
+                isItalic: false
+              }))
+              
+              // Add italic variants if any font in family has italic capability
+              if (hasItalic) {
+                const italicStyles = availableWeights.map(weight => ({
+                  weight,
+                  styleName: getStyleNameFromWeight(weight, true),
+                  isItalic: true
+                }))
+                availableStylesWithWeights = [...availableStylesWithWeights, ...italicStyles]
+              }
+              // Dedupe by weight+italic
+              const seen = new Set<string>()
+              availableStylesWithWeights = availableStylesWithWeights.filter((s:any)=>{
+                const k = `${s.weight}|${s.isItalic?1:0}`
+                if (seen.has(k)) return false
+                seen.add(k)
+                return true
+              })
+            } else {
+              // Static family: expose each variant distinctly using per-variant CSS alias to avoid collisions
+              const familyAlias = `${canonicalFamilyName(familyName)}-${shortHash(canonicalFamilyName(familyName)).slice(0,6)}`
+              const allFontStyles = familyFonts.map(font => ({
+                weight: font.weight || 400,
+                styleName: font.style || 'Regular',
+                isItalic: font.style?.toLowerCase().includes('italic') || font.style?.toLowerCase().includes('oblique') || false,
+                cssFamily: `${familyAlias}__v_${shortHash(font.id || font.filename).slice(0,6)}`,
+                font: font
+              }))
+              // Sort by weight, then regular before italic
+              availableStylesWithWeights = allFontStyles.sort((a, b) => {
+                if (a.weight !== b.weight) return a.weight - b.weight
+                return a.isItalic ? 1 : -1
+              })
+              availableWeights = [...new Set(allFontStyles.map(style => style.weight))].sort((a, b) => a - b)
+            }
+            
+            const finalType = isVariable ? "Variable" : "Static"
+            
+              return {
+              id: index + 1,
+              name: familyName,
+              family: familyName,
+              style: `${familyFonts.length} style${familyFonts.length !== 1 ? 's' : ''}`,
+              category: Array.isArray(representativeFont.category) 
+                ? representativeFont.category[0] || "Sans" // Use first category for UI compatibility
+                : (representativeFont.category || "Sans"),
+              styles: familyFonts.length,
+              type: finalType,
+              author: representativeFont.foundry || "Unknown",
+              fontFamily: `"${canonicalFamilyName(familyName)}-${shortHash(canonicalFamilyName(familyName)).slice(0,6)}", system-ui, sans-serif`,
+              availableWeights: availableWeights,
+              hasItalic: hasItalic,
+              filename: representativeFont.filename,
+              url: representativeFont.url || representativeFont.blobUrl,
+              downloadLink: representativeFont.downloadLink,
+              variableAxes: representativeFont.variableAxes,
+              openTypeFeatures: representativeFont.openTypeFeatures,
+              // Store family fonts data for style selection
+              _familyFonts: familyFonts.map((f:any)=>({
+                ...f,
+                openTypeFeatureTags: (f as any).openTypeFeatureTags || (f as any).openTypeFeatureTagsParsed || undefined
+              })),
+              // Store structured style data for proper style selection
+              _availableStyles: availableStylesWithWeights,
+              // Add collection and style tags for filtering
+              collection: representativeFont.collection || 'Text',
+              styleTags: representativeFont.styleTags || [],
+              languages: Array.isArray(representativeFont.languages) ? representativeFont.languages : ['Latin'],
+              categories: Array.isArray(representativeFont.category) ? representativeFont.category : [representativeFont.category || "Sans"]
+            }
+            } catch (error) {
+              console.error(`Error processing family ${familyName}:`, error)
+              return null
+            }
+          }).filter(Boolean) // Remove null entries
+          setFonts(catalogFonts)
+          console.log(`📝 Loaded ${catalogFonts.length} font families for catalog (${data.fonts.length} total font files)`)
+          
+          // Load CSS for all fonts
+          loadFontCSS(catalogFonts)
+        } else {
+          console.warn('No font data or empty fonts array')
+        }
+      } else {
+        console.error('API response not ok:', response.status, response.statusText)
+      }
+      }
+    } catch (error) {
+      console.error('Failed to load fonts:', error)
+    } finally {
+      setIsLoadingFonts(false)
+    }
   }, [])
 
-  const filteredFonts = fonts
-    .filter(font => font.collection === selectedCollection)
-    .filter(font =>
-      searchQuery === '' ||
-      font.family.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      font.foundry.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  // Load font CSS dynamically
+  const loadFontCSS = useCallback((fonts: FontData[]) => {
+    // Remove existing font styles
+    const existingStyles = document.querySelectorAll('style[data-font-css]')
+    existingStyles.forEach(style => style.remove())
 
-  return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
-      {/* Header */}
-      <header className="border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl z-50">
-        <div className="max-w-[2000px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
-                ← v1
-              </Link>
-              <h1 className="text-xl font-medium tracking-tight">typedump v2</h1>
-              <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg p-1">
-                {(['Text', 'Display', 'Weirdo'] as const).map((collection) => (
-                  <button
-                    key={collection}
-                    onClick={() => setSelectedCollection(collection)}
-                    className={`px-4 py-1.5 text-sm rounded-md transition-all ${
-                      selectedCollection === collection
-                        ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
-                    }`}
-                  >
-                    {collection}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search fonts..."
-                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg text-sm border-0 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 w-64"
-              />
-              <input
-                type="text"
-                value={previewText}
-                onChange={(e) => setPreviewText(e.target.value)}
-                placeholder="Preview text..."
-                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 rounded-lg text-sm border-0 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 w-64"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-[2000px] mx-auto px-6 py-12">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-32">
-            <div className="text-zinc-400">Loading fonts...</div>
-          </div>
-        ) : filteredFonts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32">
-            <div className="text-zinc-400 mb-2">No fonts found</div>
-            <div className="text-sm text-zinc-500">Try adjusting your filters</div>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {filteredFonts.map((font) => (
-              <div
-                key={font.id}
-                className="group border-b border-zinc-100 dark:border-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 transition-colors"
-              >
-                <div className="py-8">
-                  {/* Font Info */}
-                  <div className="flex items-baseline justify-between mb-6">
-                    <div className="flex items-baseline gap-4">
-                      <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {font.family}
-                      </h2>
-                      <span className="text-xs text-zinc-400">
-                        {font.foundry}
-                      </span>
-                      {font.isVariable && (
-                        <span className="text-xs bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-2 py-0.5 rounded">
-                          Variable
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {font.styleTags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs text-zinc-500 dark:text-zinc-400"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Preview */}
-                  <div
-                    className="text-6xl leading-tight text-zinc-900 dark:text-zinc-100 font-normal break-words"
-                    style={{
-                      fontFamily: `"${font.family}", system-ui, sans-serif`,
-                    }}
-                  >
-                    {previewText}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 mt-24">
-        <div className="max-w-[2000px] mx-auto px-6 py-8">
-          <div className="flex items-center justify-between text-sm text-zinc-500">
-            <div>
-              {filteredFonts.length} {filteredFonts.length === 1 ? 'font' : 'fonts'} in {selectedCollection}
-            </div>
-            <div>
-              typedump v2.0 — cleaner, simpler
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Dynamic font loading */}
-      <style jsx global>{`
-        ${fonts
-          .filter(font => font.url)
-          .map(
-            (font) => `
+    // Generate CSS for each font - handle multiple files per family
+    const fontCSS = fonts.map(font => {
+      if (font._familyFonts && font._familyFonts.length > 1) {
+        // For families with multiple files, create @font-face for each file
+        return font._familyFonts.map((fontFile: any) => {
+          const isItalic = (fontFile.style || '').toLowerCase().includes('italic') || (fontFile.style || '').toLowerCase().includes('oblique')
+          const fontWeight = fontFile.weight || 400
+          
+          return `
+            @font-face {
+              font-family: "${font.family}";
+              src: url("${fontFile.url || fontFile.blobUrl || `/fonts/${fontFile.filename}`}");
+              font-weight: ${fontWeight};
+              font-style: ${isItalic ? 'italic' : 'normal'};
+              font-display: swap;
+            }`
+        }).join('\n')
+      } else {
+        // Single font file
+        const isItalic = (font.style || '').toLowerCase().includes('italic') || (font.style || '').toLowerCase().includes('oblique')
+        return `
           @font-face {
             font-family: "${font.family}";
-            src: url("${font.url}");
+            src: url("${font.url || `/fonts/${font.filename}`}");
+            font-weight: ${font.availableWeights?.[0] || 400};
+            font-style: ${isItalic ? 'italic' : 'normal'};
             font-display: swap;
+          }`
+      }
+    }).join('\n')
+
+    // Inject CSS
+    if (fontCSS) {
+      const styleElement = document.createElement('style')
+      styleElement.setAttribute('data-font-css', 'true')
+      styleElement.textContent = fontCSS
+      document.head.appendChild(styleElement)
+    }
+  }, [])
+
+  // Helper function to get stylistic alternates from font's OpenType features
+  const getStyleAlternates = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (!font) return []
+    // Prefer server-parsed structured tags if available
+    const tagList: Array<{ tag: string; title: string }> = []
+    const pushTags = (ff: any) => {
+      const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+    }
+    pushTags(font)
+    font._familyFonts?.forEach(pushTags)
+    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+
+    // Fallback: parse from strings heuristically
+    const allFeatures = new Map<string, string>()
+    const pushFeature = (feat: any) => {
+      let raw = ''
+      if (typeof feat === 'string') raw = feat
+      else if (feat && typeof feat === 'object') raw = (feat.tag || feat.name || feat.title || '').toString()
+      if (!raw) return
+      processStyleFeature(raw, allFeatures)
+    }
+    if (Array.isArray((font as any).openTypeFeatures)) (font as any).openTypeFeatures.forEach(pushFeature)
+    if (Array.isArray((font as any).features)) (font as any).features.forEach(pushFeature)
+    if (font._familyFonts) {
+      font._familyFonts.forEach(familyFont => {
+        if (Array.isArray((familyFont as any).openTypeFeatures)) (familyFont as any).openTypeFeatures.forEach(pushFeature)
+        if (Array.isArray((familyFont as any).features)) (familyFont as any).features.forEach(pushFeature)
+      })
+    }
+    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
+  }
+  
+  // Helper function to process stylistic features
+  const processStyleFeature = (feature: string, allFeatures: Map<string, string>) => {
+    // Look for stylistic sets (ss01, ss02, etc.) and stylistic alternates
+    const f = (feature || '').toLowerCase()
+    if (f.includes('stylistic set') || f.includes('stylistic alternates') || /ss\d+/.test(f)) {
+      // Convert readable names to OpenType tags while preserving descriptive names
+      let tag = ''
+      let title = feature
+      
+      if (f.includes('stylistic alternates')) tag = 'salt'
+      else if (f.includes('stylistic set 1')) tag = 'ss01'
+      else if (f.includes('stylistic set 2')) tag = 'ss02'
+      else if (f.includes('stylistic set 3')) tag = 'ss03'
+      else if (f.includes('stylistic set 4')) tag = 'ss04'
+      else if (f.includes('stylistic set 5')) tag = 'ss05'
+      else if (f.includes('stylistic set 6')) tag = 'ss06'
+      else if (f.includes('stylistic set 7')) tag = 'ss07'
+      else if (f.includes('stylistic set 8')) tag = 'ss08'
+      else if (f.includes('stylistic set 9')) tag = 'ss09'
+      else if (f.includes('stylistic set 10')) tag = 'ss10'
+      else if (/ss\d+/.test(f)) {
+        const match = f.match(/ss\d+/i)
+        if (match) tag = (match[0] || '').toLowerCase()
+      }
+      
+      if (tag) {
+        allFeatures.set(tag, title)
+      }
+    }
+  }
+
+  // Helper function to get other OpenType features (non-stylistic)
+  const getOtherOTFeatures = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (!font?._familyFonts) return []
+    
+    // Mapping from readable feature names to OpenType tags with descriptive titles
+    const featureMapping: Record<string, { tag: string; title: string }> = {
+      'standard ligatures': { tag: 'liga', title: 'Standard Ligatures' },
+      'discretionary ligatures': { tag: 'dlig', title: 'Discretionary Ligatures' },
+      'contextual ligatures': { tag: 'clig', title: 'Contextual Ligatures' },
+      'kerning': { tag: 'kern', title: 'Kerning' },
+      'fractions': { tag: 'frac', title: 'Fractions' },
+      'ordinals': { tag: 'ordn', title: 'Ordinals' },
+      'superscript': { tag: 'sups', title: 'Superscript' },
+      'subscript': { tag: 'subs', title: 'Subscript' },
+      'small capitals': { tag: 'smcp', title: 'Small Capitals' },
+      'all small caps': { tag: 'c2sc', title: 'All Small Caps' },
+      'case-sensitive forms': { tag: 'case', title: 'Case-Sensitive Forms' },
+      'slashed zero': { tag: 'zero', title: 'Slashed Zero' },
+      'tabular nums': { tag: 'tnum', title: 'Tabular Numbers' },
+      'proportional nums': { tag: 'pnum', title: 'Proportional Numbers' },
+      'lining figures': { tag: 'lnum', title: 'Lining Figures' },
+      'oldstyle figures': { tag: 'onum', title: 'Oldstyle Figures' }
+    }
+    
+    // Prefer structured tags first
+    const tagList: Array<{ tag: string; title: string }> = []
+    const pushTags = (ff: any) => {
+      const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (!/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+    }
+    font._familyFonts?.forEach(pushTags)
+    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+
+    const allFeatures = new Map<string, string>()
+    font._familyFonts.forEach(familyFont => {
+      if (Array.isArray((familyFont as any).openTypeFeatures)) {
+        (familyFont.openTypeFeatures as any[]).forEach((feature: any) => {
+          const lowerFeature = typeof feature === 'string' ? feature.toLowerCase() : ''
+          if (lowerFeature && !lowerFeature.includes('stylistic')) {
+            const mapping = featureMapping[lowerFeature]
+            if (mapping) {
+              allFeatures.set(mapping.tag, mapping.title)
+            }
           }
-        `
+        })
+      }
+    })
+    return Array.from(allFeatures.entries()).map(([tag, title]) => ({ tag, title })).sort((a, b) => a.tag.localeCompare(b.tag))
+  }
+
+  const getVariableAxes = (fontId: number) => {
+    const font = fonts.find((f) => f.id === fontId)
+    if (!font?._familyFonts) return []
+    
+    // Get variable axes from font metadata
+    const allAxes = new Map<string, { tag: string, name: string, min: number, max: number, default: number }>()
+    font._familyFonts.forEach(familyFont => {
+      if (familyFont.variableAxes) {
+        familyFont.variableAxes.forEach((axis: any) => {
+          // Use axis tag as key to avoid duplicates
+          const min = Number(axis.min)
+          const max = Number(axis.max)
+          // Filter out degenerate axes (no range)
+          if (!isFinite(min) || !isFinite(max) || max <= min) return
+          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: Number(axis.default) })
+        })
+      }
+    })
+    
+    return Array.from(allAxes.values())
+  }
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
+    )
+  }
+
+  const toggleStyle = (style: string) => {
+    setSelectedStyles((prev) => (prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]))
+  }
+
+  const toggleWeight = (weight: number) => {
+    setSelectedWeights((prev) => (prev.includes(weight) ? prev.filter((w) => w !== weight) : [...prev, weight]))
+  }
+
+  const updateFontSelection = (fontId: number, weight: number, italic: boolean, cssFamily?: string) => {
+    console.log(`Updating font selection for ${fontId}: weight=${weight}, italic=${italic}`);
+    setFontWeightSelections((prev) => ({
+      ...prev,
+      [fontId]: { weight, italic, cssFamily: cssFamily || prev[fontId]?.cssFamily, styleName: prev[fontId]?.styleName },
+    }))
+    // Ensure variable fonts reflect dropdown in wght axis for rendering
+    setFontVariableAxes((prev) => ({
+      ...prev,
+      [fontId]: { ...(prev[fontId] || {}), wght: weight },
+    }))
+  }
+
+  const handleSort = (sortType: "Random" | "Date" | "Alphabetical") => {
+    if (sortBy === sortType) {
+      // Toggle direction if same sort type
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
+    } else {
+      // Set new sort type with default direction
+      setSortBy(sortType)
+      setSortDirection(sortType === "Date" ? "desc" : sortType === "Alphabetical" ? "asc" : "desc") // Date: desc, Alpha: asc, Random: desc
+    }
+  }
+
+  const getFilteredFonts = () => {
+    const filtered = fonts.filter((font) => {
+      // Filter by collection (displayMode) - each tab should only show fonts from that collection
+      const fontCollection = font.collection || 'Text' // Default to 'Text' if no collection set
+      
+      if (fontCollection !== displayMode) {
+        return false
+      }
+      
+      // Filter by selected categories (AND logic)
+      if (selectedCategories.length > 0) {
+        const matchesAllCategories = selectedCategories.every(cat => font.categories.includes(cat))
+        if (!matchesAllCategories) return false
+      }
+      
+      // Filter by selected style tags (AND logic)
+      if (selectedStyles.length > 0) {
+        const hasMatchingStyle = selectedStyles.every(style => {
+          // Check styleTags if available
+          if (font.styleTags && Array.isArray(font.styleTags)) {
+            return font.styleTags.includes(style)
+          }
+          // Fallback: check against inferred tags
+          if (style === 'Display' && font.collection === 'Display') return true
+          if (style === 'Serif' && font.categories?.includes('Serif')) return true  
+          if (style === 'Sans Serif' && font.categories?.includes('Sans')) return true
+          if (style === 'Monospace' && font.categories?.includes('Mono')) return true
+          if (style === 'Script' && font.categories?.includes('Script')) return true
+          if (style === 'Decorative' && font.categories?.includes('Decorative')) return true
+          return false
+        })
+        if (!hasMatchingStyle) return false
+      }
+      
+      // Filter by selected languages
+      if (selectedLanguages.length > 0) {
+        const hasMatchingLanguage = selectedLanguages.some(lang => 
+          font.languages && font.languages.includes(lang)
+        )
+        if (!hasMatchingLanguage) return false
+      }
+      
+      // Filter by weights and italic (existing logic)
+      if (selectedWeights.length === 0 && !isItalic) return true
+
+      if (selectedWeights.length === 0 && isItalic) {
+        return font.hasItalic
+      }
+
+      if (selectedWeights.length > 0) {
+        const hasSelectedWeight = selectedWeights.some((weight) => font.availableWeights.includes(weight))
+
+        if (isItalic) {
+          return hasSelectedWeight && font.hasItalic
+        }
+
+        return hasSelectedWeight
+      }
+
+      return true
+    })
+
+    // Apply sorting based on sortBy and sortDirection
+    if (sortBy === "Random") {
+      return filtered.sort((a, b) => seeded(a.id) - seeded(b.id))
+    }
+    return filtered.sort((a, b) => {
+      let result = 0
+      
+      if (sortBy === "Alphabetical") {
+        // Enhanced alphabetical sorting with numbers and symbols at the top
+        result = a.name.localeCompare(b.name, undefined, { 
+          numeric: true, 
+          sensitivity: 'base',
+          ignorePunctuation: false 
+        })
+      } else {
+        // Date sorting - use newest date across family
+        const ad = Array.isArray(a._familyFonts) ? Math.max(...a._familyFonts.map((f:any)=> f.uploadedAt ? new Date(f.uploadedAt).getTime() : 0)) : 0
+        const bd = Array.isArray(b._familyFonts) ? Math.max(...b._familyFonts.map((f:any)=> f.uploadedAt ? new Date(f.uploadedAt).getTime() : 0)) : 0
+        const aDate = isFinite(ad) ? ad : 0
+        const bDate = isFinite(bd) ? bd : 0
+        result = aDate - bDate // Default ascending (oldest first)
+      }
+      
+      // Apply direction (flip result for descending)
+      return sortDirection === "desc" ? -result : result
+    })
+  }
+
+  const resetFilters = () => {
+    setCustomText("")
+    setDisplayMode("Text")
+    setSelectedPreset("Names")
+    setSelectedCategories([])
+    setSelectedStyles([])
+    setSelectedLanguages([])
+    setSelectedWeights([])
+    setIsItalic(false)
+    setFontWeightSelections({})
+    setTextSize([72])
+    setLineHeight([120])
+    setExpandedCards(new Set())
+    setFontOTFeatures({})
+    setFontVariableAxes({})
+  }
+
+  const getPreviewContent = (fontName: string) => {
+    if (customText.trim()) {
+      return customText
+    }
+    return getPresetContent(selectedPreset, fontName)
+  }
+
+  // Small wrapper to use ControlledTextPreview with safe focus/cursor handling
+  const ControlledPreviewInput = ({
+    value,
+    cursorPosition,
+    onChangeText,
+    className,
+    style,
+    onToggleExpand,
+    fontId,
+  }: {
+    value: string
+    cursorPosition: number
+    onChangeText: (v: string, pos: number) => void
+    className?: string
+    style?: React.CSSProperties
+    onToggleExpand?: () => void
+    fontId: number
+  }) => {
+    const localRef = useRef<HTMLInputElement | null>(null)
+    useEffect(() => { inputRefs.current[fontId] = localRef.current }, [fontId])
+    return (
+      <ControlledTextPreview
+        ref={localRef as any}
+        value={value}
+        cursorPosition={cursorPosition}
+        onChange={(v, pos) => onChangeText(v, pos)}
+        onCursorChange={(pos) => onChangeText(value, pos)}
+        onClick={() => { if (!expandedCards.has(fontId)) toggleCardExpansion(fontId) }}
+        onFocus={() => {
+          setFocusedFontId(fontId)
+          if (!expandedCards.has(fontId)) toggleCardExpansion(fontId)
+        }}
+        className={className}
+        style={style}
+        multiline={true}
+      />
+    )
+  }
+
+  // Restore focus to the currently edited preview input after state updates
+  useEffect(() => {
+    if (focusedFontId != null) {
+      const el = inputRefs.current[focusedFontId]
+      if (el) {
+        try {
+          el.focus()
+          const pos = Math.min(textCursorPosition, el.value.length)
+          el.setSelectionRange(pos, pos)
+        } catch {}
+      }
+    }
+  }, [customText, textCursorPosition])
+
+  // Keep focus across expand/collapse toggles
+  useEffect(() => {
+    if (focusedFontId != null) {
+      const el = inputRefs.current[focusedFontId]
+      if (el) {
+        try {
+          el.focus()
+          const pos = Math.min(textCursorPosition, el.value.length)
+          el.setSelectionRange(pos, pos)
+        } catch {}
+      }
+    }
+  }, [expandedCards])
+
+  // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
+  const getAvailableStyleTags = () => {
+    const allTags = new Set<string>()
+    fonts.forEach(font => {
+      // Only include tags from fonts in the current collection
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode) {
+        if (font.styleTags && Array.isArray(font.styleTags)) {
+          font.styleTags.forEach(tag => allTags.add(tag))
+        }
+      }
+    })
+    const arr = Array.from(allTags)
+    // Sort by per-collection vocab order if available
+    // fetch is done outside during lifecycle; try reading window-managed vocab via endpoint synchronously is costly
+    // For now, do a quick fetch on first call when no local order yet
+    if (typeof window !== 'undefined' && arr.length > 0) {
+      // attempt to use cached order via a data attribute or skip if not fetched
+    }
+    return arr.sort((a,b)=>{
+      const order = (window as any).__appearanceOrder__?.[displayMode] as string[] | undefined
+      if (order && order.length) {
+        const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
+        const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
+        return (ia===-1? 1e6:ia) - (ib===-1? 1e6:ib)
+      }
+      return a.localeCompare(b)
+    })
+  }
+
+  // Get dynamic categories based on fonts actually present in current collection, ordered by Manage Tags vocab
+  const getCollectionCategories = () => {
+    // Get all categories from fonts in the current collection
+    const actualCategories = new Set<string>()
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode && font.categories) {
+        font.categories.forEach(category => actualCategories.add(category))
+      }
+    })
+    
+    const arr = Array.from(actualCategories)
+    return arr.sort((a,b)=>{
+      const order = (window as any).__categoryOrder__?.[displayMode] as string[] | undefined
+      if (order && order.length) {
+        const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
+        const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
+        return (ia===-1? 1e6:ia) - (ib===-1? 1e6:ib)
+      }
+      return a.localeCompare(b)
+    })
+  }
+
+  const getCollectionLanguages = () => {
+    // Get all languages from fonts in the current collection
+    const actualLanguages = new Set<string>()
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === displayMode) {
+        // Check if font has language data
+        if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
+          font.languages.forEach(language => actualLanguages.add(language))
+        } else {
+          // Fallback: if no language data, assume Latin for most fonts
+          actualLanguages.add('Latin')
+        }
+      }
+    })
+    
+    console.log(`Languages in ${displayMode} collection:`, Array.from(actualLanguages));
+    
+    // Define preferred order for common languages
+    const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
+    
+    // Return languages in preferred order, but only those that actually exist
+    const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
+    
+    // Add any remaining languages that exist but aren't in the preferred order
+    const remainingLanguages = Array.from(actualLanguages)
+      .filter(lang => !languageOrder.includes(lang))
+      .sort()
+    
+    const result = [...orderedLanguages, ...remainingLanguages];
+    console.log(`Final language result for ${displayMode}:`, result);
+    return result;
+  }
+
+  // Helper function to convert weight number to style name
+  const getStyleNameFromWeight = (weight: number, isItalic: boolean): string => {
+    let styleName = 'Regular'
+    
+    if (weight <= 150) styleName = 'Thin'
+    else if (weight <= 250) styleName = 'ExtraLight'
+    else if (weight <= 350) styleName = 'Light'
+    else if (weight <= 450) styleName = 'Regular'
+    else if (weight <= 550) styleName = 'Medium'
+    else if (weight <= 650) styleName = 'SemiBold'
+    else if (weight <= 750) styleName = 'Bold'
+    else if (weight <= 850) styleName = 'ExtraBold'
+    else styleName = 'Black'
+    
+    return isItalic ? `${styleName} Italic` : styleName
+  }
+
+  // Clean up filters when switching collections - remove invalid categories/styles
+  const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
+    // Temporarily set displayMode to get correct categories/styles for the new collection
+    const originalDisplayMode = displayMode
+    
+    // Get what categories and styles would be available in the new collection
+    const newCollectionCategories = new Set<string>()
+    const newCollectionStyles = new Set<string>()
+    const newCollectionLanguages = new Set<string>()
+    
+    fonts.forEach(font => {
+      const fontCollection = font.collection || 'Text'
+      if (fontCollection === newDisplayMode) {
+        if (font.categories) {
+          font.categories.forEach(category => newCollectionCategories.add(category))
+        }
+        if (font.styleTags && Array.isArray(font.styleTags)) {
+          font.styleTags.forEach(tag => newCollectionStyles.add(tag))
+        }
+        if (font.languages) {
+          font.languages.forEach(language => newCollectionLanguages.add(language))
+        }
+      }
+    })
+    
+    // Remove selected categories that don't exist in new collection
+    const validSelectedCategories = selectedCategories.filter(cat => newCollectionCategories.has(cat))
+    if (validSelectedCategories.length !== selectedCategories.length) {
+      setSelectedCategories(validSelectedCategories)
+    }
+    
+    // Remove selected styles that don't exist in new collection  
+    const validSelectedStyles = selectedStyles.filter(style => newCollectionStyles.has(style))
+    if (validSelectedStyles.length !== selectedStyles.length) {
+      setSelectedStyles(validSelectedStyles)
+    }
+
+    // Remove selected languages that don't exist in new collection
+    const validSelectedLanguages = selectedLanguages.filter(lang => newCollectionLanguages.has(lang))
+    if (validSelectedLanguages.length !== selectedLanguages.length) {
+      setSelectedLanguages(validSelectedLanguages)
+    }
+  }
+
+  // Post-render font fallback detection using DOM and canvas measurement
+  useEffect(() => {
+    const detectAndHighlightFallbackChars = () => {
+      // Find all contentEditable preview divs
+      const previewDivs = document.querySelectorAll('div[contenteditable="true"]')
+      
+      previewDivs.forEach((div) => {
+        const element = div as HTMLElement
+        const fontFamily = element.style.fontFamily
+        if (!fontFamily) return
+
+        // Create canvas for measurement
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+
+        const fontSize = 20 // Match approximate preview size
+        const originalText = element.textContent || ''
+        
+        // Check each character to build fallback map
+        const uniqueChars = [...new Set(originalText.split(''))]
+        const fallbackChars = new Set<string>()
+        
+        for (const char of uniqueChars) {
+          // Skip basic Latin characters and whitespace
+          if (/^[a-zA-Z0-9\s\.,!?;:'"-]$/.test(char)) continue
+          
+          try {
+            // Measure with intended font
+            ctx.font = `${fontSize}px ${fontFamily}`
+            const intendedWidth = ctx.measureText(char).width
+            
+            // Measure with fallback only
+            ctx.font = `${fontSize}px sans-serif`  
+            const fallbackWidth = ctx.measureText(char).width
+            
+            // If widths are very close, likely using fallback
+            if (Math.abs(intendedWidth - fallbackWidth) < 1) {
+              fallbackChars.add(char)
+            }
+          } catch (error) {
+            continue
+          }
+        }
+        
+        // Only proceed if we have fallback characters
+        if (fallbackChars.size === 0) {
+          // Clean up any existing highlighting
+          element.innerHTML = originalText
+          return
+        }
+        
+        // Create highlighted HTML by wrapping fallback characters
+        // Use class-only styling to avoid CSS variable injection into text content
+        let highlightedHTML = originalText
+        
+        for (const char of fallbackChars) {
+          const escapedChar = char.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(escapedChar, 'g')
+          highlightedHTML = highlightedHTML.replace(
+            regex,
+            `<span class="fallback-char">${char}</span>`
           )
-          .join('\n')}
-      `}</style>
+        }
+        
+        // Only update if content actually changed and element is not currently focused
+        // Also prevent updates if text already contains HTML/CSS artifacts  
+        if (highlightedHTML !== originalText && 
+            highlightedHTML !== element.innerHTML && 
+            document.activeElement !== element &&
+            !originalText.includes('var(--') && 
+            !originalText.includes(';">')) {
+          element.innerHTML = highlightedHTML
+        }
+      })
+    }
+    
+    // Run detection after fonts load and on text changes
+    const timer = setTimeout(detectAndHighlightFallbackChars, 100)
+    return () => clearTimeout(timer)
+  }, [fonts, customText])
+
+  // Placeholder function - now handled by useEffect
+  const highlightMissingCharacters = (text: string, fontId: number) => {
+    return text
+  }
+
+  const handlePreviewEdit = (element: HTMLDivElement, newText: string) => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+      setCustomText(newText)
+      return
+    }
+    
+    const range = selection.getRangeAt(0)
+    const cursorOffset = range.startOffset
+
+    // Store the cursor position before state update
+    const preserveCursor = () => {
+      requestAnimationFrame(() => {
+        if (element && selection) {
+          try {
+            let textNode = element.firstChild
+            if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+              const newRange = document.createRange()
+              const safeOffset = Math.min(cursorOffset, textNode.textContent?.length || 0)
+              newRange.setStart(textNode, safeOffset)
+              newRange.setEnd(textNode, safeOffset)
+              selection.removeAllRanges()
+              selection.addRange(newRange)
+            } else {
+              // If no text node exists, create one and position cursor
+              if (element.textContent !== newText) {
+                element.textContent = newText
+                textNode = element.firstChild
+                if (textNode) {
+                  const newRange = document.createRange()
+                  const safeOffset = Math.min(cursorOffset, newText.length)
+                  newRange.setStart(textNode, safeOffset)
+                  newRange.setEnd(textNode, safeOffset)
+                  selection.removeAllRanges()
+                  selection.addRange(newRange)
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('Cursor position restoration failed:', error)
+            element.focus()
+          }
+        }
+      })
+    }
+
+    setCustomText(newText)
+    preserveCursor()
+  }
+
+  const toggleCardExpansion = (fontId: number) => {
+    setExpandedCards((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(fontId)) {
+        newSet.delete(fontId)
+      } else {
+        newSet.add(fontId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleOTFeature = (fontId: number, feature: string) => {
+    setFontOTFeatures((prev) => ({
+      ...prev,
+      [fontId]: {
+        ...prev[fontId],
+        [feature]: !prev[fontId]?.[feature],
+      },
+    }))
+  }
+
+  const updateVariableAxis = (fontId: number, axis: string, value: number) => {
+    setFontVariableAxes((prev) => ({
+      ...prev,
+      [fontId]: {
+        ...prev[fontId],
+        [axis]: value,
+      },
+    }))
+    
+    // Sync weight axis changes with dropdown selection
+    if (axis === "wght") {
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: {
+          ...(prev[fontId] || { weight: 400, italic: false }),
+          weight: Math.round(value), // Round to nearest integer for weight
+        },
+      }))
+    }
+    // Sync italic axis to preview italic flag
+    if (axis === 'ital') {
+      const isItal = Number(value) >= 1
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
+      }))
+    }
+    if (axis === 'slnt') {
+      const isItal = Math.abs(Number(value)) > 0.01
+      setFontWeightSelections((prev) => ({
+        ...prev,
+        [fontId]: { ...(prev[fontId] || { weight: 400, italic: false }), italic: isItal },
+      }))
+    }
+  }
+
+  const getEffectiveStyle = (fontId: number) => {
+    const font = fonts.find(f => f.id === fontId)
+    const fontSelection = fontWeightSelections[fontId] || { weight: 400, italic: false }
+    const stateAxes = fontVariableAxes[fontId] || {}
+    const otFeatures = fontOTFeatures[fontId] || {}
+    const isFamilyVariable = (font?.type === 'Variable') || !!(font?.variableAxes && font.variableAxes.length)
+
+    // Base axes: ensure variable fonts always carry an explicit wght so browser doesn't use font's internal default
+    const axesOut: Record<string, number> = { ...stateAxes }
+    if (isFamilyVariable && axesOut.wght == null) {
+      axesOut.wght = selectedWeights.length > 0 ? selectedWeights[0] : (fontSelection.weight || 400)
+    }
+
+    // Resolve weight/italic with sidebar filters taking precedence when set
+    const weight = selectedWeights.length > 0
+      ? selectedWeights[0]
+      : (axesOut.wght || fontSelection.weight || 400)
+    // If variable italic axes present, derive italic from axes when meaningful
+    let italic = isItalic || fontSelection.italic || false
+    if (isFamilyVariable) {
+      const italVal = Number(stateAxes['ital'])
+      const slntVal = Number(stateAxes['slnt'])
+      if (isFinite(italVal)) italic = italic || italVal >= 1
+      if (isFinite(slntVal)) italic = italic || Math.abs(slntVal) > 0.01
+    }
+
+    const result = { weight, italic, variableAxes: axesOut, otFeatures }
+    return result
+  }
+
+  const getFontFeatureSettings = (otFeatures: Record<string, boolean>) => {
+    const activeFeatures = Object.entries(otFeatures)
+      .filter(([_, active]) => active)
+      .map(([feature, _]) => `"${feature}" 1`)
+
+    if (activeFeatures.length === 0) return undefined
+    return activeFeatures.join(", ")
+  }
+
+  const getFontVariationSettings = (variableAxes: Record<string, number>) => {
+    const axisSettings = Object.entries(variableAxes).map(([axis, value]) => `"${axis}" ${value}`)
+
+    if (axisSettings.length === 0) return undefined
+    return axisSettings.join(", ")
+  }
+
+  // Load fonts on mount
+  useEffect(() => {
+    loadFonts()
+  }, [loadFonts])
+
+  // Removed special font readiness and reporting; render normally
+
+  return (
+    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: getCurrentTheme().bg, color: getCurrentTheme().fg }}>
+      {/* Dynamic font loading and fallback character styles */}
+      <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
+      {sidebarOpen && (
+        <aside
+          className="w-[280px] flex-shrink-0 flex flex-col h-full"
+          style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+        >
+          <div
+            className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
+            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+          >
+            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                tune
+              </span>
+            </button>
+            <button onClick={resetFilters} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                refresh
+              </span>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <div className="p-6 space-y-8">
+
+              <div>
+                <div className="segmented-control">
+                  {(["Text", "Display", "Weirdo"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        // Clean filters before switching collection
+                        cleanFiltersForCollection(mode)
+                        setDisplayMode(mode)
+                        // Scroll to top of the list when switching modes
+                        setTimeout(() => {
+                          const mainElement = document.querySelector('main')
+                          if (mainElement) {
+                            mainElement.scrollTo({ top: 0, behavior: 'smooth' })
+                          }
+                        }, 100)
+                      }}
+                      className={`segmented-control-button ${displayMode === mode ? "active" : ""}`}
+                    >
+                      <span
+                        className="segmented-control-ag"
+                        style={{
+                          textAlign: "center",
+                          fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
+                          fontFamily: getStablePreviewFontForCollection(mode),
+                          fontSize: "24px",
+                          fontStyle: "normal",
+                          fontWeight: 500,
+                          lineHeight: "24px",
+                        }}
+                      >
+                        Ag
+                      </span>
+                      <span>{mode}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Text presets</h3>
+                <div className="flex flex-wrap gap-2">
+                  {textPresets.map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => {
+                        setSelectedPreset(preset)
+                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
+                        if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
+                      }}
+                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hidden for now - will work on color themes later
+              <div>
+                <h3 className="text-sidebar-title mb-3">Color themes</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={cycleColorTheme}
+                    className="btn-sm"
+                    style={{
+                      backgroundColor: getCurrentTheme().bg !== 'var(--gray-surface-prim)' ? getCurrentTheme().bg : undefined,
+                      color: getCurrentTheme().fg !== 'var(--gray-cont-prim)' ? getCurrentTheme().fg : undefined,
+                      border: getCurrentTheme().bg !== 'var(--gray-surface-prim)' ? `1px solid ${getCurrentTheme().fg}` : undefined
+                    }}
+                  >
+                    Add color
+                  </button>
+                  <button
+                    onClick={resetToBlackAndWhite}
+                    className={`btn-sm ${currentColorTheme === 0 ? 'active' : ''}`}
+                  >
+                    B&W
+                  </button>
+                </div>
+              </div>
+              */}
+
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Text size</h3>
+                  <Slider
+                    value={textSize}
+                    onValueChange={setTextSize}
+                    max={200}
+                    min={12}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {textSize[0]}px
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sidebar-title flex-shrink-0">Line height</h3>
+                  <Slider
+                    value={lineHeight}
+                    onValueChange={setLineHeight}
+                    max={160}
+                    min={90}
+                    step={10}
+                    className="flex-1"
+                  />
+                  <span className="text-sidebar-title flex-shrink-0" style={{ color: "var(--gray-cont-tert)" }}>
+                    {lineHeight[0]}%
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Font categories</h3>
+                <div className="flex flex-wrap gap-2">
+                  {getCollectionCategories().map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => toggleCategory(category)}
+                      className={`btn-sm ${selectedCategories.includes(category) ? "active" : ""}`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Appearance</h3>
+                <div className="flex flex-wrap gap-2">
+                  {getAvailableStyleTags().length > 0 ? getAvailableStyleTags().map((style) => (
+                    <button
+                      key={style}
+                      onClick={() => toggleStyle(style)}
+                      className={`btn-sm ${selectedStyles.includes(style) ? "active" : ""}`}
+                    >
+                      {style}
+                    </button>
+                  )) : (
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                      No style tags available
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sidebar-title mb-3">Language support</h3>
+                <div className="flex flex-wrap gap-2">
+                  {getCollectionLanguages().length > 0 ? getCollectionLanguages().map((language) => (
+                    <button
+                      key={language}
+                      onClick={() =>
+                        setSelectedLanguages((prev) =>
+                          prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language],
+                        )
+                      }
+                      className={`btn-sm ${selectedLanguages.includes(language) ? "active" : ""}`}
+                    >
+                      {language}
+                    </button>
+                  )) : (
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available in {displayMode} collection</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sidebar-title">Style</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {weights.map((weight) => (
+                    <button
+                      key={weight}
+                      onClick={() => toggleWeight(weight)}
+                      className={`btn-sm ${selectedWeights.includes(weight) ? "active" : ""}`}
+                    >
+                      {weight}
+                    </button>
+                  ))}
+                  <button onClick={() => setIsItalic(!isItalic)} className={`btn-sm ${isItalic ? "active" : ""}`}>
+                    Italic
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <header
+          className="sticky top-0 z-10 p-4 flex-shrink-0"
+          style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {!sidebarOpen && (
+                <div className="w-[32px] h-[32px] flex items-center justify-center">
+                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                      tune
+                    </span>
+                  </button>
+                </div>
+              )}
+              <h1 
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
+                  fontFamily: "Inter Variable",
+                  fontSize: "22px",
+                  fontStyle: "normal",
+                  fontWeight: 900,
+                  lineHeight: "100%",
+                  textTransform: "lowercase",
+                  color: getCurrentTheme().fg
+                }}
+                onClick={() => window.location.href = '/'}
+              >
+                typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <nav className="flex flex-row gap-2">
+                <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
+                <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
+              </nav>
+              <a 
+                href="mailto:make@logictomagic.com"
+                className="icon-btn"
+                title="Send feedback"
+              >
+                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                  flag_2
+                </span>
+              </a>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto pb-16">
+          <div
+            className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
+            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+          >
+            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
+            <div className="flex gap-2">
+              <button onClick={() => handleSort("Random")} className={`btn-sm ${sortBy === "Random" ? "active" : ""}`}>
+                Random
+              </button>
+              <button onClick={() => handleSort("Date")} className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}>
+                {sortBy === "Date" && sortDirection === "desc" ? "New" : 
+                 sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
+              </button>
+              <button
+                onClick={() => handleSort("Alphabetical")}
+                className={`btn-sm ${sortBy === "Alphabetical" ? "active" : ""}`}
+              >
+                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" : 
+                 sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
+              </button>
+            </div>
+          </div>
+
+          <div className="min-h-[100vh]">
+            {isLoadingFonts ? (
+              <div className="p-6 text-center">
+                <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
+              </div>
+            ) : fonts.length === 0 ? (
+              <div className="p-6 text-center">
+                <div style={{ color: "var(--gray-cont-tert)" }}>
+                  Temporary maintenance in progress. Font catalog will be restored shortly.
+                </div>
+              </div>
+            ) : (
+              getFilteredFonts().map((font) => {
+              const fontSelection = fontWeightSelections[font.id] || (() => {
+                // Use structured style data for default selection
+                if (font._availableStyles && font._availableStyles.length > 0) {
+                  // Prefer Regular style first, then first non-italic, then first available
+                  const regularStyle = font._availableStyles.find(style => 
+                    style.styleName === 'Regular' || (style.weight === 400 && !style.isItalic)
+                  )
+                  const nonItalicStyle = font._availableStyles.find(style => !style.isItalic)
+                  const defaultStyle = regularStyle || nonItalicStyle || font._availableStyles[0]
+                  
+                  return {
+                    weight: defaultStyle.weight,
+                    italic: defaultStyle.isItalic,
+                    cssFamily: (defaultStyle as any).cssFamily,
+                    styleName: defaultStyle.styleName,
+                  }
+                }
+                // Fallback for compatibility
+                return { weight: 400, italic: false }
+              })()
+              const effectiveStyle = getEffectiveStyle(font.id)
+              return (
+                <div
+                  key={font.id}
+                  className="transition-colors"
+                  style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-start gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2 flex-row gap-2">
+                          <div
+                            className="flex items-center px-2 py-1.5 rounded-md"
+                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                          >
+                            <h2 className="text-font-name">{font.name}</h2>
+                          </div>
+                          {font._availableStyles && font._availableStyles.length > 1 ? (
+                            <div className="dropdown-wrap">
+                              <select
+                                ref={(el) => { selectRefs.current[font.id] = el }}
+                                value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
+                                onChange={(e) => {
+                                  const [weight, italic, cssFamily] = e.target.value.split("|")
+                                  updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
+                                  setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
+                                }}
+                                className={`dropdown-select text-sidebar-title appearance-none`}
+                              >
+                                {font._availableStyles?.map((style, index) => (
+                                  <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
+                                    {style.styleName}
+                                  </option>
+                                ))}
+                              </select>
+                              <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
+                            </div>
+                          ) : (
+                            <div className="dropdown-wrap" aria-disabled>
+                              <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)', padding: '6px 10px' }}>Single Style</div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-author">
+                            {(() => {
+                              const count = (font._availableStyles?.length || font.styles || 1)
+                              return `${font.type}, ${count} style${count !== 1 ? 's' : ''}`
+                            })()}
+                          </span>
+                          <span className="text-author">by {font.author}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                      {(() => {
+                        // Check if any font in the family has a download link set in admin (not the blob URL)
+                        const adminDownloadLink = font.downloadLink || font._familyFonts?.find(f => f.downloadLink && f.downloadLink.trim() !== '')?.downloadLink
+                        const hasAdminDownloadLink = Boolean(adminDownloadLink)
+                        
+                        if (hasAdminDownloadLink) {
+                          return (
+                            <button
+                              className="download-btn"
+                              style={{
+                                color: "#fcfcfc",
+                                backgroundColor: "#0a0a0a",
+                              }}
+                              onClick={() => window.open(adminDownloadLink, '_blank')}
+                            >
+                              Download
+                            </button>
+                          )
+                        }
+                        return null // Hide button if no admin download link is set
+                      })()}
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <ControlledPreviewInput
+                      value={getPreviewContent(font.name)}
+                      onChangeText={(val, pos) => {
+                        // Only set global customText when user actually changes text
+                        // Avoid setting it on focus/cursor events that pass the same value
+                        setTextCursorPosition(pos)
+                        if (val !== customText) {
+                          // If preset is in effect (customText empty) and val equals preset content, skip
+                          const presetValue = getPresetContent(selectedPreset, font.name)
+                          const isPreset = customText.trim() === '' && val === presetValue
+                          if (!isPreset) setCustomText(val)
+                        }
+                      }}
+                      cursorPosition={textCursorPosition}
+                      className="whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0"
+                      style={{
+                        fontSize: `${textSize[0]}px`,
+                        lineHeight: `${lineHeight[0]}%`,
+                        fontFamily: (fontWeightSelections[font.id]?.cssFamily ? `"${fontWeightSelections[font.id]?.cssFamily}", system-ui, sans-serif` : font.fontFamily),
+                        fontWeight: effectiveStyle.weight,
+                        fontStyle: effectiveStyle.italic ? "italic" : "normal",
+                        color: "var(--gray-cont-prim)",
+                        opacity: 1,
+                        fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
+                        fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
+                      }}
+                      onToggleExpand={() => toggleCardExpansion(font.id)}
+                      fontId={font.id}
+                      />
+
+                      {/* No bullet overlay while loading */}
+                    </div>
+
+                    {expandedCards.has(font.id) && (
+                      <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
+                        {/* Style Alternates */}
+                        {getStyleAlternates(font.id).length > 0 && (
+                          <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              Stylistic Alternates
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {getStyleAlternates(font.id).map((feature) => (
+                                <button
+                                  key={feature.tag}
+                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
+                                  title={feature.title}
+                                >
+                                  {feature.title}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Other OpenType Features */}
+                        {getOtherOTFeatures(font.id).length > 0 && (
+                          <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              OpenType Features
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {getOtherOTFeatures(font.id).map((feature) => (
+                                <button
+                                  key={feature.tag}
+                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
+                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
+                                  title={feature.title}
+                                >
+                                  {feature.title}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Variable Font Axes */}
+                        {getVariableAxes(font.id).length > 0 && (
+                          <div>
+                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
+                              Variable Axes
+                            </div>
+                            <div className="w-full max-w-[280px]">
+                              {getVariableAxes(font.id).map((axis) => {
+                                // Get initial value from current font characteristics
+                                const getInitialValue = () => {
+                                  if (axis.tag === "wght" && effectiveStyle.weight) {
+                                    // Clamp weight to axis bounds
+                                    return Math.max(axis.min, Math.min(axis.max, effectiveStyle.weight))
+                                  }
+                                  return fontVariableAxes[font.id]?.[axis.tag] || axis.default
+                                }
+                                
+                                return (
+                                  <div key={axis.tag} className="mb-3 last:mb-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sidebar-title flex-shrink-0 w-16">{axis.name}</span>
+                                      <Slider
+                                        value={[getInitialValue()]}
+                                        onValueChange={(value) => {
+                                          let v = value[0]
+                                          if (axis.tag === 'slnt') {
+                                            // avoid sticky min edge on drag
+                                            if (Math.abs(v - axis.min) < 0.01) v = axis.min + 0.01
+                                          }
+                                          if (axis.tag === 'ital') {
+                                            // snap near 0 or 1 for stability
+                                            if (v < 0.1) v = 0
+                                            else if (v > 0.9) v = 1
+                                          }
+                                          updateVariableAxis(font.id, axis.tag, v)
+                                        }}
+                                        min={axis.min}
+                                        max={axis.max}
+                                        step={axis.tag === "wght" ? 1 : 0.5}
+                                        className="flex-1"
+                                      />
+                                      <span
+                                        className="text-sidebar-title flex-shrink-0 w-12 text-right"
+                                        style={{ color: "var(--gray-cont-tert)" }}
+                                      >
+                                        {Math.round((fontVariableAxes[font.id]?.[axis.tag] || getInitialValue()) * 10) / 10}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+            )}
+            
+            {/* Footer at end of catalog (styled like About) */}
+            <footer 
+              style={{ 
+                display: "flex",
+                padding: "24px",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                alignSelf: "stretch",
+                borderTop: "1px solid var(--gray-brd-prim)" 
+              }}
+            >
+              <div className="flex justify-between items-center w-full">
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>
+                  © typedump, 2025–Future
+                </span>
+                <span className="text-sm" style={{ color: "var(--gray-cont-tert)", textAlign: "right" }}>
+                  Made by <a href="https://magicxlogic.com/" target="_blank" rel="noopener noreferrer" className="hover:underline">Magic x Logic</a>
+                </span>
+              </div>
+            </footer>
+          </div>
+        </main>
+
+      </div>
     </div>
   )
 }
