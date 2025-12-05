@@ -758,6 +758,23 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
     console.log(`🎯 Extracted ${openTypeFeatures.length} OpenType features:`, openTypeFeatures)
     console.log(`🌍 Language support:`, languages)
 
+    // Build comprehensive openTypeFeatureTags including ALL detected features
+    const openTypeFeatureTags: Array<{ tag: string; title: string }> = []
+    const stylisticPattern = /^(ss\d\d|salt|cv\d\d)$/
+
+    supportedFeatures.forEach(tag => {
+      if (stylisticPattern.test(tag)) {
+        // Use custom name if available, otherwise fall back to generic name from featureNames
+        const title = customStylisticNames[tag] || featureNames[tag] || tag.toUpperCase()
+        openTypeFeatureTags.push({ tag, title })
+      }
+    })
+
+    // Sort by tag for consistent ordering
+    openTypeFeatureTags.sort((a, b) => a.tag.localeCompare(b.tag))
+
+    console.log(`🎨 Built ${openTypeFeatureTags.length} feature tags:`, openTypeFeatureTags)
+
     // Create metadata with safe, serializable values only
     const metadata: FontMetadata = {
       name: String(family || 'Unknown Font'),
@@ -779,7 +796,7 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
       availableWeights: availableWeights.filter(w => typeof w === 'number' && !isNaN(w)),
       variableAxes: variableAxes.length > 0 ? variableAxes : undefined,
       openTypeFeatures: openTypeFeatures.length > 0 ? openTypeFeatures : ['Standard Ligatures', 'Kerning'],
-      openTypeFeatureTags: Object.entries(customStylisticNames).map(([tag, title]) => ({ tag, title })) ,
+      openTypeFeatureTags: openTypeFeatureTags.length > 0 ? openTypeFeatureTags : undefined,
       languages: languages.filter(l => typeof l === 'string'),
       foundry: String(foundry || 'Unknown'),
       published: true, // New fonts are published by default
