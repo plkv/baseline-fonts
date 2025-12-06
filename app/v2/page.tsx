@@ -1763,21 +1763,32 @@ export default function FontLibrary() {
                             </div>
                             <div className="w-full max-w-[280px]">
                               {getVariableAxes(font.id).map((axis) => {
-                                // Get initial value from current font characteristics
-                                const getInitialValue = () => {
+                                // Get current value from state, or fall back to initial value
+                                const getCurrentValue = () => {
+                                  // Priority 1: Value from state (user has interacted with slider)
+                                  const stateValue = fontVariableAxes[font.id]?.[axis.tag]
+                                  if (stateValue !== undefined) {
+                                    return stateValue
+                                  }
+
+                                  // Priority 2: For wght axis, use effectiveStyle.weight if available
                                   if (axis.tag === "wght" && effectiveStyle.weight) {
                                     // Clamp weight to axis bounds
                                     return Math.max(axis.min, Math.min(axis.max, effectiveStyle.weight))
                                   }
-                                  return fontVariableAxes[font.id]?.[axis.tag] || axis.default
+
+                                  // Priority 3: Default value from font
+                                  return axis.default
                                 }
-                                
+
+                                const currentValue = getCurrentValue()
+
                                 return (
                                   <div key={axis.tag} className="mb-3 last:mb-0">
                                     <div className="flex items-center gap-2">
                                       <span className="text-sidebar-title flex-shrink-0 w-16">{axis.name}</span>
                                       <Slider
-                                        value={[getInitialValue()]}
+                                        value={[currentValue]}
                                         onValueChange={(value) => {
                                           let v = value[0]
                                           if (axis.tag === 'slnt') {
@@ -1802,7 +1813,7 @@ export default function FontLibrary() {
                                         className="text-sidebar-title flex-shrink-0 w-12 text-right"
                                         style={{ color: "var(--gray-cont-tert)" }}
                                       >
-                                        {Math.round((fontVariableAxes[font.id]?.[axis.tag] || getInitialValue()) * 10) / 10}
+                                        {Math.round(currentValue * 10) / 10}
                                       </span>
                                     </div>
                                   </div>
