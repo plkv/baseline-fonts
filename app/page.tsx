@@ -96,7 +96,7 @@ export default function FontLibrary() {
   const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
     {},
   )
-  const [textSize, setTextSize] = useState([72])
+  const [textSize, setTextSize] = useState([56])
   const [lineHeight, setLineHeight] = useState([120])
 
   // Color Theme State
@@ -791,7 +791,7 @@ export default function FontLibrary() {
     setSelectedWeights([])
     setIsItalic(false)
     setFontWeightSelections({})
-    setTextSize([72])
+    setTextSize([56])
     setLineHeight([120])
     setExpandedCards(new Set())
     setFontOTFeatures({})
@@ -1343,7 +1343,7 @@ export default function FontLibrary() {
                       key={preset}
                       onClick={() => {
                         setSelectedPreset(preset)
-                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([72])
+                        if (preset === "Paragraph") setTextSize([20]); else setTextSize([56])
                         if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
                       }}
                       className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
@@ -1385,7 +1385,7 @@ export default function FontLibrary() {
                   <Slider
                     value={textSize}
                     onValueChange={setTextSize}
-                    max={200}
+                    max={120}
                     min={12}
                     step={1}
                     className="flex-1"
