@@ -281,48 +281,52 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
         console.log(`❌ No ${tableName} table found`)
         return
       }
-      
+
       console.log(`🔍 Scanning ${tableName} table for features...`)
-      
+
       // Modern OpenType.js structure uses 'features' array directly
       if (table.features && Array.isArray(table.features)) {
         console.log(`  Found ${table.features.length} features in ${tableName}`)
         table.features.forEach((feature: any) => {
           const tag = feature.tag || feature.featureTag
-          if (tag && featureNames[tag] && !supportedFeatures.has(tag)) {
+          if (tag && !supportedFeatures.has(tag)) {
             supportedFeatures.add(tag)
-            openTypeFeatures.push(featureNames[tag])
-            console.log(`    ✅ ${tag} -> ${featureNames[tag]}`)
+            // Add feature name from mapping, or use tag itself for unmapped features
+            const featureName = featureNames[tag] || tag.toUpperCase()
+            openTypeFeatures.push(featureName)
+            console.log(`    ✅ ${tag} -> ${featureName}`)
           }
         })
       }
-      
+
       // Legacy OpenType.js structure
       if (table.featureList) {
         // Try different possible structures
         if (table.featureList.featureRecords) {
           table.featureList.featureRecords.forEach((record: any) => {
             const tag = record.featureTag || record.tag
-            if (tag && featureNames[tag] && !supportedFeatures.has(tag)) {
+            if (tag && !supportedFeatures.has(tag)) {
               supportedFeatures.add(tag)
-              openTypeFeatures.push(featureNames[tag])
-              console.log(`    ✅ ${tag} -> ${featureNames[tag]}`)
+              const featureName = featureNames[tag] || tag.toUpperCase()
+              openTypeFeatures.push(featureName)
+              console.log(`    ✅ ${tag} -> ${featureName}`)
             }
           })
         }
-        
+
         // Also check direct feature list
         if (Array.isArray(table.featureList)) {
           table.featureList.forEach((feature: any) => {
-            if (feature.tag && featureNames[feature.tag] && !supportedFeatures.has(feature.tag)) {
+            if (feature.tag && !supportedFeatures.has(feature.tag)) {
               supportedFeatures.add(feature.tag)
-              openTypeFeatures.push(featureNames[feature.tag])
-              console.log(`    ✅ ${feature.tag} -> ${featureNames[feature.tag]}`)
+              const featureName = featureNames[feature.tag] || feature.tag.toUpperCase()
+              openTypeFeatures.push(featureName)
+              console.log(`    ✅ ${feature.tag} -> ${featureName}`)
             }
           })
         }
       }
-      
+
       if (!table.features && !table.featureList) {
         console.log(`  No features found in ${tableName} table`)
       }
@@ -760,12 +764,31 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
 
     // Build comprehensive openTypeFeatureTags including ALL detected features
     const openTypeFeatureTags: Array<{ tag: string; title: string }> = []
-    const stylisticPattern = /^(ss\d\d|salt|cv\d\d)$/
+    // Include stylistic sets (ss01-ss99), character variants (cv01-cv99), and salt
+    const stylisticPattern = /^(ss\d{2}|salt|calt|cv\d{2}|swsh|cswh)$/
 
     supportedFeatures.forEach(tag => {
       if (stylisticPattern.test(tag)) {
-        // Use custom name if available, otherwise fall back to generic name from featureNames
-        const title = customStylisticNames[tag] || featureNames[tag] || tag.toUpperCase()
+        // Generate title for stylistic features
+        let title = customStylisticNames[tag] || featureNames[tag]
+
+        // Auto-generate titles for unmapped stylistic sets (ss21-ss99)
+        if (!title && /^ss\d{2}$/.test(tag)) {
+          const setNumber = parseInt(tag.substring(2), 10)
+          title = `Stylistic Set ${setNumber}`
+        }
+
+        // Auto-generate titles for character variants (cv01-cv99)
+        if (!title && /^cv\d{2}$/.test(tag)) {
+          const variantNumber = parseInt(tag.substring(2), 10)
+          title = `Character Variant ${variantNumber}`
+        }
+
+        // Fallback to uppercase tag
+        if (!title) {
+          title = tag.toUpperCase()
+        }
+
         openTypeFeatureTags.push({ tag, title })
       }
     })
