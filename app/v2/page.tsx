@@ -1664,7 +1664,7 @@ export default function FontLibrary() {
                             <span className="text-font-name">{font.type}</span>
                           </div>
                           <div
-                            className="flex items-center px-2 py-1.5 rounded-md"
+                            className="hidden md:flex items-center px-2 py-1.5 rounded-md"
                             style={{ border: "1px solid var(--gray-brd-prim)" }}
                           >
                             <span className="text-font-name">
@@ -1676,7 +1676,7 @@ export default function FontLibrary() {
                           </div>
                           {getStyleAlternates(font.id).length > 0 && (
                             <div
-                              className="flex items-center px-2 py-1.5 rounded-md"
+                              className="hidden md:flex items-center px-2 py-1.5 rounded-md"
                               style={{ border: "1px solid var(--gray-brd-prim)" }}
                             >
                               <span className="text-font-name">
@@ -1684,7 +1684,12 @@ export default function FontLibrary() {
                               </span>
                             </div>
                           )}
-                          <span className="text-author">by {font.author}</span>
+                          <span
+                            className="text-author truncate max-w-[200px]"
+                            title={`by ${font.author}`}
+                          >
+                            by {font.author}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
