@@ -58,6 +58,8 @@ export default function AdminManager() {
   const [tagsLoading, setTagsLoading] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
+  const [renamingIdx, setRenamingIdx] = useState<number | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 
   const load = async () => {
     setLoading(true)
@@ -364,17 +366,75 @@ export default function AdminManager() {
                 )}
                 {!tagsLoading && tagEdits.map((t, idx) => {
                   const usedBy = usageCounts[t] || 0
+                  const isRenaming = renamingIdx === idx
                   return (
-                    <div key={idx} className="flex gap-2 items-center" draggable onDragStart={()=>{ setDragIdx(idx) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
-                      if (dragIdx===null) return; const list = [...tagEdits]
+                    <div key={idx} className="flex gap-2 items-center" draggable={!isRenaming} onDragStart={()=>{ if (!isRenaming) setDragIdx(idx) }} onDragOver={(e)=>e.preventDefault()} onDrop={()=>{
+                      if (dragIdx===null || isRenaming) return; const list = [...tagEdits]
                       const [m] = list.splice(dragIdx,1); list.splice(idx,0,m); setTagEdits(list); setDragIdx(null)
                     }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--gray-cont-tert)', cursor: 'grab' }}>drag_indicator</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--gray-cont-tert)', cursor: isRenaming ? 'default' : 'grab' }}>drag_indicator</span>
                       <input className="btn-md flex-1" value={tagEdits[idx] || ''} onChange={(e)=>{
                         setTagEdits(prev=>{ const base = [...prev]; base[idx] = normalizeTag(e.target.value); return base })
-                      }} />
+                      }} disabled={isRenaming} />
                       <span className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>{usedBy}</span>
-                      <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = [...prev]; base.splice(idx,1); return base })}>Remove</button>
+                      {isRenaming ? (
+                        <>
+                          <input
+                            className="btn-md"
+                            placeholder="New tag name"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            autoFocus
+                          />
+                          <button className="btn-sm" onClick={async ()=>{
+                            if (!renameValue.trim()) {
+                              toast.error('New tag name cannot be empty')
+                              return
+                            }
+                            const oldTag = tagEdits[idx]
+                            const newTag = normalizeTag(renameValue)
+
+                            try {
+                              toast.loading(`Renaming "${oldTag}" to "${newTag}"...`)
+                              const res = await fetch('/api/tags/rename', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ oldTag, newTag, type: manageType })
+                              })
+                              const data = await res.json()
+
+                              if (data.success) {
+                                toast.success(`Renamed "${oldTag}" to "${newTag}" (${data.updatedCount} fonts updated)`)
+                                // Refresh vocabulary and usage
+                                const summaryRes = await fetch(`/api/tags/summary?type=${manageType}`, { cache: 'no-store' })
+                                const summaryData = await summaryRes.json()
+                                const vocab: string[] = Array.isArray(summaryData.vocab) ? summaryData.vocab : []
+                                const usageArr: Array<{ tag: string; count: number }> = Array.isArray(summaryData.usage) ? summaryData.usage : []
+                                const map: Record<string, number> = {}
+                                usageArr.forEach(u => { map[u.tag] = u.count })
+                                setUsageCounts(map)
+                                setTagEdits(vocab)
+
+                                // Reload fonts
+                                await load()
+                              } else {
+                                toast.error(data.error || 'Rename failed')
+                              }
+                            } catch (e) {
+                              toast.error('Failed to rename tag')
+                            } finally {
+                              setRenamingIdx(null)
+                              setRenameValue('')
+                            }
+                          }}>Save</button>
+                          <button className="btn-sm" onClick={()=>{ setRenamingIdx(null); setRenameValue('') }}>Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn-sm" onClick={()=>{ setRenamingIdx(idx); setRenameValue(tagEdits[idx]) }}>Rename</button>
+                          <button className="btn-sm" onClick={()=>setTagEdits(prev=>{ const base = [...prev]; base.splice(idx,1); return base })}>Remove</button>
+                        </>
+                      )}
                     </div>
                   )
                 })}
