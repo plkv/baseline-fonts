@@ -1625,7 +1625,7 @@ export default function FontLibrary() {
                             className="flex items-center px-2 py-1.5 rounded-md"
                             style={{ border: "1px solid var(--gray-brd-prim)" }}
                           >
-                            <span className="text-sidebar-title">{font.name}</span>
+                            <span className="text-font-name">{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
                             <div className="dropdown-wrap">
@@ -1637,7 +1637,7 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className={`dropdown-select text-sidebar-title appearance-none`}
+                                className={`dropdown-select text-font-name appearance-none`}
                               >
                                 {font._availableStyles?.map((style, index) => (
                                   <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
@@ -1652,7 +1652,7 @@ export default function FontLibrary() {
                               className="flex items-center px-2 py-1.5 rounded-md"
                               style={{ background: 'var(--gray-bg-sec)' }}
                             >
-                              <span className="text-sidebar-title">Single style</span>
+                              <span className="text-font-name">Single style</span>
                             </div>
                           )}
                         </div>
@@ -1661,13 +1661,13 @@ export default function FontLibrary() {
                             className="flex items-center px-2 py-1.5 rounded-md"
                             style={{ background: 'var(--gray-bg-sec)' }}
                           >
-                            <span className="text-sidebar-title">{font.type}</span>
+                            <span className="text-font-name">{font.type}</span>
                           </div>
                           <div
                             className="flex items-center px-2 py-1.5 rounded-md"
                             style={{ background: 'var(--gray-bg-sec)' }}
                           >
-                            <span className="text-sidebar-title">
+                            <span className="text-font-name">
                               {(() => {
                                 const count = (font._availableStyles?.length || font.styles || 1)
                                 return `${count} style${count !== 1 ? 's' : ''}`
@@ -1679,7 +1679,7 @@ export default function FontLibrary() {
                               className="flex items-center px-2 py-1.5 rounded-md"
                               style={{ background: 'var(--gray-bg-sec)' }}
                             >
-                              <span className="text-sidebar-title">
+                              <span className="text-font-name">
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
                               </span>
                             </div>
