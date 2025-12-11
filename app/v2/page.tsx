@@ -1664,11 +1664,16 @@ export default function FontLibrary() {
                           )}
                           {(getStyleAlternates(font.id).length > 0 || getVariableAxes(font.id).length > 0) && (
                             <button
-                              onClick={() => toggleCardExpansion(font.id)}
-                              className="flex items-center justify-center transition-colors"
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                toggleCardExpansion(font.id)
+                              }}
+                              className="flex items-center justify-center transition-colors hover:bg-gray-50"
                               style={{
-                                width: "28px",
-                                height: "28px",
+                                width: "32px",
+                                height: "32px",
                                 border: "1px solid var(--gray-brd-prim)",
                                 borderRadius: "6px",
                                 background: "transparent",
@@ -1680,10 +1685,11 @@ export default function FontLibrary() {
                               <span
                                 className="material-symbols-outlined"
                                 style={{
-                                  fontSize: "18px",
+                                  fontSize: "20px",
                                   fontWeight: 300,
                                   transform: expandedCards.has(font.id) ? "rotate(180deg)" : "rotate(0deg)",
                                   transition: "transform 0.2s ease",
+                                  pointerEvents: "none",
                                 }}
                               >
                                 expand_more
