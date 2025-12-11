@@ -868,7 +868,7 @@ export default function FontLibrary() {
     }
   }, [customText, textCursorPosition])
 
-  // Keep focus across expand/collapse toggles
+  // Keep focus across expand/collapse toggles and when focusing new input
   useEffect(() => {
     if (focusedFontId != null) {
       const el = inputRefs.current[focusedFontId]
@@ -880,7 +880,7 @@ export default function FontLibrary() {
         } catch {}
       }
     }
-  }, [expandedCards])
+  }, [expandedCards, focusedFontId])
 
   // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
