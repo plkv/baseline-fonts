@@ -840,11 +840,7 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onClick={() => { if (!expandedCards.has(fontId)) toggleCardExpansion(fontId) }}
-        onFocus={() => {
-          setFocusedFontId(fontId)
-          if (!expandedCards.has(fontId)) toggleCardExpansion(fontId)
-        }}
+        onFocus={() => setFocusedFontId(fontId)}
         className={className}
         style={style}
         multiline={true}
@@ -1666,6 +1662,34 @@ export default function FontLibrary() {
                               </span>
                             </div>
                           )}
+                          {(getStyleAlternates(font.id).length > 0 || getVariableAxes(font.id).length > 0) && (
+                            <button
+                              onClick={() => toggleCardExpansion(font.id)}
+                              className="flex items-center justify-center transition-colors"
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                border: "1px solid var(--gray-brd-prim)",
+                                borderRadius: "6px",
+                                background: "transparent",
+                                cursor: "pointer",
+                                padding: "0",
+                              }}
+                              title={expandedCards.has(font.id) ? "Hide settings" : "Show settings"}
+                            >
+                              <span
+                                className="material-symbols-outlined"
+                                style={{
+                                  fontSize: "18px",
+                                  fontWeight: 300,
+                                  transform: expandedCards.has(font.id) ? "rotate(180deg)" : "rotate(0deg)",
+                                  transition: "transform 0.2s ease",
+                                }}
+                              >
+                                expand_more
+                              </span>
+                            </button>
+                          )}
                           <span className="text-author">by {font.author}</span>
                         </div>
                       </div>
@@ -1727,7 +1751,7 @@ export default function FontLibrary() {
                       {/* No bullet overlay while loading */}
                     </div>
 
-                    {expandedCards.has(font.id) && (
+                    {expandedCards.has(font.id) && (getStyleAlternates(font.id).length > 0 || getVariableAxes(font.id).length > 0) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
                         {/* Style Alternates */}
                         {getStyleAlternates(font.id).length > 0 && (
