@@ -1742,27 +1742,6 @@ export default function FontLibrary() {
                           </div>
                         )}
 
-                        {/* Other OpenType Features */}
-                        {getOtherOTFeatures(font.id).length > 0 && (
-                          <div>
-                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
-                              OpenType Features
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {getOtherOTFeatures(font.id).map((feature) => (
-                                <button
-                                  key={feature.tag}
-                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
-                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
-                                  title={feature.title}
-                                >
-                                  {feature.title}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         {/* Variable Font Axes */}
                         {getVariableAxes(font.id).length > 0 && (
                           <div>
