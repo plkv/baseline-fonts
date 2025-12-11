@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { kv } from '@vercel/kv'
 
+// Use Node.js runtime for KV operations
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const COLLECTIONS = ['Text', 'Display', 'Weirdo'] as const
 const TYPES = ['appearance', 'category'] as const
 
