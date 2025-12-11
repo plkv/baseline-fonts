@@ -519,15 +519,23 @@ export default function FontLibrary() {
   const getStyleAlternates = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
     if (!font) return []
-    // Prefer server-parsed structured tags if available
-    const tagList: Array<{ tag: string; title: string }> = []
+    // Prefer server-parsed structured tags if available - use Map to deduplicate by tag
+    const tagMap = new Map<string, string>()
     const pushTags = (ff: any) => {
       const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
-      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => {
+        if (/^ss\d\d$|^salt$/i.test(tag) && !tagMap.has(tag)) {
+          tagMap.set(tag, title)
+        }
+      })
     }
     pushTags(font)
     font._familyFonts?.forEach(pushTags)
-    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+    if (tagMap.size > 0) {
+      return Array.from(tagMap.entries())
+        .map(([tag, title]) => ({ tag, title }))
+        .sort((a, b) => a.tag.localeCompare(b.tag))
+    }
 
     // Fallback: parse from strings heuristically
     const allFeatures = new Map<string, string>()
