@@ -1659,13 +1659,13 @@ export default function FontLibrary() {
                         <div className="flex items-center gap-2">
                           <div
                             className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ background: 'var(--gray-bg-sec)' }}
+                            style={{ border: "1px solid var(--gray-brd-prim)" }}
                           >
                             <span className="text-font-name">{font.type}</span>
                           </div>
                           <div
                             className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ background: 'var(--gray-bg-sec)' }}
+                            style={{ border: "1px solid var(--gray-brd-prim)" }}
                           >
                             <span className="text-font-name">
                               {(() => {
@@ -1677,7 +1677,7 @@ export default function FontLibrary() {
                           {getStyleAlternates(font.id).length > 0 && (
                             <div
                               className="flex items-center px-2 py-1.5 rounded-md"
-                              style={{ background: 'var(--gray-bg-sec)' }}
+                              style={{ border: "1px solid var(--gray-brd-prim)" }}
                             >
                               <span className="text-font-name">
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
