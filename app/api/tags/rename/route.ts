@@ -39,20 +39,31 @@ export async function POST(req: NextRequest) {
     let updatedCount = 0
     let fontsAffected = 0
 
-    // Update fonts with the renamed tag
+    // Update fonts with the renamed tag (case-insensitive)
     for (const f of all as any[]) {
       let wasUpdated = false
 
       if (type === 'appearance') {
         const curr: string[] = Array.isArray(f.styleTags) ? f.styleTags : []
-        const normalized = curr.map(t => toTitleCase(t))
 
-        if (normalized.some(t => t === normalizedOld)) {
-          // Replace old tag with new tag
-          const updated = normalized.map(t => t === normalizedOld ? normalizedNew : t)
-          // Remove duplicates (in case new tag already exists)
-          const unique = Array.from(new Set(updated.map(t => t.toLowerCase())))
-            .map(lower => updated.find(t => t.toLowerCase() === lower)!)
+        // Check if old tag exists (case-insensitive)
+        const hasOldTag = curr.some(t => toTitleCase(t.trim()).toLowerCase() === normalizedOld.toLowerCase())
+
+        if (hasOldTag) {
+          // Replace old tag with new tag, normalize all tags to TitleCase
+          const updated = curr.map(t => {
+            const normalized = toTitleCase(t.trim())
+            return normalized.toLowerCase() === normalizedOld.toLowerCase() ? normalizedNew : normalized
+          })
+
+          // Remove duplicates (case-insensitive, keep TitleCase)
+          const seen = new Set<string>()
+          const unique = updated.filter(tag => {
+            const lower = tag.toLowerCase()
+            if (seen.has(lower)) return false
+            seen.add(lower)
+            return true
+          })
 
           await fontStorageClean.updateFont(f.id, { styleTags: unique })
           wasUpdated = true
@@ -60,14 +71,25 @@ export async function POST(req: NextRequest) {
         }
       } else if (type === 'category') {
         const curr: string[] = Array.isArray(f.category) ? f.category : []
-        const normalized = curr.map(t => toTitleCase(t))
 
-        if (normalized.some(t => t === normalizedOld)) {
-          // Replace old tag with new tag
-          const updated = normalized.map(t => t === normalizedOld ? normalizedNew : t)
-          // Remove duplicates
-          const unique = Array.from(new Set(updated.map(t => t.toLowerCase())))
-            .map(lower => updated.find(t => t.toLowerCase() === lower)!)
+        // Check if old tag exists (case-insensitive)
+        const hasOldTag = curr.some(t => toTitleCase(t.trim()).toLowerCase() === normalizedOld.toLowerCase())
+
+        if (hasOldTag) {
+          // Replace old tag with new tag, normalize all tags to TitleCase
+          const updated = curr.map(t => {
+            const normalized = toTitleCase(t.trim())
+            return normalized.toLowerCase() === normalizedOld.toLowerCase() ? normalizedNew : normalized
+          })
+
+          // Remove duplicates (case-insensitive, keep TitleCase)
+          const seen = new Set<string>()
+          const unique = updated.filter(tag => {
+            const lower = tag.toLowerCase()
+            if (seen.has(lower)) return false
+            seen.add(lower)
+            return true
+          })
 
           await fontStorageClean.updateFont(f.id, { category: unique })
           wasUpdated = true
