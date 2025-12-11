@@ -840,12 +840,6 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onClick={() => {
-          // Only expand if there are settings to show
-          if (!expandedCards.has(fontId) && (getStyleAlternates(fontId).length > 0 || getVariableAxes(fontId).length > 0)) {
-            toggleCardExpansion(fontId)
-          }
-        }}
         onFocus={() => {
           setFocusedFontId(fontId)
           // Only expand if there are settings to show
