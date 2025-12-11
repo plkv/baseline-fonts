@@ -25,6 +25,7 @@ function toVariant(font: any, familyId: string): FontVariant {
       : Array.isArray((font as any).features)
         ? (font as any).features
         : [],
+    openTypeFeatureTags: (font as any).openTypeFeatureTags || [],
     fontMetrics: font.fontMetrics,
     glyphCount: font.glyphCount,
     uploadedAt: font.uploadedAt || new Date().toISOString(),

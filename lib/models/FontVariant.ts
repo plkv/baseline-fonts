@@ -23,7 +23,8 @@ export interface FontVariant {
   isVariable: boolean
   variableAxes?: VariableAxis[]
   openTypeFeatures: string[]
-  
+  openTypeFeatureTags?: Array<{ tag: string; title: string }>
+
   // Font metrics
   fontMetrics?: FontMetrics
   glyphCount?: number
