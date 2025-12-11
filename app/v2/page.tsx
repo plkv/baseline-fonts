@@ -86,7 +86,7 @@ export default function FontLibrary() {
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [customText, setCustomText] = useState("")
-  const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState("Names")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
@@ -701,10 +701,10 @@ export default function FontLibrary() {
 
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
-      // Filter by collection (displayMode) - each tab should only show fonts from that collection
+      // Filter by collection - if none selected, show all; if some selected, show only those
       const fontCollection = font.collection || 'Text' // Default to 'Text' if no collection set
-      
-      if (fontCollection !== displayMode) {
+
+      if (selectedCollections.length > 0 && !selectedCollections.includes(fontCollection)) {
         return false
       }
       
@@ -904,20 +904,21 @@ export default function FontLibrary() {
     })
   }
 
-  // Get dynamic categories based on fonts actually present in current collection, ordered by Manage Tags vocab
+  // Get dynamic categories based on fonts actually present in selected collections (or all if none selected)
   const getCollectionCategories = () => {
-    // Get all categories from fonts in the current collection
+    // Get all categories from fonts in the selected collections (or all if none selected)
     const actualCategories = new Set<string>()
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode && font.categories) {
+      const shouldInclude = selectedCollections.length === 0 || selectedCollections.includes(fontCollection)
+      if (shouldInclude && font.categories) {
         font.categories.forEach(category => actualCategories.add(category))
       }
     })
-    
+
     const arr = Array.from(actualCategories)
     return arr.sort((a,b)=>{
-      const order = (window as any).__categoryOrder__?.[displayMode] as string[] | undefined
+      const order = (window as any).__categoryOrder__ as string[] | undefined
       if (order && order.length) {
         const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
         const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
@@ -928,11 +929,12 @@ export default function FontLibrary() {
   }
 
   const getCollectionLanguages = () => {
-    // Get all languages from fonts in the current collection
+    // Get all languages from fonts in the selected collections (or all if none selected)
     const actualLanguages = new Set<string>()
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode) {
+      const shouldInclude = selectedCollections.length === 0 || selectedCollections.includes(fontCollection)
+      if (shouldInclude) {
         // Check if font has language data
         if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
           font.languages.forEach(language => actualLanguages.add(language))
@@ -942,22 +944,23 @@ export default function FontLibrary() {
         }
       }
     })
-    
-    console.log(`Languages in ${displayMode} collection:`, Array.from(actualLanguages));
-    
+
+    const collectionsLabel = selectedCollections.length > 0 ? selectedCollections.join(', ') : 'all collections'
+    console.log(`Languages in ${collectionsLabel}:`, Array.from(actualLanguages));
+
     // Define preferred order for common languages
     const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
-    
+
     // Return languages in preferred order, but only those that actually exist
     const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
-    
+
     // Add any remaining languages that exist but aren't in the preferred order
     const remainingLanguages = Array.from(actualLanguages)
       .filter(lang => !languageOrder.includes(lang))
       .sort()
-    
+
     const result = [...orderedLanguages, ...remainingLanguages];
-    console.log(`Final language result for ${displayMode}:`, result);
+    console.log(`Final language result for ${collectionsLabel}:`, result);
     return result;
   }
 
@@ -976,40 +979,6 @@ export default function FontLibrary() {
     else styleName = 'Black'
     
     return isItalic ? `${styleName} Italic` : styleName
-  }
-
-  // Clean up filters when switching collections - keep style tags (unified), remove invalid categories/languages
-  const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
-    // Get what categories and languages would be available in the new collection
-    const newCollectionCategories = new Set<string>()
-    const newCollectionLanguages = new Set<string>()
-
-    fonts.forEach(font => {
-      const fontCollection = font.collection || 'Text'
-      if (fontCollection === newDisplayMode) {
-        if (font.categories) {
-          font.categories.forEach(category => newCollectionCategories.add(category))
-        }
-        if (font.languages) {
-          font.languages.forEach(language => newCollectionLanguages.add(language))
-        }
-      }
-    })
-
-    // Remove selected categories that don't exist in new collection
-    const validSelectedCategories = selectedCategories.filter(cat => newCollectionCategories.has(cat))
-    if (validSelectedCategories.length !== selectedCategories.length) {
-      setSelectedCategories(validSelectedCategories)
-    }
-
-    // Keep ALL selected style tags - they are now unified across collections
-    // No need to filter selectedStyles - tags work across all collections
-
-    // Remove selected languages that don't exist in new collection
-    const validSelectedLanguages = selectedLanguages.filter(lang => newCollectionLanguages.has(lang))
-    if (validSelectedLanguages.length !== selectedLanguages.length) {
-      setSelectedLanguages(validSelectedLanguages)
-    }
   }
 
   // Post-render font fallback detection using DOM and canvas measurement
@@ -1308,15 +1277,18 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
-                <div className="segmented-control">
+                <div className="flex gap-2">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
-                        // Clean filters before switching collection
-                        cleanFiltersForCollection(mode)
-                        setDisplayMode(mode)
-                        // Scroll to top of the list when switching modes
+                        // Toggle collection filter
+                        setSelectedCollections(prev =>
+                          prev.includes(mode)
+                            ? prev.filter(c => c !== mode)
+                            : [...prev, mode]
+                        )
+                        // Scroll to top of the list when changing filters
                         setTimeout(() => {
                           const mainElement = document.querySelector('main')
                           if (mainElement) {
@@ -1324,7 +1296,7 @@ export default function FontLibrary() {
                           }
                         }, 100)
                       }}
-                      className={`segmented-control-button ${displayMode === mode ? "active" : ""}`}
+                      className={`segmented-control-button ${selectedCollections.includes(mode) ? "active" : ""}`}
                     >
                       <span
                         className="segmented-control-ag"
@@ -1474,7 +1446,7 @@ export default function FontLibrary() {
                       {language}
                     </button>
                   )) : (
-                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available in {displayMode} collection</span>
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available{selectedCollections.length > 0 ? ` in ${selectedCollections.join(', ')} collection${selectedCollections.length > 1 ? 's' : ''}` : ''}</span>
                   )}
                 </div>
               </div>
