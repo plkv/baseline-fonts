@@ -250,6 +250,11 @@ export default function AdminManager() {
     if ((editing[fam.name] as any)?.foundry !== undefined) updates.foundry = (editing[fam.name] as any).foundry
     if ((editing[fam.name] as any)?.downloadLink !== undefined) updates.downloadLink = (editing[fam.name] as any).downloadLink
     const targetName = (editing[fam.name] as any)?.name || fam.name
+
+    // Check if target family already exists (merge operation)
+    const existingFamily = families.find(f => f.name === targetName && f.name !== fam.name)
+    const isMerge = existingFamily && targetName !== fam.name
+
     await Promise.all(fam.fonts.map(async f => {
       const body: any = { id: f.id, updates: { ...updates } }
       if (targetName && targetName !== fam.name) body.updates.family = targetName
@@ -261,7 +266,15 @@ export default function AdminManager() {
     setEditing(prev => { const c = { ...prev }; delete c[fam.name]; return c })
     // Optimistic local update to avoid full reload
     setFonts(prev => prev.map(f => f.family === fam.name ? { ...f, family: targetName, foundry: updates.foundry ?? f.foundry, collection: e.collection, styleTags: e.styleTags, languages: e.languages, category: (updates.category || (f as any).category || []), downloadLink: updates.downloadLink ?? (f as any).downloadLink } : f))
-    try { toast.success('Family updated') } catch {}
+
+    // Show appropriate success message
+    if (isMerge) {
+      try {
+        toast.success(`Merged "${fam.name}" into "${targetName}" (${fam.fonts.length} variants + ${existingFamily.fonts.length} variants = ${fam.fonts.length + existingFamily.fonts.length} total)`)
+      } catch {}
+    } else {
+      try { toast.success('Family updated') } catch {}
+    }
   }
 
   const deleteFamily = async (fam: Family) => {
