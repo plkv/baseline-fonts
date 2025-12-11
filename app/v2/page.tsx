@@ -1621,7 +1621,12 @@ export default function FontLibrary() {
                     <div className="flex justify-between items-start gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center mb-2 flex-row gap-2">
-                          <h2 className="text-font-name">{font.name}</h2>
+                          <div
+                            className="flex items-center px-2 py-1.5 rounded-md"
+                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                          >
+                            <span className="text-sidebar-title">{font.name}</span>
+                          </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
                             <div className="dropdown-wrap">
                               <select
@@ -1643,25 +1648,36 @@ export default function FontLibrary() {
                               <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
                             </div>
                           ) : (
-                            <span className="text-font-name" style={{ color: 'var(--gray-cont-tert)' }}>Single style</span>
+                            <div
+                              className="flex items-center px-2 py-1.5 rounded-md"
+                              style={{ background: 'var(--gray-bg-sec)' }}
+                            >
+                              <span className="text-sidebar-title">Single style</span>
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <div
                             className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                            style={{ background: 'var(--gray-bg-sec)' }}
+                          >
+                            <span className="text-sidebar-title">{font.type}</span>
+                          </div>
+                          <div
+                            className="flex items-center px-2 py-1.5 rounded-md"
+                            style={{ background: 'var(--gray-bg-sec)' }}
                           >
                             <span className="text-sidebar-title">
                               {(() => {
                                 const count = (font._availableStyles?.length || font.styles || 1)
-                                return `${font.type}, ${count} style${count !== 1 ? 's' : ''}`
+                                return `${count} style${count !== 1 ? 's' : ''}`
                               })()}
                             </span>
                           </div>
                           {getStyleAlternates(font.id).length > 0 && (
                             <div
                               className="flex items-center px-2 py-1.5 rounded-md"
-                              style={{ border: "1px solid var(--gray-brd-prim)" }}
+                              style={{ background: 'var(--gray-bg-sec)' }}
                             >
                               <span className="text-sidebar-title">
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
