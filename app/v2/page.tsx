@@ -1628,7 +1628,7 @@ export default function FontLibrary() {
                             <span className="text-font-name">{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="dropdown-wrap">
+                            <div className="dropdown-wrap max-w-[180px] md:max-w-[240px]">
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
                                 value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
@@ -1637,7 +1637,8 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className={`dropdown-select text-font-name appearance-none`}
+                                className="dropdown-select text-font-name appearance-none w-full truncate pr-0"
+                                style={{ minWidth: 0 }}
                               >
                                 {font._availableStyles?.map((style, index) => (
                                   <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
@@ -1645,7 +1646,7 @@ export default function FontLibrary() {
                                   </option>
                                 ))}
                               </select>
-                              <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
+                              <span className="material-symbols-outlined dropdown-icon flex-shrink-0" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
                             </div>
                           ) : (
                             <div
