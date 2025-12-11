@@ -1628,7 +1628,11 @@ export default function FontLibrary() {
                             <span className="text-font-name">{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="dropdown-wrap max-w-[180px] md:max-w-[240px]">
+                            <div className="relative max-w-[180px] md:max-w-[240px]" style={{
+                              borderRadius: '6px',
+                              backgroundColor: 'var(--gray-surface-sec)',
+                              overflow: 'hidden'
+                            }}>
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
                                 value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
@@ -1637,8 +1641,19 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className="dropdown-select text-font-name appearance-none w-full truncate pr-0"
-                                style={{ minWidth: 0 }}
+                                className="text-font-name appearance-none w-full truncate cursor-pointer"
+                                style={{
+                                  minWidth: 0,
+                                  padding: '6px 36px 6px 8px',
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  outline: 'none',
+                                  fontFamily: '"Inter Variable", sans-serif',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  lineHeight: '20px',
+                                  color: 'var(--gray-cont-prim)'
+                                }}
                               >
                                 {font._availableStyles?.map((style, index) => (
                                   <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
@@ -1646,7 +1661,19 @@ export default function FontLibrary() {
                                   </option>
                                 ))}
                               </select>
-                              <span className="material-symbols-outlined dropdown-icon flex-shrink-0" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
+                              <span
+                                className="material-symbols-outlined absolute right-0 top-1/2"
+                                style={{
+                                  fontWeight: 300,
+                                  fontSize: '20px',
+                                  pointerEvents: 'none',
+                                  transform: 'translateY(-50%)',
+                                  padding: '8px',
+                                  color: 'var(--gray-cont-tert)'
+                                }}
+                              >
+                                expand_more
+                              </span>
                             </div>
                           ) : (
                             <div
