@@ -840,7 +840,19 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onFocus={() => setFocusedFontId(fontId)}
+        onClick={() => {
+          // Only expand if there are settings to show
+          if (!expandedCards.has(fontId) && (getStyleAlternates(fontId).length > 0 || getVariableAxes(fontId).length > 0)) {
+            toggleCardExpansion(fontId)
+          }
+        }}
+        onFocus={() => {
+          setFocusedFontId(fontId)
+          // Only expand if there are settings to show
+          if (!expandedCards.has(fontId) && (getStyleAlternates(fontId).length > 0 || getVariableAxes(fontId).length > 0)) {
+            toggleCardExpansion(fontId)
+          }
+        }}
         className={className}
         style={style}
         multiline={true}
@@ -1661,40 +1673,6 @@ export default function FontLibrary() {
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
                               </span>
                             </div>
-                          )}
-                          {(getStyleAlternates(font.id).length > 0 || getVariableAxes(font.id).length > 0) && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                toggleCardExpansion(font.id)
-                              }}
-                              className="flex items-center justify-center transition-colors hover:bg-gray-50"
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                border: "1px solid var(--gray-brd-prim)",
-                                borderRadius: "6px",
-                                background: "transparent",
-                                cursor: "pointer",
-                                padding: "0",
-                              }}
-                              title={expandedCards.has(font.id) ? "Hide settings" : "Show settings"}
-                            >
-                              <span
-                                className="material-symbols-outlined"
-                                style={{
-                                  fontSize: "20px",
-                                  fontWeight: 300,
-                                  transform: expandedCards.has(font.id) ? "rotate(180deg)" : "rotate(0deg)",
-                                  transition: "transform 0.2s ease",
-                                  pointerEvents: "none",
-                                }}
-                              >
-                                expand_more
-                              </span>
-                            </button>
                           )}
                           <span className="text-author">by {font.author}</span>
                         </div>
