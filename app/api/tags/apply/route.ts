@@ -2,21 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fontStorageClean } from '@/lib/font-storage-clean'
 import { toTitleCase } from '@/lib/category-utils'
 
-type Coll = 'Text'|'Display'|'Weirdo'
-
+// Unified tags - applies to all fonts regardless of collection
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as { type: 'appearance'|'category', collection: Coll, list: string[] }
-    const { type, collection, list } = body
-    if (!type || !collection || !Array.isArray(list)) {
-      return NextResponse.json({ success: false, error: 'type, collection, list required' }, { status: 400 })
+    const body = await req.json() as { type: 'appearance'|'category', list: string[] }
+    const { type, list } = body
+    if (!type || !Array.isArray(list)) {
+      return NextResponse.json({ success: false, error: 'type and list required' }, { status: 400 })
     }
     const keep = new Set(list.map(s=>toTitleCase(s).toLowerCase()))
     const all = await fontStorageClean.getAllFonts()
     let updated = 0
+
+    // Apply to ALL fonts, not filtered by collection
     for (const f of all as any[]) {
-      const coll: Coll = (f.collection as Coll) || 'Text'
-      if (coll !== collection) continue
       if (type === 'appearance') {
         const curr: string[] = Array.isArray(f.styleTags) ? f.styleTags : (typeof f.styleTags === 'string' ? [f.styleTags] : [])
         const pruned = curr.filter(t=> keep.has((t||'').toLowerCase()))

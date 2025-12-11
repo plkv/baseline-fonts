@@ -882,27 +882,19 @@ export default function FontLibrary() {
     }
   }, [expandedCards, focusedFontId])
 
-  // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
+  // Get all available style tags from ALL fonts (unified across collections), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
     const allTags = new Set<string>()
     fonts.forEach(font => {
-      // Only include tags from fonts in the current collection
-      const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode) {
-        if (font.styleTags && Array.isArray(font.styleTags)) {
-          font.styleTags.forEach(tag => allTags.add(tag))
-        }
+      // Include tags from ALL fonts regardless of collection
+      if (font.styleTags && Array.isArray(font.styleTags)) {
+        font.styleTags.forEach(tag => allTags.add(tag))
       }
     })
     const arr = Array.from(allTags)
-    // Sort by per-collection vocab order if available
-    // fetch is done outside during lifecycle; try reading window-managed vocab via endpoint synchronously is costly
-    // For now, do a quick fetch on first call when no local order yet
-    if (typeof window !== 'undefined' && arr.length > 0) {
-      // attempt to use cached order via a data attribute or skip if not fetched
-    }
+    // Sort by unified vocab order (no collection-specific filtering)
     return arr.sort((a,b)=>{
-      const order = (window as any).__appearanceOrder__?.[displayMode] as string[] | undefined
+      const order = (window as any).__appearanceOrder__ as string[] | undefined
       if (order && order.length) {
         const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
         const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
@@ -986,42 +978,32 @@ export default function FontLibrary() {
     return isItalic ? `${styleName} Italic` : styleName
   }
 
-  // Clean up filters when switching collections - remove invalid categories/styles
+  // Clean up filters when switching collections - keep style tags (unified), remove invalid categories/languages
   const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
-    // Temporarily set displayMode to get correct categories/styles for the new collection
-    const originalDisplayMode = displayMode
-    
-    // Get what categories and styles would be available in the new collection
+    // Get what categories and languages would be available in the new collection
     const newCollectionCategories = new Set<string>()
-    const newCollectionStyles = new Set<string>()
     const newCollectionLanguages = new Set<string>()
-    
+
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
       if (fontCollection === newDisplayMode) {
         if (font.categories) {
           font.categories.forEach(category => newCollectionCategories.add(category))
         }
-        if (font.styleTags && Array.isArray(font.styleTags)) {
-          font.styleTags.forEach(tag => newCollectionStyles.add(tag))
-        }
         if (font.languages) {
           font.languages.forEach(language => newCollectionLanguages.add(language))
         }
       }
     })
-    
+
     // Remove selected categories that don't exist in new collection
     const validSelectedCategories = selectedCategories.filter(cat => newCollectionCategories.has(cat))
     if (validSelectedCategories.length !== selectedCategories.length) {
       setSelectedCategories(validSelectedCategories)
     }
-    
-    // Remove selected styles that don't exist in new collection  
-    const validSelectedStyles = selectedStyles.filter(style => newCollectionStyles.has(style))
-    if (validSelectedStyles.length !== selectedStyles.length) {
-      setSelectedStyles(validSelectedStyles)
-    }
+
+    // Keep ALL selected style tags - they are now unified across collections
+    // No need to filter selectedStyles - tags work across all collections
 
     // Remove selected languages that don't exist in new collection
     const validSelectedLanguages = selectedLanguages.filter(lang => newCollectionLanguages.has(lang))
@@ -1275,6 +1257,25 @@ export default function FontLibrary() {
   useEffect(() => {
     loadFonts()
   }, [loadFonts])
+
+  // Load unified appearance order vocabulary on mount
+  useEffect(() => {
+    const loadAppearanceOrder = async () => {
+      try {
+        const response = await fetch('/api/tags/vocab?type=appearance')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && Array.isArray(data.vocabulary)) {
+            // Store unified appearance order globally (no collection key)
+            (window as any).__appearanceOrder__ = data.vocabulary
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load appearance order vocabulary:', error)
+      }
+    }
+    loadAppearanceOrder()
+  }, [])
 
   // Removed special font readiness and reporting; render normally
 

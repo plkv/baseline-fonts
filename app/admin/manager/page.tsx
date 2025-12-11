@@ -54,7 +54,6 @@ export default function AdminManager() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [manageTagsOpen, setManageTagsOpen] = useState(false)
   const [manageType, setManageType] = useState<'appearance'|'category'>('appearance')
-  const [manageCollection, setManageCollection] = useState<'Text'|'Display'|'Weirdo'>('Text')
   const [tagEdits, setTagEdits] = useState<string[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
@@ -98,19 +97,16 @@ export default function AdminManager() {
   useEffect(()=>{
     const loadKV = async () => {
       try {
-        const loadOne = async (type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo') => {
-          const res = await fetch(`/api/tags/vocab?type=${type}&collection=${collection}`, { cache:'no-store' })
+        const loadOne = async (type: 'appearance'|'category') => {
+          const res = await fetch(`/api/tags/vocab?type=${type}`, { cache:'no-store' })
           const data = await res.json()
           return Array.isArray(data.list) ? data.list : []
         }
-        const [appText, appDisp, appWeir] = await Promise.all([
-          loadOne('appearance','Text'), loadOne('appearance','Display'), loadOne('appearance','Weirdo')
+        const [app, cat] = await Promise.all([
+          loadOne('appearance'), loadOne('category')
         ])
-        const [catText, catDisp, catWeir] = await Promise.all([
-          loadOne('category','Text'), loadOne('category','Display'), loadOne('category','Weirdo')
-        ])
-        setAppearanceVocab({ Text: appText, Display: appDisp, Weirdo: appWeir })
-        setCategoryVocab({ Text: catText, Display: catDisp, Weirdo: catWeir })
+        setAppearanceVocab({ Text: app, Display: app, Weirdo: app })
+        setCategoryVocab({ Text: cat, Display: cat, Weirdo: cat })
       } catch {}
     }
     loadKV()
@@ -122,7 +118,7 @@ export default function AdminManager() {
     setTagsLoading(true)
     ;(async ()=>{
       try {
-        const res = await fetch(`/api/tags/summary?type=${manageType}&collection=${manageCollection}`, { cache: 'no-store' })
+        const res = await fetch(`/api/tags/summary?type=${manageType}`, { cache: 'no-store' })
         const data = await res.json()
         const vocab: string[] = Array.isArray(data.vocab) ? data.vocab : []
         const usageArr: Array<{ tag: string; count: number }> = Array.isArray(data.usage) ? data.usage : []
@@ -132,12 +128,12 @@ export default function AdminManager() {
         setTagEdits(vocab)
       } catch {
         // fallback to existing vocab state if summary fails
-        setTagEdits(manageType==='appearance' ? appearanceVocab[manageCollection] : categoryVocab[manageCollection])
+        setTagEdits(manageType==='appearance' ? appearanceVocab['Text'] : categoryVocab['Text'])
       } finally {
         setTagsLoading(false)
       }
     })()
-  }, [manageTagsOpen, manageType, manageCollection])
+  }, [manageTagsOpen, manageType])
 
   // Vocabularies persisted in KV; fallback to dataset on first load
   const [appearanceVocab, setAppearanceVocab] = useState<Record<'Text'|'Display'|'Weirdo', string[]>>({ Text: [], Display: [], Weirdo: [] })
@@ -145,27 +141,29 @@ export default function AdminManager() {
 
   useEffect(()=>{
     const fetchVocab = async () => {
-      const loadOne = async (type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo') => {
-        const res = await fetch(`/api/tags/vocab?type=${type}&collection=${collection}`, { cache:'no-store' })
+      const loadOne = async (type: 'appearance'|'category') => {
+        const res = await fetch(`/api/tags/vocab?type=${type}`, { cache:'no-store' })
         const data = await res.json()
         return Array.isArray(data.list) ? data.list : []
       }
-      const defaultsAppearance = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() } as any
-      fonts.forEach(f=>{ const c = (f.collection as any)||'Text'; (f.styleTags||[]).forEach((t)=> defaultsAppearance[c].add(t)) })
-      const defaultsCategory = { Text: new Set<string>(), Display: new Set<string>(), Weirdo: new Set<string>() } as any
-      fonts.forEach(f=>{ const c = (f.collection as any)||'Text'; (f.category||[]).forEach((t)=> defaultsCategory[c].add(t)) })
+      const defaultsAppearance = new Set<string>()
+      fonts.forEach(f=>{ (f.styleTags||[]).forEach((t)=> defaultsAppearance.add(t)) })
+      const defaultsCategory = new Set<string>()
+      fonts.forEach(f=>{ (f.category||[]).forEach((t)=> defaultsCategory.add(t)) })
 
-      const appText = await loadOne('appearance','Text'); const appDisp = await loadOne('appearance','Display'); const appWeir = await loadOne('appearance','Weirdo')
-      const catText = await loadOne('category','Text'); const catDisp = await loadOne('category','Display'); const catWeir = await loadOne('category','Weirdo')
+      const app = await loadOne('appearance')
+      const cat = await loadOne('category')
+      const appList = (app.length ? app : Array.from(defaultsAppearance)).sort((a,b)=>a.localeCompare(b))
+      const catList = (cat.length ? cat : Array.from(defaultsCategory)).sort((a,b)=>a.localeCompare(b))
       setAppearanceVocab({
-        Text: (appText.length? appText : Array.from(defaultsAppearance.Text)).sort((a,b)=>a.localeCompare(b)),
-        Display: (appDisp.length? appDisp : Array.from(defaultsAppearance.Display)).sort((a,b)=>a.localeCompare(b)),
-        Weirdo: (appWeir.length? appWeir : Array.from(defaultsAppearance.Weirdo)).sort((a,b)=>a.localeCompare(b)),
+        Text: appList,
+        Display: appList,
+        Weirdo: appList,
       })
       setCategoryVocab({
-        Text: (catText.length? catText : Array.from(defaultsCategory.Text)).sort((a,b)=>a.localeCompare(b)),
-        Display: (catDisp.length? catDisp : Array.from(defaultsCategory.Display)).sort((a,b)=>a.localeCompare(b)),
-        Weirdo: (catWeir.length? catWeir : Array.from(defaultsCategory.Weirdo)).sort((a,b)=>a.localeCompare(b)),
+        Text: catList,
+        Display: catList,
+        Weirdo: catList,
       })
     }
     fetchVocab()
@@ -346,11 +344,6 @@ export default function AdminManager() {
                   <option value="appearance">Appearance</option>
                   <option value="category">Category</option>
                 </select>
-                <select className="btn-md" value={manageCollection} onChange={e=>{ setManageCollection(e.target.value as any); setTagEdits([]) }}>
-                  <option>Text</option>
-                  <option>Display</option>
-                  <option>Weirdo</option>
-                </select>
               </div>
               <div className="space-y-2" style={{ maxHeight: 320, overflowY: 'auto' }}>
                 {tagsLoading && (
@@ -379,7 +372,7 @@ export default function AdminManager() {
                 <div className="mt-2">
                   <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)' }}>Used but not in list</div>
                   {!tagsLoading && (
-                    <MissingUsed type={manageType} collection={manageCollection} current={tagEdits} onAdd={(t)=>setTagEdits(prev=>[...prev, normalizeTag(t)])} />
+                    <MissingUsed type={manageType} current={tagEdits} onAdd={(t)=>setTagEdits(prev=>[...prev, normalizeTag(t)])} />
                   )}
                 </div>
               </div>
@@ -393,26 +386,24 @@ export default function AdminManager() {
                   base.forEach((t)=>{ const n = normalizeTag(t); const key = n.toLowerCase(); if (n && !seen.has(key)) { seen.add(key); newList.push(n) } })
                   const keep = new Set(newList.map(x=>x.toLowerCase()))
                   // Apply pruning across families server-side for consistency
-                  await fetch('/api/tags/apply', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type: manageType, collection: manageCollection, list: newList }) })
+                  await fetch('/api/tags/apply', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type: manageType, list: newList }) })
                   // Persist vocabulary order to KV
-                  await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, collection: manageCollection, list: newList }) })
+                  await fetch('/api/tags/vocab', { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ type: manageType, list: newList }) })
                   setTagEdits(newList)
                   try { toast.success('Tags saved') } catch {}
                   await load()
                   // refresh vocab
-                  const res = await fetch(`/api/tags/vocab?type=${manageType}&collection=${manageCollection}`, { cache:'no-store' })
+                  const res = await fetch(`/api/tags/vocab?type=${manageType}`, { cache:'no-store' })
                   const data = await res.json()
                   const list = Array.isArray(data.list) ? data.list : []
-                  if (manageType==='appearance') setAppearanceVocab(prev=>({ ...prev, [manageCollection]: list }))
-                  else setCategoryVocab(prev=>({ ...prev, [manageCollection]: list }))
+                  if (manageType==='appearance') setAppearanceVocab({ Text: list, Display: list, Weirdo: list })
+                  else setCategoryVocab({ Text: list, Display: list, Weirdo: list })
                   // Update global order used by catalog pages without full reload
                   if (typeof window !== 'undefined') {
                     if (manageType === 'appearance') {
-                      ;(window as any).__appearanceOrder__ = (window as any).__appearanceOrder__ || {}
-                      ;(window as any).__appearanceOrder__[manageCollection] = list
+                      ;(window as any).__appearanceOrder__ = list
                     } else {
-                      ;(window as any).__categoryOrder__ = (window as any).__categoryOrder__ || {}
-                      ;(window as any).__categoryOrder__[manageCollection] = list
+                      ;(window as any).__categoryOrder__ = list
                     }
                   }
                 }}>Save</button>
@@ -660,19 +651,19 @@ export default function AdminManager() {
   )
 }
 
-function MissingUsed({ type, collection, current, onAdd }: { type: 'appearance'|'category', collection: 'Text'|'Display'|'Weirdo', current: string[], onAdd: (t:string)=>void }) {
+function MissingUsed({ type, current, onAdd }: { type: 'appearance'|'category', current: string[], onAdd: (t:string)=>void }) {
   const [missing, setMissing] = useState<string[]>([])
   useEffect(()=>{
     (async ()=>{
       try {
-        const res = await fetch(`/api/tags/summary?type=${type}&collection=${collection}`, { cache:'no-store' })
+        const res = await fetch(`/api/tags/summary?type=${type}`, { cache:'no-store' })
         const data = await res.json()
         const currL = (current||[]).map(x=>x.toLowerCase())
         const miss = (Array.isArray(data.missing)? data.missing:[]).filter((t:string)=>!currL.includes(t.toLowerCase()))
         setMissing(miss)
       } catch { setMissing([]) }
     })()
-  }, [type, collection, JSON.stringify(current)])
+  }, [type, JSON.stringify(current)])
   if (!missing.length) return null
   return (
     <div className="flex gap-1 flex-wrap mt-1">
