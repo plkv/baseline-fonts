@@ -85,7 +85,7 @@ export default function FontLibrary() {
     if (typeof window !== 'undefined') {
       return window.innerWidth >= 768
     }
-    return true
+    return false // Default to closed on SSR
   })
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
@@ -802,6 +802,7 @@ export default function FontLibrary() {
     setCustomText("")
     setDisplayMode("Text")
     setSelectedPreset("Names")
+    setSelectedCollections([]) // Reset collection filters
     setSelectedCategories([])
     setSelectedStyles([])
     setSelectedLanguages([])
@@ -1387,7 +1388,6 @@ export default function FontLibrary() {
           style={{
             paddingLeft: '16px',
             paddingBottom: '16px',
-            paddingTop: '16px',
             height: '100%'
           }}
         >
