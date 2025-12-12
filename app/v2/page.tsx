@@ -162,7 +162,7 @@ export default function FontLibrary() {
   const [focusedFontId, setFocusedFontId] = useState<number | null>(null)
 
   const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
-  const [textCursorPosition, setTextCursorPosition] = useState(0)
+  const [textCursorPosition, setTextCursorPosition] = useState<Record<number, number>>({})
 
   // Load fonts from our API
   const loadFonts = useCallback(async () => {
@@ -862,12 +862,12 @@ export default function FontLibrary() {
       if (el) {
         try {
           el.focus()
-          const pos = Math.min(textCursorPosition, el.value.length)
+          const pos = Math.min(textCursorPosition[focusedFontId] || 0, el.value.length)
           el.setSelectionRange(pos, pos)
         } catch {}
       }
     }
-  }, [customText, textCursorPosition])
+  }, [customText, textCursorPosition, focusedFontId])
 
   // Keep focus across expand/collapse toggles and when focusing new input
   useEffect(() => {
@@ -876,12 +876,12 @@ export default function FontLibrary() {
       if (el) {
         try {
           el.focus()
-          const pos = Math.min(textCursorPosition, el.value.length)
+          const pos = Math.min(textCursorPosition[focusedFontId] || 0, el.value.length)
           el.setSelectionRange(pos, pos)
         } catch {}
       }
     }
-  }, [expandedCards, focusedFontId])
+  }, [expandedCards, focusedFontId, textCursorPosition])
 
   // Get all available style tags from ALL fonts (unified across collections), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
@@ -1854,11 +1854,12 @@ export default function FontLibrary() {
                             }}>{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="relative max-w-[180px] md:max-w-[240px]" style={{
+                            <div className="relative" style={{
                               borderRadius: '12px',
                               backgroundColor: 'var(--gray-surface-sec)',
                               overflow: 'hidden',
-                              height: '40px'
+                              height: '40px',
+                              width: 'fit-content'
                             }}>
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
@@ -1868,9 +1869,8 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className="appearance-none w-full truncate cursor-pointer"
+                                className="appearance-none cursor-pointer"
                                 style={{
-                                  minWidth: 0,
                                   padding: '10px 36px 10px 12px',
                                   backgroundColor: 'transparent',
                                   border: 'none',
@@ -1921,24 +1921,28 @@ export default function FontLibrary() {
                               }}>Single style</span>
                             </div>
                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="flex items-center"
-                            style={{
-                              border: "1px solid var(--gray-brd-prim)",
-                              borderRadius: '12px',
-                              padding: '10px 12px',
-                              height: '40px'
-                            }}
-                          >
-                            <span style={{
-                              fontFamily: '"Inter Variable", sans-serif',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '20px'
-                            }}>{font.type}</span>
-                          </div>
+
+                          {/* Type badge (Variable only, hide Static) */}
+                          {font.type !== "Static" && (
+                            <div
+                              className="flex items-center"
+                              style={{
+                                border: "1px solid var(--gray-brd-prim)",
+                                borderRadius: '12px',
+                                padding: '10px 12px',
+                                height: '40px'
+                              }}
+                            >
+                              <span style={{
+                                fontFamily: '"Inter Variable", sans-serif',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '20px'
+                              }}>{font.type}</span>
+                            </div>
+                          )}
+
+                          {/* Styles count */}
                           <div
                             className="hidden md:flex items-center"
                             style={{
@@ -1960,6 +1964,8 @@ export default function FontLibrary() {
                               })()}
                             </span>
                           </div>
+
+                          {/* Alternates count */}
                           {getStyleAlternates(font.id).length > 0 && (
                             <div
                               className="hidden md:flex items-center"
@@ -1980,6 +1986,8 @@ export default function FontLibrary() {
                               </span>
                             </div>
                           )}
+
+                          {/* Author */}
                           <span
                             className="text-author truncate max-w-[200px]"
                             title={`by ${font.author}`}
@@ -2039,7 +2047,7 @@ export default function FontLibrary() {
                       onChangeText={(val, pos) => {
                         // Only set global customText when user actually changes text
                         // Avoid setting it on focus/cursor events that pass the same value
-                        setTextCursorPosition(pos)
+                        setTextCursorPosition(prev => ({ ...prev, [font.id]: pos }))
                         if (val !== customText) {
                           // If preset is in effect (customText empty) and val equals preset content, skip
                           const presetValue = getPresetContent(selectedPreset, font.name)
@@ -2047,7 +2055,7 @@ export default function FontLibrary() {
                           if (!isPreset) setCustomText(val)
                         }
                       }}
-                      cursorPosition={textCursorPosition}
+                      cursorPosition={textCursorPosition[font.id] || 0}
                       className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${loadedFonts.has(font.id) ? 'font-fade-in' : ''}`}
                       style={{
                         fontSize: `${textSize[0]}px`,
