@@ -1254,7 +1254,7 @@ export default function FontLibrary() {
       <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
 
       {/* Navbar - над всем контентом */}
-      <div style={{ padding: '16px', paddingBottom: 0 }}>
+      <div style={{ padding: '16px' }}>
         <header
           className="p-4 flex-shrink-0"
           style={{
@@ -1343,6 +1343,11 @@ export default function FontLibrary() {
                 refresh
               </span>
             </button>
+          </div>
+
+          {/* Количество семейств */}
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}>
+            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-hide">
@@ -1496,6 +1501,69 @@ export default function FontLibrary() {
                 </div>
               </div>
 
+              {/* Сортировка */}
+              <div>
+                <h3 className="text-sidebar-title mb-3">Sort by</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSort("Random")}
+                    style={{
+                      padding: '13px 12px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: sortBy === "Random" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                      color: sortBy === "Random" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                      cursor: 'pointer',
+                      fontFamily: '"Inter Variable", sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '14px',
+                      height: '40px'
+                    }}
+                  >
+                    Random
+                  </button>
+                  <button
+                    onClick={() => handleSort("Date")}
+                    style={{
+                      padding: '13px 12px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: sortBy === "Date" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                      color: sortBy === "Date" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                      cursor: 'pointer',
+                      fontFamily: '"Inter Variable", sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '14px',
+                      height: '40px'
+                    }}
+                  >
+                    {sortBy === "Date" && sortDirection === "desc" ? "New" :
+                     sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
+                  </button>
+                  <button
+                    onClick={() => handleSort("Alphabetical")}
+                    style={{
+                      padding: '13px 12px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: sortBy === "Alphabetical" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                      color: sortBy === "Alphabetical" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                      cursor: 'pointer',
+                      fontFamily: '"Inter Variable", sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '14px',
+                      height: '40px'
+                    }}
+                  >
+                    {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
+                     sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <h3 className="text-sidebar-title mb-3">Font categories</h3>
                 <div className="flex flex-wrap gap-2">
@@ -1640,71 +1708,6 @@ export default function FontLibrary() {
       )}
 
       <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
-          <div
-            className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
-            style={{ backgroundColor: 'transparent', color: getCurrentTheme().fg }}
-          >
-            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSort("Random")}
-                style={{
-                  padding: '13px 12px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: sortBy === "Random" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                  color: sortBy === "Random" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                  cursor: 'pointer',
-                  fontFamily: '"Inter Variable", sans-serif',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  lineHeight: '14px',
-                  height: '40px'
-                }}
-              >
-                Random
-              </button>
-              <button
-                onClick={() => handleSort("Date")}
-                style={{
-                  padding: '13px 12px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: sortBy === "Date" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                  color: sortBy === "Date" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                  cursor: 'pointer',
-                  fontFamily: '"Inter Variable", sans-serif',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  lineHeight: '14px',
-                  height: '40px'
-                }}
-              >
-                {sortBy === "Date" && sortDirection === "desc" ? "New" :
-                 sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
-              </button>
-              <button
-                onClick={() => handleSort("Alphabetical")}
-                style={{
-                  padding: '13px 12px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: sortBy === "Alphabetical" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                  color: sortBy === "Alphabetical" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                  cursor: 'pointer',
-                  fontFamily: '"Inter Variable", sans-serif',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  lineHeight: '14px',
-                  height: '40px'
-                }}
-              >
-                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
-                 sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
-              </button>
-            </div>
-          </div>
-
           <div className="min-h-[100vh] p-4 space-y-4">
             {isLoadingFonts ? (
               <div className="p-6 text-center">
