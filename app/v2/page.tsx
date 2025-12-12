@@ -1526,7 +1526,7 @@ export default function FontLibrary() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto pb-16">
+        <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'var(--gray-surface-sec)' }}>
           <div
             className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
             style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
@@ -1550,7 +1550,7 @@ export default function FontLibrary() {
             </div>
           </div>
 
-          <div className="min-h-[100vh]">
+          <div className="min-h-[100vh] p-4 space-y-4">
             {isLoadingFonts ? (
               <div className="p-6 text-center">
                 <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
@@ -1588,7 +1588,11 @@ export default function FontLibrary() {
                 <div
                   key={font.id}
                   className="transition-colors"
-                  style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}
+                  style={{
+                    backgroundColor: 'var(--gray-bg-prim)',
+                    border: '1px solid var(--gray-brd-prim)',
+                    borderRadius: '16px'
+                  }}
                 >
                   <div className="p-6">
                     <div className="flex justify-between items-start gap-4 mb-4">
