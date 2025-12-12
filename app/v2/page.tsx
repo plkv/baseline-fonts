@@ -1249,9 +1249,70 @@ export default function FontLibrary() {
   // Removed special font readiness and reporting; render normally
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: getCurrentTheme().bg, color: getCurrentTheme().fg }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--gray-surface-sec)', color: getCurrentTheme().fg }}>
       {/* Dynamic font loading and fallback character styles */}
       <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
+
+      {/* Navbar - над всем контентом */}
+      <div style={{ padding: '16px', paddingBottom: 0 }}>
+        <header
+          className="p-4 flex-shrink-0"
+          style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            color: getCurrentTheme().fg,
+            zIndex: 20
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {!sidebarOpen && (
+                <div className="w-[32px] h-[32px] flex items-center justify-center">
+                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                      tune
+                    </span>
+                  </button>
+                </div>
+              )}
+              <h1
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
+                  fontFamily: "Inter Variable",
+                  fontSize: "22px",
+                  fontStyle: "normal",
+                  fontWeight: 900,
+                  lineHeight: "100%",
+                  textTransform: "lowercase",
+                  color: getCurrentTheme().fg
+                }}
+                onClick={() => window.location.href = '/'}
+              >
+                typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <nav className="flex flex-row gap-2">
+                <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
+                <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
+              </nav>
+              <a
+                href="mailto:make@logictomagic.com"
+                className="icon-btn"
+                title="Send feedback"
+              >
+                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                  flag_2
+                </span>
+              </a>
+            </div>
+          </div>
+        </header>
+      </div>
+
+      {/* Контейнер для сайдбара и каталога */}
+      <div className="flex-1 flex overflow-hidden">
       {sidebarOpen && (
         <div style={{ paddingLeft: '16px', height: '100%' }}>
           <aside
@@ -1578,70 +1639,10 @@ export default function FontLibrary() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div style={{ padding: '16px', paddingBottom: 0 }}>
-          <header
-            className="p-4 flex-shrink-0"
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              color: getCurrentTheme().fg,
-              position: 'sticky',
-              top: '16px',
-              zIndex: 20
-            }}
-          >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {!sidebarOpen && (
-                <div className="w-[32px] h-[32px] flex items-center justify-center">
-                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
-                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      tune
-                    </span>
-                  </button>
-                </div>
-              )}
-              <h1 
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                style={{
-                  fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
-                  fontFamily: "Inter Variable",
-                  fontSize: "22px",
-                  fontStyle: "normal",
-                  fontWeight: 900,
-                  lineHeight: "100%",
-                  textTransform: "lowercase",
-                  color: getCurrentTheme().fg
-                }}
-                onClick={() => window.location.href = '/'}
-              >
-                typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
-              </h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <nav className="flex flex-row gap-2">
-                <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
-                <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
-              </nav>
-              <a 
-                href="mailto:make@logictomagic.com"
-                className="icon-btn"
-                title="Send feedback"
-              >
-                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                  flag_2
-                </span>
-              </a>
-            </div>
-          </div>
-        </header>
-        </div>
-
-        <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'var(--gray-surface-sec)' }}>
+      <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
           <div
             className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
-            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+            style={{ backgroundColor: 'transparent', color: getCurrentTheme().fg }}
           >
             <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
             <div className="flex gap-2">
@@ -2088,8 +2089,8 @@ export default function FontLibrary() {
             </footer>
           </div>
         </main>
-
       </div>
+
     </div>
   )
 }
