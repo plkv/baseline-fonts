@@ -1390,7 +1390,7 @@ export default function FontLibrary() {
 
       {sidebarOpen && (
         <div
-          className="md:relative md:h-full fixed left-0 top-0 bottom-0 z-40"
+          className="fixed md:relative left-0 md:left-auto top-0 md:top-auto bottom-0 md:bottom-auto z-40 md:z-auto md:h-full"
           style={{
             paddingLeft: '16px',
             paddingBottom: '16px',
