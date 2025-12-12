@@ -1257,30 +1257,39 @@ export default function FontLibrary() {
         const fontSelection = fontWeightSelections[font.id]
         const cssFamily = fontSelection?.cssFamily || font.fontFamily
 
-        if (!cssFamily) return
+        if (!cssFamily) {
+          // If no cssFamily, mark as loaded immediately
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+          return
+        }
 
-        // Check if font is loaded
-        await document.fonts.load(`400 16px "${cssFamily}"`)
+        // Wait for fonts to be ready, then check if this specific font is loaded
+        await document.fonts.ready
 
-        // Mark font as loaded
-        setLoadedFonts(prev => {
-          const newSet = new Set(prev)
-          newSet.add(font.id)
-          return newSet
-        })
+        // Check if font is actually loaded
+        const fontSpec = `16px "${cssFamily}"`
+        const isLoaded = document.fonts.check(fontSpec)
+
+        if (isLoaded) {
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+        } else {
+          // Try to load the font
+          await document.fonts.load(fontSpec)
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+        }
       } catch (error) {
-        // Silently fail - font might already be loaded or not available
-        console.debug('Font load check failed:', font.name, error)
+        // On error, mark as loaded anyway to remove shimmer
+        console.debug('Font load check failed, marking as loaded:', font.name, error)
+        setLoadedFonts(prev => new Set(prev).add(font.id))
       }
     }
 
-    // Check all fonts
-    fonts.forEach(font => {
-      if (!loadedFonts.has(font.id)) {
-        checkFontLoaded(font)
-      }
+    // Check all fonts that aren't already marked as loaded
+    const fontsToCheck = fonts.filter(font => !loadedFonts.has(font.id))
+    fontsToCheck.forEach(font => {
+      checkFontLoaded(font)
     })
-  }, [fonts, fontWeightSelections])
+  }, [fonts, fontWeightSelections, loadedFonts])
 
   // Removed special font readiness and reporting; render normally
 
@@ -1321,21 +1330,10 @@ export default function FontLibrary() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!sidebarOpen && (
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  style={{
-                    fontFamily: '"Inter Variable", sans-serif',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '20px',
-                    color: 'var(--gray-cont-prim)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}
-                >
-                  Side Navigation
+                <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+                  <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                    side_navigation
+                  </span>
                 </button>
               )}
               <h1
@@ -1397,21 +1395,10 @@ export default function FontLibrary() {
                 gap: '12px'
               }}
             >
-            <button
-              onClick={() => setSidebarOpen(false)}
-              style={{
-                fontFamily: '"Inter Variable", sans-serif',
-                fontSize: '14px',
-                fontWeight: 500,
-                lineHeight: '20px',
-                color: 'var(--gray-cont-prim)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0
-              }}
-            >
-              Side Navigation
+            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                side_navigation
+              </span>
             </button>
             <span className="text-sidebar-title flex-1">{getFilteredFonts().length} font families</span>
             <button onClick={resetFilters} className="icon-btn">
