@@ -44,6 +44,7 @@ export default function AdminManager() {
   const [fonts, setFonts] = useState<CleanFont[]>([])
   const [query, setQuery] = useState('')
   const [collectionFilter, setCollectionFilter] = useState<'all' | 'Text' | 'Display' | 'Weirdo'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'date' | 'alpha'>('date')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<Record<string, { collection: Family['collection']; styleTags: string[]; languages: string[]; category?: string[] }>>({})
@@ -220,11 +221,21 @@ export default function AdminManager() {
     })
     // basic filter/sort
     const filtered = arr.filter(f => (collectionFilter === 'all' ? true : f.collection === collectionFilter))
+      .filter(f => (categoryFilter === 'all' ? true : (f.category || []).includes(categoryFilter)))
       .filter(f => (query ? f.name.toLowerCase().includes(query.toLowerCase()) : true))
     if (sortBy === 'alpha') filtered.sort((a, b) => a.name.localeCompare(b.name))
     else filtered.sort((a, b) => (b.uploadedAt || '').localeCompare(a.uploadedAt || ''))
     return filtered
-  }, [fonts, collectionFilter, sortBy, query])
+  }, [fonts, collectionFilter, categoryFilter, sortBy, query])
+
+  // Build category vocabulary from families
+  const categoryVocabulary = useMemo<string[]>(() => {
+    const cats = new Set<string>()
+    for (const fam of families) {
+      (fam.category || []).forEach(c => cats.add(c))
+    }
+    return Array.from(cats).sort((a,b)=>a.localeCompare(b))
+  }, [families])
 
   // Build language vocabulary from data
   const languageVocabulary = useMemo<string[]>(() => {
@@ -347,6 +358,12 @@ export default function AdminManager() {
           <select className="btn-md" value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
             <option value="date">Date</option>
             <option value="alpha">A–Z</option>
+          </select>
+          <select className="btn-md" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+            <option value="all">All categories</option>
+            {categoryVocabulary.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
           </select>
           <Dialog open={manageTagsOpen} onOpenChange={(o)=>{ setManageTagsOpen(o); if(!o) setTagEdits([]) }}>
             <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
