@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider"
 import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
 import { canonicalFamilyName } from "@/lib/font-naming"
 import { shortHash } from "@/lib/hash"
+import "./v2.css"
 
 // Font interface for our API data
 interface FontData {
@@ -1301,34 +1302,16 @@ export default function FontLibrary() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--gray-surface-sec)', color: getCurrentTheme().fg }}>
-      {/* Dynamic font loading and fallback character styles */}
+      {/* Fallback character styles */}
       <style dangerouslySetInnerHTML={{ __html: `
         .fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-        .shimmer {
-          background: linear-gradient(to right, #f0f0f0 0%, #e0e0e0 20%, #f0f0f0 40%, #f0f0f0 100%);
-          background-size: 1000px 100%;
-          animation: shimmer 2s infinite linear;
-        }
-        .font-fade-in {
-          animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       ` }} />
 
       {/* Navbar - над всем контентом */}
       <div style={{ padding: '16px' }}>
         <header
-          className="p-4 flex-shrink-0"
+          className="p-4 flex-shrink-0 v2-card"
           style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
             color: getCurrentTheme().fg,
             zIndex: 20
           }}
@@ -1399,10 +1382,8 @@ export default function FontLibrary() {
           }}
         >
           <aside
-            className="w-[280px] flex-shrink-0 flex flex-col h-full"
+            className="w-[280px] flex-shrink-0 flex flex-col h-full v2-card"
             style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
               color: getCurrentTheme().fg
             }}
           >
@@ -1453,26 +1434,7 @@ export default function FontLibrary() {
                           }
                         }, 100)
                       }}
-                      style={{
-                        padding: '12px 8px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedCollections.includes(mode) ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedCollections.includes(mode) ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        flex: 1,
-                        height: '80px'
-                      }}
-                      className={selectedCollections.includes(mode) ? "active" : ""}
+                      className={`v2-approach-button ${selectedCollections.includes(mode) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       <span
                         className="segmented-control-ag"
@@ -1505,19 +1467,7 @@ export default function FontLibrary() {
                         if (preset === "Paragraph") setTextSize([20]); else setTextSize([56])
                         if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
                       }}
-                      style={{
-                        padding: '13px 12px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedPreset === preset ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedPreset === preset ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        height: '40px'
-                      }}
+                      className={`v2-button ${selectedPreset === preset ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {preset}
                     </button>
@@ -1590,56 +1540,20 @@ export default function FontLibrary() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleSort("Random")}
-                    style={{
-                      padding: '13px 12px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: sortBy === "Random" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                      color: sortBy === "Random" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                      cursor: 'pointer',
-                      fontFamily: '"Inter Variable", sans-serif',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      lineHeight: '14px',
-                      height: '40px'
-                    }}
+                    className={`v2-button ${sortBy === "Random" ? 'v2-button-active' : 'v2-button-inactive'}`}
                   >
                     Random
                   </button>
                   <button
                     onClick={() => handleSort("Date")}
-                    style={{
-                      padding: '13px 12px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: sortBy === "Date" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                      color: sortBy === "Date" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                      cursor: 'pointer',
-                      fontFamily: '"Inter Variable", sans-serif',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      lineHeight: '14px',
-                      height: '40px'
-                    }}
+                    className={`v2-button ${sortBy === "Date" ? 'v2-button-active' : 'v2-button-inactive'}`}
                   >
                     {sortBy === "Date" && sortDirection === "desc" ? "New" :
                      sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
                   </button>
                   <button
                     onClick={() => handleSort("Alphabetical")}
-                    style={{
-                      padding: '13px 12px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: sortBy === "Alphabetical" ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                      color: sortBy === "Alphabetical" ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                      cursor: 'pointer',
-                      fontFamily: '"Inter Variable", sans-serif',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      lineHeight: '14px',
-                      height: '40px'
-                    }}
+                    className={`v2-button ${sortBy === "Alphabetical" ? 'v2-button-active' : 'v2-button-inactive'}`}
                   >
                     {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
                      sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
@@ -1654,19 +1568,7 @@ export default function FontLibrary() {
                     <button
                       key={category}
                       onClick={() => toggleCategory(category)}
-                      style={{
-                        padding: '13px 12px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedCategories.includes(category) ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedCategories.includes(category) ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        height: '40px'
-                      }}
+                      className={`v2-button ${selectedCategories.includes(category) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {category}
                     </button>
@@ -1681,19 +1583,7 @@ export default function FontLibrary() {
                     <button
                       key={style}
                       onClick={() => toggleStyle(style)}
-                      style={{
-                        padding: '13px 12px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedStyles.includes(style) ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedStyles.includes(style) ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        height: '40px'
-                      }}
+                      className={`v2-button ${selectedStyles.includes(style) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {style}
                     </button>
@@ -1716,19 +1606,7 @@ export default function FontLibrary() {
                           prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language],
                         )
                       }
-                      style={{
-                        padding: '13px 12px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedLanguages.includes(language) ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedLanguages.includes(language) ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        height: '40px'
-                      }}
+                      className={`v2-button ${selectedLanguages.includes(language) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {language}
                     </button>
@@ -1747,38 +1625,14 @@ export default function FontLibrary() {
                     <button
                       key={weight}
                       onClick={() => toggleWeight(weight)}
-                      style={{
-                        padding: '13px 12px',
-                        borderRadius: '12px',
-                        border: 'none',
-                        backgroundColor: selectedWeights.includes(weight) ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                        color: selectedWeights.includes(weight) ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                        cursor: 'pointer',
-                        fontFamily: '"Inter Variable", sans-serif',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        lineHeight: '14px',
-                        height: '40px'
-                      }}
+                      className={`v2-button ${selectedWeights.includes(weight) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {weight}
                     </button>
                   ))}
                   <button
                     onClick={() => setIsItalic(!isItalic)}
-                    style={{
-                      padding: '13px 12px',
-                      borderRadius: '12px',
-                      border: 'none',
-                      backgroundColor: isItalic ? '#0a0a0a' : 'var(--gray-surface-sec)',
-                      color: isItalic ? '#fcfcfc' : 'var(--gray-cont-prim)',
-                      cursor: 'pointer',
-                      fontFamily: '"Inter Variable", sans-serif',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      lineHeight: '14px',
-                      height: '40px'
-                    }}
+                    className={`v2-button ${isItalic ? 'v2-button-active' : 'v2-button-inactive'}`}
                   >
                     Italic
                   </button>
@@ -1797,20 +1651,19 @@ export default function FontLibrary() {
               Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
+                  className="v2-card"
                   style={{
-                    backgroundColor: 'white',
-                    borderRadius: '16px',
                     padding: '24px',
                     minHeight: '200px'
                   }}
                 >
-                  <div className="shimmer" style={{
+                  <div className="v2-shimmer" style={{
                     height: '40px',
                     width: '200px',
                     borderRadius: '8px',
                     marginBottom: '16px'
                   }} />
-                  <div className="shimmer" style={{
+                  <div className="v2-shimmer" style={{
                     height: '80px',
                     width: '100%',
                     borderRadius: '8px'
@@ -1849,40 +1702,17 @@ export default function FontLibrary() {
               return (
                 <div
                   key={font.id}
-                  className="transition-colors"
-                  style={{
-                    backgroundColor: 'white',
-                    borderRadius: '16px'
-                  }}
+                  className="transition-colors v2-card"
                 >
                   <div className="p-6">
                     <div className="flex justify-between items-start gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center mb-2 flex-row flex-wrap gap-2">
-                          <div
-                            className="flex items-center"
-                            style={{
-                              border: "1px solid var(--gray-brd-prim)",
-                              borderRadius: '12px',
-                              padding: '10px 12px',
-                              height: '40px'
-                            }}
-                          >
-                            <span style={{
-                              fontFamily: '"Inter Variable", sans-serif',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '20px'
-                            }}>{font.name}</span>
+                          <div className="v2-badge flex items-center">
+                            <span>{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="relative" style={{
-                              borderRadius: '12px',
-                              backgroundColor: 'var(--gray-surface-sec)',
-                              overflow: 'hidden',
-                              height: '40px',
-                              width: 'fit-content'
-                            }}>
+                            <div className="relative v2-dropdown">
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
                                 value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
@@ -1926,60 +1756,21 @@ export default function FontLibrary() {
                               </span>
                             </div>
                           ) : (
-                            <div
-                              className="flex items-center"
-                              style={{
-                                background: 'var(--gray-bg-sec)',
-                                borderRadius: '12px',
-                                padding: '10px 12px',
-                                height: '40px'
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: '"Inter Variable", sans-serif',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                lineHeight: '20px'
-                              }}>Single style</span>
+                            <div className="flex items-center v2-badge" style={{ background: 'var(--gray-bg-sec)', border: 'none' }}>
+                              <span>Single style</span>
                             </div>
                           )}
 
                           {/* Type badge (Variable only, hide Static) */}
                           {font.type !== "Static" && (
-                            <div
-                              className="hidden md:flex items-center"
-                              style={{
-                                border: "1px solid var(--gray-brd-prim)",
-                                borderRadius: '12px',
-                                padding: '10px 12px',
-                                height: '40px'
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: '"Inter Variable", sans-serif',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                lineHeight: '20px'
-                              }}>{font.type}</span>
+                            <div className="hidden md:flex items-center v2-badge">
+                              <span>{font.type}</span>
                             </div>
                           )}
 
                           {/* Styles count */}
-                          <div
-                            className="hidden md:flex items-center"
-                            style={{
-                              border: "1px solid var(--gray-brd-prim)",
-                              borderRadius: '12px',
-                              padding: '10px 12px',
-                              height: '40px'
-                            }}
-                          >
-                            <span style={{
-                              fontFamily: '"Inter Variable", sans-serif',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '20px'
-                            }}>
+                          <div className="hidden md:flex items-center v2-badge">
+                            <span>
                               {(() => {
                                 const count = (font._availableStyles?.length || font.styles || 1)
                                 return `${count} style${count !== 1 ? 's' : ''}`
@@ -1989,21 +1780,8 @@ export default function FontLibrary() {
 
                           {/* Alternates count */}
                           {getStyleAlternates(font.id).length > 0 && (
-                            <div
-                              className="hidden md:flex items-center"
-                              style={{
-                                border: "1px solid var(--gray-brd-prim)",
-                                borderRadius: '12px',
-                                padding: '10px 12px',
-                                height: '40px'
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: '"Inter Variable", sans-serif',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                lineHeight: '20px'
-                              }}>
+                            <div className="hidden md:flex items-center v2-badge">
+                              <span>
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
                               </span>
                             </div>
@@ -2027,20 +1805,9 @@ export default function FontLibrary() {
                         if (hasAdminDownloadLink) {
                           return (
                             <button
-                              style={{
-                                color: "#fcfcfc",
-                                backgroundColor: "#0a0a0a",
-                                borderRadius: '12px',
-                                padding: '10px 12px',
-                                height: '40px',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontFamily: '"Inter Variable", sans-serif',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                lineHeight: '20px'
-                              }}
+                              className="v2-badge v2-button-active"
                               onClick={() => window.open(adminDownloadLink, '_blank')}
+                              style={{ cursor: 'pointer' }}
                             >
                               Get font
                             </button>
@@ -2054,7 +1821,7 @@ export default function FontLibrary() {
                       {/* Shimmer placeholder while font is loading */}
                       {!loadedFonts.has(font.id) && (
                         <div
-                          className="shimmer absolute inset-0 rounded"
+                          className="v2-shimmer absolute inset-0 rounded"
                           style={{
                             height: `${textSize[0] * (lineHeight[0] / 100)}px`,
                             minHeight: '40px',
@@ -2078,7 +1845,7 @@ export default function FontLibrary() {
                         }
                       }}
                       cursorPosition={textCursorPosition[font.id] || 0}
-                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${loadedFonts.has(font.id) ? 'font-fade-in' : ''}`}
+                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${loadedFonts.has(font.id) ? 'v2-font-fade-in' : ''}`}
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
