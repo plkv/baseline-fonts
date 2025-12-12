@@ -1412,7 +1412,7 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
-                <div className="flex gap-4">
+                <div className="flex gap-2">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
                       key={mode}
@@ -1432,7 +1432,7 @@ export default function FontLibrary() {
                         }, 100)
                       }}
                       style={{
-                        padding: '6px 16px 6px 8px',
+                        padding: '12px 8px',
                         borderRadius: '12px',
                         border: 'none',
                         backgroundColor: selectedCollections.includes(mode) ? '#0a0a0a' : 'var(--gray-surface-sec)',
@@ -1445,7 +1445,10 @@ export default function FontLibrary() {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '16px'
+                        justifyContent: 'center',
+                        gap: '8px',
+                        flex: 1,
+                        height: '80px'
                       }}
                       className={selectedCollections.includes(mode) ? "active" : ""}
                     >
@@ -1768,9 +1771,30 @@ export default function FontLibrary() {
       <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
           <div className="min-h-[100vh] px-4 pb-4 space-y-4">
             {isLoadingFonts ? (
-              <div className="p-6 text-center">
-                <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
-              </div>
+              // Show skeleton cards during loading to prevent layout shift
+              Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    minHeight: '200px'
+                  }}
+                >
+                  <div className="shimmer" style={{
+                    height: '40px',
+                    width: '200px',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }} />
+                  <div className="shimmer" style={{
+                    height: '80px',
+                    width: '100%',
+                    borderRadius: '8px'
+                  }} />
+                </div>
+              ))
             ) : fonts.length === 0 ? (
               <div className="p-6 text-center">
                 <div style={{ color: "var(--gray-cont-tert)" }}>
