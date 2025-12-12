@@ -800,7 +800,6 @@ export default function FontLibrary() {
 
   const resetFilters = () => {
     setCustomText("")
-    setDisplayMode("Text")
     setSelectedPreset("Names")
     setSelectedCollections([]) // Reset collection filters
     setSelectedCategories([])
@@ -808,6 +807,7 @@ export default function FontLibrary() {
     setSelectedLanguages([])
     setSelectedWeights([])
     setIsItalic(false)
+    setSortBy("Random") // Reset sort to default
     setFontWeightSelections({})
     setTextSize([56])
     setLineHeight([120])
