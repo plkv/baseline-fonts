@@ -93,6 +93,7 @@ export default function FontLibrary() {
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
   const [loadedFonts, setLoadedFonts] = useState<Set<number>>(new Set())
+  const [animatedFonts, setAnimatedFonts] = useState<Set<number>>(new Set()) // Track fonts that have been animated once
   const [customText, setCustomText] = useState("")
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState("Names")
@@ -1298,6 +1299,15 @@ export default function FontLibrary() {
     })
   }, [fonts, fontWeightSelections, loadedFonts])
 
+  // Track fonts that should be animated (only on first load)
+  useEffect(() => {
+    loadedFonts.forEach(fontId => {
+      if (!animatedFonts.has(fontId)) {
+        setAnimatedFonts(prev => new Set(prev).add(fontId))
+      }
+    })
+  }, [loadedFonts, animatedFonts])
+
   // Removed special font readiness and reporting; render normally
 
   return (
@@ -1841,7 +1851,7 @@ export default function FontLibrary() {
                         }
                       }}
                       cursorPosition={textCursorPosition[font.id] || 0}
-                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${loadedFonts.has(font.id) ? 'v2-font-fade-in' : ''}`}
+                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${!animatedFonts.has(font.id) && loadedFonts.has(font.id) ? 'v2-font-fade-in' : ''}`}
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
