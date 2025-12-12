@@ -1253,14 +1253,25 @@ export default function FontLibrary() {
       {/* Dynamic font loading and fallback character styles */}
       <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
       {sidebarOpen && (
-        <aside
-          className="w-[280px] flex-shrink-0 flex flex-col h-full"
-          style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
-        >
-          <div
-            className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
-            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+        <div style={{ paddingLeft: '16px', height: '100%' }}>
+          <aside
+            className="w-[280px] flex-shrink-0 flex flex-col h-full"
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              color: getCurrentTheme().fg
+            }}
           >
+            <div
+              className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
+              style={{
+                backgroundColor: 'white',
+                borderBottom: "1px solid var(--gray-brd-prim)",
+                color: getCurrentTheme().fg,
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px'
+              }}
+            >
             <button onClick={() => setSidebarOpen(false)} className="icon-btn">
               <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
                 tune
@@ -1564,13 +1575,22 @@ export default function FontLibrary() {
             </div>
           </div>
         </aside>
+        </div>
       )}
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header
-          className="sticky top-0 z-10 p-4 flex-shrink-0"
-          style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
-        >
+        <div style={{ padding: '16px', paddingBottom: 0 }}>
+          <header
+            className="p-4 flex-shrink-0"
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              color: getCurrentTheme().fg,
+              position: 'sticky',
+              top: '16px',
+              zIndex: 20
+            }}
+          >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!sidebarOpen && (
@@ -1616,6 +1636,7 @@ export default function FontLibrary() {
             </div>
           </div>
         </header>
+        </div>
 
         <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'var(--gray-surface-sec)' }}>
           <div
