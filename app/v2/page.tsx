@@ -1314,7 +1314,7 @@ export default function FontLibrary() {
       {/* Контейнер для сайдбара и каталога */}
       <div className="flex-1 flex overflow-hidden">
       {sidebarOpen && (
-        <div style={{ paddingLeft: '16px', height: '100%' }}>
+        <div style={{ paddingLeft: '16px', paddingBottom: '16px', height: '100%' }}>
           <aside
             className="w-[280px] flex-shrink-0 flex flex-col h-full"
             style={{
@@ -1324,13 +1324,14 @@ export default function FontLibrary() {
             }}
           >
             <div
-              className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
+              className="sticky top-0 z-10 flex items-center p-4 flex-shrink-0"
               style={{
                 backgroundColor: 'white',
                 borderBottom: "1px solid var(--gray-brd-prim)",
                 color: getCurrentTheme().fg,
                 borderTopLeftRadius: '16px',
-                borderTopRightRadius: '16px'
+                borderTopRightRadius: '16px',
+                gap: '12px'
               }}
             >
             <button onClick={() => setSidebarOpen(false)} className="icon-btn">
@@ -1338,16 +1339,12 @@ export default function FontLibrary() {
                 tune
               </span>
             </button>
+            <span className="text-sidebar-title flex-1">{getFilteredFonts().length} font families</span>
             <button onClick={resetFilters} className="icon-btn">
               <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
                 refresh
               </span>
             </button>
-          </div>
-
-          {/* Количество семейств */}
-          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}>
-            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-hide">
@@ -1708,7 +1705,7 @@ export default function FontLibrary() {
       )}
 
       <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
-          <div className="min-h-[100vh] p-4 space-y-4">
+          <div className="min-h-[100vh] px-4 pb-4 space-y-4">
             {isLoadingFonts ? (
               <div className="p-6 text-center">
                 <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
