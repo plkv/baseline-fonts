@@ -1711,7 +1711,7 @@ export default function FontLibrary() {
                           <div className="v2-badge flex items-center">
                             <span>{font.name}</span>
                           </div>
-                          {font._availableStyles && font._availableStyles.length > 1 ? (
+                          {font._availableStyles && font._availableStyles.length > 1 && (
                             <div className="relative v2-dropdown">
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
@@ -1755,10 +1755,6 @@ export default function FontLibrary() {
                                 expand_more
                               </span>
                             </div>
-                          ) : (
-                            <div className="flex items-center v2-badge" style={{ background: 'var(--gray-bg-sec)', border: 'none' }}>
-                              <span>Single style</span>
-                            </div>
                           )}
 
                           {/* Type badge (Variable only, hide Static) */}
@@ -1769,14 +1765,14 @@ export default function FontLibrary() {
                           )}
 
                           {/* Styles count */}
-                          <div className="hidden md:flex items-center v2-badge">
-                            <span>
-                              {(() => {
-                                const count = (font._availableStyles?.length || font.styles || 1)
-                                return `${count} style${count !== 1 ? 's' : ''}`
-                              })()}
-                            </span>
-                          </div>
+                          {(() => {
+                            const count = (font._availableStyles?.length || font.styles || 1)
+                            return count > 1 ? (
+                              <div className="hidden md:flex items-center v2-badge">
+                                <span>{count} styles</span>
+                              </div>
+                            ) : null
+                          })()}
 
                           {/* Alternates count */}
                           {getStyleAlternates(font.id).length > 0 && (
