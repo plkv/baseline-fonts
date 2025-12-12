@@ -1296,7 +1296,23 @@ export default function FontLibrary() {
                           }
                         }, 100)
                       }}
-                      className={`segmented-control-button ${selectedCollections.includes(mode) ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedCollections.includes(mode) ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedCollections.includes(mode) ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                      className={selectedCollections.includes(mode) ? "active" : ""}
                     >
                       <span
                         className="segmented-control-ag"
@@ -1329,7 +1345,19 @@ export default function FontLibrary() {
                         if (preset === "Paragraph") setTextSize([20]); else setTextSize([56])
                         if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
                       }}
-                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedPreset === preset ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedPreset === preset ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px'
+                      }}
                     >
                       {preset}
                     </button>
@@ -1403,7 +1431,19 @@ export default function FontLibrary() {
                     <button
                       key={category}
                       onClick={() => toggleCategory(category)}
-                      className={`btn-sm ${selectedCategories.includes(category) ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedCategories.includes(category) ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedCategories.includes(category) ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px'
+                      }}
                     >
                       {category}
                     </button>
@@ -1418,7 +1458,19 @@ export default function FontLibrary() {
                     <button
                       key={style}
                       onClick={() => toggleStyle(style)}
-                      className={`btn-sm ${selectedStyles.includes(style) ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedStyles.includes(style) ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedStyles.includes(style) ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px'
+                      }}
                     >
                       {style}
                     </button>
@@ -1441,7 +1493,19 @@ export default function FontLibrary() {
                           prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language],
                         )
                       }
-                      className={`btn-sm ${selectedLanguages.includes(language) ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedLanguages.includes(language) ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedLanguages.includes(language) ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px'
+                      }}
                     >
                       {language}
                     </button>
@@ -1460,12 +1524,39 @@ export default function FontLibrary() {
                     <button
                       key={weight}
                       onClick={() => toggleWeight(weight)}
-                      className={`btn-sm ${selectedWeights.includes(weight) ? "active" : ""}`}
+                      style={{
+                        padding: '13px 12px',
+                        borderRadius: '12px',
+                        border: 'none',
+                        backgroundColor: selectedWeights.includes(weight) ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                        color: selectedWeights.includes(weight) ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                        cursor: 'pointer',
+                        fontFamily: '"Inter Variable", sans-serif',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        lineHeight: '14px',
+                        height: '40px'
+                      }}
                     >
                       {weight}
                     </button>
                   ))}
-                  <button onClick={() => setIsItalic(!isItalic)} className={`btn-sm ${isItalic ? "active" : ""}`}>
+                  <button
+                    onClick={() => setIsItalic(!isItalic)}
+                    style={{
+                      padding: '13px 12px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      backgroundColor: isItalic ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                      color: isItalic ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                      cursor: 'pointer',
+                      fontFamily: '"Inter Variable", sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '14px',
+                      height: '40px'
+                    }}
+                  >
                     Italic
                   </button>
                 </div>
@@ -1533,18 +1624,60 @@ export default function FontLibrary() {
           >
             <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
             <div className="flex gap-2">
-              <button onClick={() => handleSort("Random")} className={`btn-sm ${sortBy === "Random" ? "active" : ""}`}>
+              <button
+                onClick={() => handleSort("Random")}
+                style={{
+                  padding: '13px 12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: sortBy === "Random" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                  color: sortBy === "Random" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                  cursor: 'pointer',
+                  fontFamily: '"Inter Variable", sans-serif',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  lineHeight: '14px',
+                  height: '40px'
+                }}
+              >
                 Random
               </button>
-              <button onClick={() => handleSort("Date")} className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}>
-                {sortBy === "Date" && sortDirection === "desc" ? "New" : 
+              <button
+                onClick={() => handleSort("Date")}
+                style={{
+                  padding: '13px 12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: sortBy === "Date" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                  color: sortBy === "Date" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                  cursor: 'pointer',
+                  fontFamily: '"Inter Variable", sans-serif',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  lineHeight: '14px',
+                  height: '40px'
+                }}
+              >
+                {sortBy === "Date" && sortDirection === "desc" ? "New" :
                  sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
               </button>
               <button
                 onClick={() => handleSort("Alphabetical")}
-                className={`btn-sm ${sortBy === "Alphabetical" ? "active" : ""}`}
+                style={{
+                  padding: '13px 12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: sortBy === "Alphabetical" ? '#0a0a0a' : 'var(--gray-surface-sec)',
+                  color: sortBy === "Alphabetical" ? '#fcfcfc' : 'var(--gray-cont-prim)',
+                  cursor: 'pointer',
+                  fontFamily: '"Inter Variable", sans-serif',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  lineHeight: '14px',
+                  height: '40px'
+                }}
               >
-                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" : 
+                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
                  sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
               </button>
             </div>
@@ -1589,8 +1722,7 @@ export default function FontLibrary() {
                   key={font.id}
                   className="transition-colors"
                   style={{
-                    backgroundColor: 'var(--gray-bg-prim)',
-                    border: '1px solid var(--gray-brd-prim)',
+                    backgroundColor: 'white',
                     borderRadius: '16px'
                   }}
                 >
@@ -1599,16 +1731,27 @@ export default function FontLibrary() {
                       <div className="flex-1">
                         <div className="flex items-center mb-2 flex-row gap-2">
                           <div
-                            className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                            className="flex items-center"
+                            style={{
+                              border: "1px solid var(--gray-brd-prim)",
+                              borderRadius: '12px',
+                              padding: '10px 12px',
+                              height: '40px'
+                            }}
                           >
-                            <span className="text-font-name">{font.name}</span>
+                            <span style={{
+                              fontFamily: '"Inter Variable", sans-serif',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>{font.name}</span>
                           </div>
                           {font._availableStyles && font._availableStyles.length > 1 ? (
                             <div className="relative max-w-[180px] md:max-w-[240px]" style={{
-                              borderRadius: '6px',
+                              borderRadius: '12px',
                               backgroundColor: 'var(--gray-surface-sec)',
-                              overflow: 'hidden'
+                              overflow: 'hidden',
+                              height: '40px'
                             }}>
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
@@ -1618,10 +1761,10 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className="text-font-name appearance-none w-full truncate cursor-pointer"
+                                className="appearance-none w-full truncate cursor-pointer"
                                 style={{
                                   minWidth: 0,
-                                  padding: '6px 36px 6px 8px',
+                                  padding: '10px 36px 10px 12px',
                                   backgroundColor: 'transparent',
                                   border: 'none',
                                   outline: 'none',
@@ -1629,7 +1772,8 @@ export default function FontLibrary() {
                                   fontSize: '14px',
                                   fontWeight: 500,
                                   lineHeight: '20px',
-                                  color: 'var(--gray-cont-prim)'
+                                  color: 'var(--gray-cont-prim)',
+                                  height: '40px'
                                 }}
                               >
                                 {font._availableStyles?.map((style, index) => (
@@ -1654,25 +1798,55 @@ export default function FontLibrary() {
                             </div>
                           ) : (
                             <div
-                              className="flex items-center px-2 py-1.5 rounded-md"
-                              style={{ background: 'var(--gray-bg-sec)' }}
+                              className="flex items-center"
+                              style={{
+                                background: 'var(--gray-bg-sec)',
+                                borderRadius: '12px',
+                                padding: '10px 12px',
+                                height: '40px'
+                              }}
                             >
-                              <span className="text-font-name">Single style</span>
+                              <span style={{
+                                fontFamily: '"Inter Variable", sans-serif',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '20px'
+                              }}>Single style</span>
                             </div>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
                           <div
-                            className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                            className="flex items-center"
+                            style={{
+                              border: "1px solid var(--gray-brd-prim)",
+                              borderRadius: '12px',
+                              padding: '10px 12px',
+                              height: '40px'
+                            }}
                           >
-                            <span className="text-font-name">{font.type}</span>
+                            <span style={{
+                              fontFamily: '"Inter Variable", sans-serif',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>{font.type}</span>
                           </div>
                           <div
-                            className="hidden md:flex items-center px-2 py-1.5 rounded-md"
-                            style={{ border: "1px solid var(--gray-brd-prim)" }}
+                            className="hidden md:flex items-center"
+                            style={{
+                              border: "1px solid var(--gray-brd-prim)",
+                              borderRadius: '12px',
+                              padding: '10px 12px',
+                              height: '40px'
+                            }}
                           >
-                            <span className="text-font-name">
+                            <span style={{
+                              fontFamily: '"Inter Variable", sans-serif',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '20px'
+                            }}>
                               {(() => {
                                 const count = (font._availableStyles?.length || font.styles || 1)
                                 return `${count} style${count !== 1 ? 's' : ''}`
@@ -1681,10 +1855,20 @@ export default function FontLibrary() {
                           </div>
                           {getStyleAlternates(font.id).length > 0 && (
                             <div
-                              className="hidden md:flex items-center px-2 py-1.5 rounded-md"
-                              style={{ border: "1px solid var(--gray-brd-prim)" }}
+                              className="hidden md:flex items-center"
+                              style={{
+                                border: "1px solid var(--gray-brd-prim)",
+                                borderRadius: '12px',
+                                padding: '10px 12px',
+                                height: '40px'
+                              }}
                             >
-                              <span className="text-font-name">
+                              <span style={{
+                                fontFamily: '"Inter Variable", sans-serif',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '20px'
+                              }}>
                                 {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
                               </span>
                             </div>
@@ -1706,14 +1890,22 @@ export default function FontLibrary() {
                         if (hasAdminDownloadLink) {
                           return (
                             <button
-                              className="download-btn"
                               style={{
                                 color: "#fcfcfc",
                                 backgroundColor: "#0a0a0a",
+                                borderRadius: '12px',
+                                padding: '10px 12px',
+                                height: '40px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontFamily: '"Inter Variable", sans-serif',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '20px'
                               }}
                               onClick={() => window.open(adminDownloadLink, '_blank')}
                             >
-                              Download
+                              Get font
                             </button>
                           )
                         }
