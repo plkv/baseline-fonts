@@ -79,7 +79,13 @@ const getPresetContent = (preset: string, fontName: string) => {
 export default function FontLibrary() {
   const pathname = usePathname()
   // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // On mobile, start with sidebar closed
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768
+    }
+    return true
+  })
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
   // Font Data State
@@ -1374,8 +1380,24 @@ export default function FontLibrary() {
 
       {/* Контейнер для сайдбара и каталога */}
       <div className="flex-1 flex overflow-hidden">
+      {/* Backdrop for mobile sidebar */}
       {sidebarOpen && (
-        <div style={{ paddingLeft: '16px', paddingBottom: '16px', height: '100%' }}>
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {sidebarOpen && (
+        <div
+          className="md:relative md:h-full fixed left-0 top-0 bottom-0 z-40"
+          style={{
+            paddingLeft: '16px',
+            paddingBottom: '16px',
+            paddingTop: '16px',
+            height: '100%'
+          }}
+        >
           <aside
             className="w-[280px] flex-shrink-0 flex flex-col h-full"
             style={{
@@ -1836,7 +1858,7 @@ export default function FontLibrary() {
                   <div className="p-6">
                     <div className="flex justify-between items-start gap-4 mb-4">
                       <div className="flex-1">
-                        <div className="flex items-center mb-2 flex-row gap-2">
+                        <div className="flex items-center mb-2 flex-row flex-wrap gap-2">
                           <div
                             className="flex items-center"
                             style={{
@@ -1925,7 +1947,7 @@ export default function FontLibrary() {
                           {/* Type badge (Variable only, hide Static) */}
                           {font.type !== "Static" && (
                             <div
-                              className="flex items-center"
+                              className="hidden md:flex items-center"
                               style={{
                                 border: "1px solid var(--gray-brd-prim)",
                                 borderRadius: '12px',
