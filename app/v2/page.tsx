@@ -807,7 +807,7 @@ export default function FontLibrary() {
     setSelectedLanguages([])
     setSelectedWeights([])
     setIsItalic(false)
-    setSortBy("Random") // Reset sort to default
+    setSortBy("Date") // Reset sort to default (New)
     setFontWeightSelections({})
     setTextSize([56])
     setLineHeight([120])
@@ -1549,12 +1549,6 @@ export default function FontLibrary() {
                 <h3 className="text-sidebar-title mb-3">Sort by</h3>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleSort("Random")}
-                    className={`v2-button ${sortBy === "Random" ? 'v2-button-active' : 'v2-button-inactive'}`}
-                  >
-                    Random
-                  </button>
-                  <button
                     onClick={() => handleSort("Date")}
                     className={`v2-button ${sortBy === "Date" ? 'v2-button-active' : 'v2-button-inactive'}`}
                   >
@@ -1567,6 +1561,12 @@ export default function FontLibrary() {
                   >
                     {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
                      sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
+                  </button>
+                  <button
+                    onClick={() => handleSort("Random")}
+                    className={`v2-button ${sortBy === "Random" ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  >
+                    Random
                   </button>
                 </div>
               </div>
