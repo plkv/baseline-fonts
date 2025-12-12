@@ -82,9 +82,10 @@ export default function FontLibrary() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
-  // Font Data State  
+  // Font Data State
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [loadedFonts, setLoadedFonts] = useState<Set<number>>(new Set())
   const [customText, setCustomText] = useState("")
   const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState("Names")
@@ -1246,12 +1247,65 @@ export default function FontLibrary() {
     loadAppearanceOrder()
   }, [])
 
+  // Track font loading for individual fonts
+  useEffect(() => {
+    if (!fonts || fonts.length === 0) return
+
+    const checkFontLoaded = async (font: FontData) => {
+      try {
+        // Get the CSS family name from font selection or default
+        const fontSelection = fontWeightSelections[font.id]
+        const cssFamily = fontSelection?.cssFamily || font.fontFamily
+
+        if (!cssFamily) return
+
+        // Check if font is loaded
+        await document.fonts.load(`400 16px "${cssFamily}"`)
+
+        // Mark font as loaded
+        setLoadedFonts(prev => {
+          const newSet = new Set(prev)
+          newSet.add(font.id)
+          return newSet
+        })
+      } catch (error) {
+        // Silently fail - font might already be loaded or not available
+        console.debug('Font load check failed:', font.name, error)
+      }
+    }
+
+    // Check all fonts
+    fonts.forEach(font => {
+      if (!loadedFonts.has(font.id)) {
+        checkFontLoaded(font)
+      }
+    })
+  }, [fonts, fontWeightSelections])
+
   // Removed special font readiness and reporting; render normally
 
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--gray-surface-sec)', color: getCurrentTheme().fg }}>
       {/* Dynamic font loading and fallback character styles */}
-      <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
+      <style dangerouslySetInnerHTML={{ __html: `
+        .fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
+        }
+        .shimmer {
+          background: linear-gradient(to right, #f0f0f0 0%, #e0e0e0 20%, #f0f0f0 40%, #f0f0f0 100%);
+          background-size: 1000px 100%;
+          animation: shimmer 2s infinite linear;
+        }
+        .font-fade-in {
+          animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      ` }} />
 
       {/* Navbar - над всем контентом */}
       <div style={{ padding: '16px' }}>
@@ -1267,13 +1321,22 @@ export default function FontLibrary() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {!sidebarOpen && (
-                <div className="w-[32px] h-[32px] flex items-center justify-center">
-                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
-                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      tune
-                    </span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  style={{
+                    fontFamily: '"Inter Variable", sans-serif',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '20px',
+                    color: 'var(--gray-cont-prim)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0
+                  }}
+                >
+                  Side Navigation
+                </button>
               )}
               <h1
                 className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -1302,7 +1365,7 @@ export default function FontLibrary() {
                 className="icon-btn"
                 title="Send feedback"
               >
-                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
                   flag_2
                 </span>
               </a>
@@ -1334,14 +1397,25 @@ export default function FontLibrary() {
                 gap: '12px'
               }}
             >
-            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
-              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                tune
-              </span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                fontFamily: '"Inter Variable", sans-serif',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '20px',
+                color: 'var(--gray-cont-prim)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0
+              }}
+            >
+              Side Navigation
             </button>
             <span className="text-sidebar-title flex-1">{getFilteredFonts().length} font families</span>
             <button onClick={resetFilters} className="icon-btn">
-              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+              <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
                 refresh
               </span>
             </button>
@@ -1351,7 +1425,7 @@ export default function FontLibrary() {
             <div className="p-6 space-y-8">
 
               <div>
-                <div className="flex gap-2">
+                <div className="flex gap-4">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
                       key={mode}
@@ -1371,7 +1445,7 @@ export default function FontLibrary() {
                         }, 100)
                       }}
                       style={{
-                        padding: '13px 12px',
+                        padding: '6px 16px 6px 8px',
                         borderRadius: '12px',
                         border: 'none',
                         backgroundColor: selectedCollections.includes(mode) ? '#0a0a0a' : 'var(--gray-surface-sec)',
@@ -1381,10 +1455,10 @@ export default function FontLibrary() {
                         fontSize: '12px',
                         fontWeight: 500,
                         lineHeight: '14px',
-                        height: '40px',
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '16px'
                       }}
                       className={selectedCollections.includes(mode) ? "active" : ""}
                     >
@@ -1807,7 +1881,7 @@ export default function FontLibrary() {
                               <span
                                 className="material-symbols-outlined absolute right-0 top-1/2"
                                 style={{
-                                  fontWeight: 300,
+                                  fontWeight: 400,
                                   fontSize: '20px',
                                   pointerEvents: 'none',
                                   transform: 'translateY(-50%)',
@@ -1936,6 +2010,19 @@ export default function FontLibrary() {
                       </div>
                     </div>
                     <div className="relative">
+                      {/* Shimmer placeholder while font is loading */}
+                      {!loadedFonts.has(font.id) && (
+                        <div
+                          className="shimmer absolute inset-0 rounded"
+                          style={{
+                            height: `${textSize[0] * (lineHeight[0] / 100)}px`,
+                            minHeight: '40px',
+                            zIndex: 1,
+                            pointerEvents: 'none'
+                          }}
+                        />
+                      )}
+
                       <ControlledPreviewInput
                       value={getPreviewContent(font.name)}
                       onChangeText={(val, pos) => {
@@ -1950,7 +2037,7 @@ export default function FontLibrary() {
                         }
                       }}
                       cursorPosition={textCursorPosition}
-                      className="whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0"
+                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${loadedFonts.has(font.id) ? 'font-fade-in' : ''}`}
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
@@ -1958,7 +2045,7 @@ export default function FontLibrary() {
                         fontWeight: effectiveStyle.weight,
                         fontStyle: effectiveStyle.italic ? "italic" : "normal",
                         color: "var(--gray-cont-prim)",
-                        opacity: 1,
+                        opacity: loadedFonts.has(font.id) ? 1 : 0,
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
