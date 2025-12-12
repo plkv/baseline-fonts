@@ -1390,7 +1390,7 @@ export default function FontLibrary() {
             <div
               className="sticky top-0 z-10 flex items-center p-4 flex-shrink-0"
               style={{
-                backgroundColor: 'white',
+                backgroundColor: 'var(--v2-card-bg)',
                 borderBottom: "1px solid var(--gray-brd-prim)",
                 color: getCurrentTheme().fg,
                 borderTopLeftRadius: '16px',
