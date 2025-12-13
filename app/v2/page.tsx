@@ -852,8 +852,8 @@ export default function FontLibrary() {
         onCursorChange={(pos) => onChangeText(value, pos)}
         onFocus={() => {
           setFocusedFontId(fontId)
-          // Only expand if there are settings to show
-          if (!expandedCards.has(fontId) && (getStyleAlternates(fontId).length > 0 || getVariableAxes(fontId).length > 0)) {
+          // Expand card on focus if not already expanded
+          if (!expandedCards.has(fontId)) {
             toggleCardExpansion(fontId)
           }
         }}
