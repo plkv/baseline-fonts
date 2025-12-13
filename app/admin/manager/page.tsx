@@ -61,6 +61,7 @@ export default function AdminManager() {
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({})
   const [renamingIdx, setRenamingIdx] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [reparsingAxes, setReparsingAxes] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -91,6 +92,37 @@ export default function AdminManager() {
       setFonts(flat)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const reparseAxes = async () => {
+    if (!confirm('Re-parse variable axes for all fonts? This will fix default slider values but may take a few minutes.')) {
+      return
+    }
+
+    setReparsingAxes(true)
+    try {
+      const res = await fetch('/api/fonts-clean/reparse-axes', {
+        method: 'POST',
+      })
+      const result = await res.json()
+
+      if (result.success) {
+        toast.success(`✅ Re-parsed ${result.updatedCount} variable fonts`)
+        if (result.errors && result.errors.length > 0) {
+          console.error('Re-parse errors:', result.errors)
+          toast.error(`⚠️ ${result.errorCount} fonts had errors (check console)`)
+        }
+        // Reload fonts to show updated data
+        await load()
+      } else {
+        toast.error(`❌ Re-parse failed: ${result.error}`)
+      }
+    } catch (error: any) {
+      console.error('Re-parse error:', error)
+      toast.error(`❌ Failed to re-parse: ${error.message}`)
+    } finally {
+      setReparsingAxes(false)
     }
   }
 
@@ -365,6 +397,14 @@ export default function AdminManager() {
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
+          <button
+            className="btn-md"
+            onClick={reparseAxes}
+            disabled={reparsingAxes}
+            style={{ opacity: reparsingAxes ? 0.5 : 1 }}
+          >
+            {reparsingAxes ? 'Re-parsing...' : 'Re-parse Axes'}
+          </button>
           <Dialog open={manageTagsOpen} onOpenChange={(o)=>{ setManageTagsOpen(o); if(!o) setTagEdits([]) }}>
             <DialogTrigger className="btn-md">Manage Tags</DialogTrigger>
             <DialogContent>
