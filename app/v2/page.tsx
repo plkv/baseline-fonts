@@ -662,7 +662,15 @@ export default function FontLibrary() {
           const max = Number(axis.max)
           // Filter out degenerate axes (no range)
           if (!isFinite(min) || !isFinite(max) || max <= min) return
-          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: Number(axis.default) })
+
+          // Parse default value with fallback
+          let defaultValue = Number(axis.default)
+          if (!isFinite(defaultValue)) {
+            // If default is not valid, use min for axes with negative values, otherwise use min
+            defaultValue = min < 0 ? 0 : min
+          }
+
+          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: defaultValue })
         })
       }
     })
