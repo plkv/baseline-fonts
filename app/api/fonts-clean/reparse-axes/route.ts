@@ -3,7 +3,8 @@ import { kv } from '@vercel/kv'
 import { get } from '@vercel/blob'
 import { parseFontFile } from '@/lib/font-parser'
 
-const FONTS_KEY = 'fonts:all'
+const FONTS_KEY = 'fonts:metadata'
+const FONTS_CACHE_KEY = 'fonts_cache'
 
 /**
  * Re-parse variable axes for all fonts to fix default values
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
     // Save updated fonts back to KV
     if (updatedCount > 0) {
       await kv.set(FONTS_KEY, fonts)
+      // Also update cache
+      await kv.set(FONTS_CACHE_KEY, fonts)
       console.log(`💾 Saved updated metadata for ${updatedCount} fonts`)
     }
 
