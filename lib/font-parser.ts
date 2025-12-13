@@ -396,15 +396,27 @@ export async function parseFontFile(buffer: ArrayBuffer, originalName: string, f
           }
           
           // Set proper defaults based on axis type
-          let defaultValue = Number(axis.defaultValue) || 400
-          if (tag === 'wght') {
-            defaultValue = Number(axis.defaultValue) || 400 // Weight defaults to 400
-          } else if (tag === 'wdth') {
-            defaultValue = Number(axis.defaultValue) || 100 // Width defaults to 100%
-          } else if (tag === 'slnt') {
-            defaultValue = Number(axis.defaultValue) || 0 // Slant defaults to 0
-          } else if (tag === 'opsz') {
-            defaultValue = Number(axis.defaultValue) || 12 // Optical size defaults to 12pt
+          // Use axis.defaultValue if available, otherwise use sensible fallbacks
+          let defaultValue: number
+          const parsedDefault = Number(axis.defaultValue)
+          const hasValidDefault = axis.defaultValue !== undefined && axis.defaultValue !== null && isFinite(parsedDefault)
+
+          if (hasValidDefault) {
+            defaultValue = parsedDefault
+          } else {
+            // Fallback defaults by axis type
+            if (tag === 'wght') {
+              defaultValue = 400 // Weight defaults to 400
+            } else if (tag === 'wdth') {
+              defaultValue = 100 // Width defaults to 100%
+            } else if (tag === 'slnt' || tag === 'ital') {
+              defaultValue = 0 // Slant/Italic defaults to 0
+            } else if (tag === 'opsz') {
+              defaultValue = 12 // Optical size defaults to 12pt
+            } else {
+              // For unknown axes, use min value or 0
+              defaultValue = Number(axis.minValue) || 0
+            }
           }
           
           const safeAxis = {
