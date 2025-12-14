@@ -107,7 +107,7 @@ export default function FontLibrary() {
   const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
     {},
   )
-  const [textSize, setTextSize] = useState([40])
+  const [textSize, setTextSize] = useState([56])
   const [lineHeight, setLineHeight] = useState([120])
 
   // Color Theme State
@@ -819,7 +819,7 @@ export default function FontLibrary() {
     setIsItalic(false)
     setSortBy("Date") // Reset sort to default (New)
     setFontWeightSelections({})
-    setTextSize([40])
+    setTextSize([56])
     setLineHeight([120])
     setExpandedCards(new Set())
     setFontOTFeatures({})
@@ -1871,7 +1871,7 @@ export default function FontLibrary() {
                       })()}
                       </div>
                     </div>
-                    <div className="relative">
+                    <div className="relative py-6">
                       {/* Shimmer placeholder while font is loading */}
                       {!loadedFonts.has(font.id) && (
                         <div
