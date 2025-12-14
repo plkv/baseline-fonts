@@ -1430,7 +1430,7 @@ export default function FontLibrary() {
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-hide">
-            <div className="p-6 space-y-8">
+            <div className="p-4 space-y-8">
 
               <div>
                 <div className="flex gap-2">
