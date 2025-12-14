@@ -80,6 +80,8 @@ export default function FontLibrary() {
   const pathname = usePathname()
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
   // Font Data State  
@@ -96,7 +98,7 @@ export default function FontLibrary() {
   const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
     {},
   )
-  const [textSize, setTextSize] = useState([56])
+  const [textSize, setTextSize] = useState([40])
   const [lineHeight, setLineHeight] = useState([120])
 
   // Color Theme State
@@ -1266,6 +1268,16 @@ export default function FontLibrary() {
     loadFonts()
   }, [loadFonts])
 
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   // Removed special font readiness and reporting; render normally
 
   return (
@@ -1273,28 +1285,36 @@ export default function FontLibrary() {
       {/* Dynamic font loading and fallback character styles */}
       <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
       {sidebarOpen && (
-        <aside
-          className="w-[280px] flex-shrink-0 flex flex-col h-full"
-          style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
-        >
-          <div
-            className="sticky top-0 z-10 flex justify-between items-center p-4 flex-shrink-0"
-            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+        <>
+          {/* Overlay for mobile */}
+          {isMobile && (
+            <div
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <aside
+            className={`${isMobile ? 'fixed left-0 top-0 z-50' : 'flex-shrink-0'} w-[280px] flex flex-col h-full`}
+            style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
           >
-            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
-              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                tune
-              </span>
-            </button>
-            <button onClick={resetFilters} className="icon-btn">
-              <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                refresh
-              </span>
-            </button>
-          </div>
+            <div
+              className={`sticky top-0 z-10 flex justify-between items-center ${isMobile ? 'p-2' : 'p-4'} flex-shrink-0`}
+              style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+            >
+              <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                  tune
+                </span>
+              </button>
+              <button onClick={resetFilters} className="icon-btn">
+                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                  refresh
+                </span>
+              </button>
+            </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide">
-            <div className="p-4 space-y-8">
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+              <div className={isMobile ? "p-2 space-y-8" : "p-4 space-y-8"}>
 
               <div>
                 <div className="segmented-control">
@@ -1490,6 +1510,7 @@ export default function FontLibrary() {
             </div>
           </div>
         </aside>
+        </>
       )}
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -1526,19 +1547,47 @@ export default function FontLibrary() {
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              <nav className="flex flex-row gap-2">
-                <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
-                <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
-              </nav>
-              <a 
-                href="mailto:make@logictomagic.com"
-                className="icon-btn"
-                title="Send feedback"
-              >
-                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                  flag_2
-                </span>
-              </a>
+              {isMobile ? (
+                <div className="relative">
+                  <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                      {mobileMenuOpen ? 'close' : 'menu'}
+                    </span>
+                  </button>
+                  {mobileMenuOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 flex flex-col gap-1 p-2 rounded-lg shadow-lg"
+                      style={{ backgroundColor: getCurrentTheme().bg, border: "1px solid var(--gray-brd-prim)", minWidth: "120px" }}
+                    >
+                      <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>Library</a>
+                      <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>About</a>
+                      <a
+                        href="mailto:make@logictomagic.com"
+                        className="menu-tab"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Feedback
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <nav className="flex flex-row gap-2">
+                    <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
+                    <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
+                  </nav>
+                  <a
+                    href="mailto:make@logictomagic.com"
+                    className="icon-btn"
+                    title="Send feedback"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
+                      flag_2
+                    </span>
+                  </a>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -1567,13 +1616,13 @@ export default function FontLibrary() {
             </div>
           </div>
 
-          <div className="min-h-[100vh]">
+          <div className={`min-h-[100vh] ${isMobile ? 'p-2 space-y-2' : ''}`}>
             {isLoadingFonts ? (
-              <div className="p-6 text-center">
+              <div className={isMobile ? "p-2 text-center" : "p-6 text-center"}>
                 <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
               </div>
             ) : fonts.length === 0 ? (
-              <div className="p-6 text-center">
+              <div className={isMobile ? "p-2 text-center" : "p-6 text-center"}>
                 <div style={{ color: "var(--gray-cont-tert)" }}>
                   Temporary maintenance in progress. Font catalog will be restored shortly.
                 </div>
@@ -1607,7 +1656,7 @@ export default function FontLibrary() {
                   className="transition-colors"
                   style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}
                 >
-                  <div className="p-6">
+                  <div className={isMobile ? "p-2" : "p-6"}>
                     <div className="flex justify-between items-start gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center mb-2 flex-row gap-2">
