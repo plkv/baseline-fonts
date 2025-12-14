@@ -6,7 +6,6 @@ import { Slider } from "@/components/ui/slider"
 import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
 import { canonicalFamilyName } from "@/lib/font-naming"
 import { shortHash } from "@/lib/hash"
-import { generateFontSEOText } from "@/lib/font-descriptions"
 import "./v2.css"
 
 // Font interface for our API data
@@ -1874,11 +1873,6 @@ export default function FontLibrary() {
                       })()}
                       </div>
                     </div>
-
-                    {/* SEO-friendly font description */}
-                    <p className="text-sm mt-3" style={{ color: "var(--gray-cont-sec)", lineHeight: "1.5" }}>
-                      {generateFontSEOText(font.name, font)}
-                    </p>
 
                     <div className="relative py-6">
                       {/* Shimmer placeholder while font is loading */}
