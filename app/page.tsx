@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider"
 import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
 import { canonicalFamilyName } from "@/lib/font-naming"
 import { shortHash } from "@/lib/hash"
+import "./v2.css"
 
 // Font interface for our API data
 interface FontData {
@@ -79,16 +80,24 @@ const getPresetContent = (preset: string, fontName: string) => {
 export default function FontLibrary() {
   const pathname = usePathname()
   // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    // On mobile, start with sidebar closed
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768
+    }
+    return false // Default to closed on SSR
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const selectRefs = useRef<Record<number, HTMLSelectElement | null>>({})
   
-  // Font Data State  
+  // Font Data State
   const [fonts, setFonts] = useState<FontData[]>([])
   const [isLoadingFonts, setIsLoadingFonts] = useState(true)
+  const [loadedFonts, setLoadedFonts] = useState<Set<number>>(new Set())
+  const [animatedFonts, setAnimatedFonts] = useState<Set<number>>(new Set()) // Track fonts that have been animated once
   const [customText, setCustomText] = useState("")
-  const [displayMode, setDisplayMode] = useState<"Text" | "Display" | "Weirdo">("Text")
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [selectedPreset, setSelectedPreset] = useState("Names")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
@@ -163,7 +172,7 @@ export default function FontLibrary() {
   const [focusedFontId, setFocusedFontId] = useState<number | null>(null)
 
   const [editingElementRef, setEditingElementRef] = useState<HTMLDivElement | null>(null)
-  const [textCursorPosition, setTextCursorPosition] = useState(0)
+  const [textCursorPosition, setTextCursorPosition] = useState<Record<number, number>>({})
 
   // Load fonts from our API
   const loadFonts = useCallback(async () => {
@@ -521,15 +530,23 @@ export default function FontLibrary() {
   const getStyleAlternates = (fontId: number) => {
     const font = fonts.find((f) => f.id === fontId)
     if (!font) return []
-    // Prefer server-parsed structured tags if available
-    const tagList: Array<{ tag: string; title: string }> = []
+    // Prefer server-parsed structured tags if available - use Map to deduplicate by tag
+    const tagMap = new Map<string, string>()
     const pushTags = (ff: any) => {
       const list = (ff && (ff as any).openTypeFeatureTags) as Array<{ tag: string; title: string }> | undefined
-      if (Array.isArray(list)) list.forEach(({ tag, title }) => { if (/^ss\d\d$|^salt$/i.test(tag)) tagList.push({ tag, title }) })
+      if (Array.isArray(list)) list.forEach(({ tag, title }) => {
+        if (/^ss\d\d$|^salt$/i.test(tag) && !tagMap.has(tag)) {
+          tagMap.set(tag, title)
+        }
+      })
     }
     pushTags(font)
     font._familyFonts?.forEach(pushTags)
-    if (tagList.length > 0) return tagList.sort((a, b) => a.tag.localeCompare(b.tag))
+    if (tagMap.size > 0) {
+      return Array.from(tagMap.entries())
+        .map(([tag, title]) => ({ tag, title }))
+        .sort((a, b) => a.tag.localeCompare(b.tag))
+    }
 
     // Fallback: parse from strings heuristically
     const allFeatures = new Map<string, string>()
@@ -647,7 +664,15 @@ export default function FontLibrary() {
           const max = Number(axis.max)
           // Filter out degenerate axes (no range)
           if (!isFinite(min) || !isFinite(max) || max <= min) return
-          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: Number(axis.default) })
+
+          // Parse default value with fallback
+          let defaultValue = Number(axis.default)
+          if (!isFinite(defaultValue)) {
+            // If default is not valid, use min for axes with negative values, otherwise use min
+            defaultValue = min < 0 ? 0 : min
+          }
+
+          allAxes.set(axis.axis, { tag: axis.axis, name: axis.name, min, max, default: defaultValue })
         })
       }
     })
@@ -695,10 +720,10 @@ export default function FontLibrary() {
 
   const getFilteredFonts = () => {
     const filtered = fonts.filter((font) => {
-      // Filter by collection (displayMode) - each tab should only show fonts from that collection
+      // Filter by collection - if none selected, show all; if some selected, show only those
       const fontCollection = font.collection || 'Text' // Default to 'Text' if no collection set
-      
-      if (fontCollection !== displayMode) {
+
+      if (selectedCollections.length > 0 && !selectedCollections.includes(fontCollection)) {
         return false
       }
       
@@ -785,15 +810,16 @@ export default function FontLibrary() {
 
   const resetFilters = () => {
     setCustomText("")
-    setDisplayMode("Text")
     setSelectedPreset("Names")
+    setSelectedCollections([]) // Reset collection filters
     setSelectedCategories([])
     setSelectedStyles([])
     setSelectedLanguages([])
     setSelectedWeights([])
     setIsItalic(false)
+    setSortBy("Date") // Reset sort to default (New)
     setFontWeightSelections({})
-    setTextSize([56])
+    setTextSize([40])
     setLineHeight([120])
     setExpandedCards(new Set())
     setFontOTFeatures({})
@@ -834,10 +860,12 @@ export default function FontLibrary() {
         cursorPosition={cursorPosition}
         onChange={(v, pos) => onChangeText(v, pos)}
         onCursorChange={(pos) => onChangeText(value, pos)}
-        onClick={() => { if (!expandedCards.has(fontId)) toggleCardExpansion(fontId) }}
         onFocus={() => {
           setFocusedFontId(fontId)
-          if (!expandedCards.has(fontId)) toggleCardExpansion(fontId)
+          // Expand card on focus if not already expanded
+          if (!expandedCards.has(fontId)) {
+            toggleCardExpansion(fontId)
+          }
         }}
         className={className}
         style={style}
@@ -853,48 +881,40 @@ export default function FontLibrary() {
       if (el) {
         try {
           el.focus()
-          const pos = Math.min(textCursorPosition, el.value.length)
+          const pos = Math.min(textCursorPosition[focusedFontId] || 0, el.value.length)
           el.setSelectionRange(pos, pos)
         } catch {}
       }
     }
-  }, [customText, textCursorPosition])
+  }, [customText, textCursorPosition, focusedFontId])
 
-  // Keep focus across expand/collapse toggles
+  // Keep focus across expand/collapse toggles and when focusing new input
   useEffect(() => {
     if (focusedFontId != null) {
       const el = inputRefs.current[focusedFontId]
       if (el) {
         try {
           el.focus()
-          const pos = Math.min(textCursorPosition, el.value.length)
+          const pos = Math.min(textCursorPosition[focusedFontId] || 0, el.value.length)
           el.setSelectionRange(pos, pos)
         } catch {}
       }
     }
-  }, [expandedCards])
+  }, [expandedCards, focusedFontId, textCursorPosition])
 
-  // Get all available style tags from fonts in current collection only (no inference), ordered by Manage Tags vocab
+  // Get all available style tags from ALL fonts (unified across collections), ordered by Manage Tags vocab
   const getAvailableStyleTags = () => {
     const allTags = new Set<string>()
     fonts.forEach(font => {
-      // Only include tags from fonts in the current collection
-      const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode) {
-        if (font.styleTags && Array.isArray(font.styleTags)) {
-          font.styleTags.forEach(tag => allTags.add(tag))
-        }
+      // Include tags from ALL fonts regardless of collection
+      if (font.styleTags && Array.isArray(font.styleTags)) {
+        font.styleTags.forEach(tag => allTags.add(tag))
       }
     })
     const arr = Array.from(allTags)
-    // Sort by per-collection vocab order if available
-    // fetch is done outside during lifecycle; try reading window-managed vocab via endpoint synchronously is costly
-    // For now, do a quick fetch on first call when no local order yet
-    if (typeof window !== 'undefined' && arr.length > 0) {
-      // attempt to use cached order via a data attribute or skip if not fetched
-    }
+    // Sort by unified vocab order (no collection-specific filtering)
     return arr.sort((a,b)=>{
-      const order = (window as any).__appearanceOrder__?.[displayMode] as string[] | undefined
+      const order = (window as any).__appearanceOrder__ as string[] | undefined
       if (order && order.length) {
         const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
         const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
@@ -904,20 +924,21 @@ export default function FontLibrary() {
     })
   }
 
-  // Get dynamic categories based on fonts actually present in current collection, ordered by Manage Tags vocab
+  // Get dynamic categories based on fonts actually present in selected collections (or all if none selected)
   const getCollectionCategories = () => {
-    // Get all categories from fonts in the current collection
+    // Get all categories from fonts in the selected collections (or all if none selected)
     const actualCategories = new Set<string>()
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode && font.categories) {
+      const shouldInclude = selectedCollections.length === 0 || selectedCollections.includes(fontCollection)
+      if (shouldInclude && font.categories) {
         font.categories.forEach(category => actualCategories.add(category))
       }
     })
-    
+
     const arr = Array.from(actualCategories)
     return arr.sort((a,b)=>{
-      const order = (window as any).__categoryOrder__?.[displayMode] as string[] | undefined
+      const order = (window as any).__categoryOrder__ as string[] | undefined
       if (order && order.length) {
         const ia = order.findIndex(x=>x.toLowerCase()===a.toLowerCase())
         const ib = order.findIndex(x=>x.toLowerCase()===b.toLowerCase())
@@ -928,11 +949,12 @@ export default function FontLibrary() {
   }
 
   const getCollectionLanguages = () => {
-    // Get all languages from fonts in the current collection
+    // Get all languages from fonts in the selected collections (or all if none selected)
     const actualLanguages = new Set<string>()
     fonts.forEach(font => {
       const fontCollection = font.collection || 'Text'
-      if (fontCollection === displayMode) {
+      const shouldInclude = selectedCollections.length === 0 || selectedCollections.includes(fontCollection)
+      if (shouldInclude) {
         // Check if font has language data
         if (font.languages && Array.isArray(font.languages) && font.languages.length > 0) {
           font.languages.forEach(language => actualLanguages.add(language))
@@ -942,22 +964,23 @@ export default function FontLibrary() {
         }
       }
     })
-    
-    console.log(`Languages in ${displayMode} collection:`, Array.from(actualLanguages));
-    
+
+    const collectionsLabel = selectedCollections.length > 0 ? selectedCollections.join(', ') : 'all collections'
+    console.log(`Languages in ${collectionsLabel}:`, Array.from(actualLanguages));
+
     // Define preferred order for common languages
     const languageOrder = ['Latin', 'Cyrillic', 'Greek', 'Arabic', 'Hebrew', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese', 'Hindi', 'Bengali', 'Tamil', 'Telugu', 'Georgian']
-    
+
     // Return languages in preferred order, but only those that actually exist
     const orderedLanguages = languageOrder.filter(lang => actualLanguages.has(lang))
-    
+
     // Add any remaining languages that exist but aren't in the preferred order
     const remainingLanguages = Array.from(actualLanguages)
       .filter(lang => !languageOrder.includes(lang))
       .sort()
-    
+
     const result = [...orderedLanguages, ...remainingLanguages];
-    console.log(`Final language result for ${displayMode}:`, result);
+    console.log(`Final language result for ${collectionsLabel}:`, result);
     return result;
   }
 
@@ -976,50 +999,6 @@ export default function FontLibrary() {
     else styleName = 'Black'
     
     return isItalic ? `${styleName} Italic` : styleName
-  }
-
-  // Clean up filters when switching collections - remove invalid categories/styles
-  const cleanFiltersForCollection = (newDisplayMode: "Text" | "Display" | "Weirdo") => {
-    // Temporarily set displayMode to get correct categories/styles for the new collection
-    const originalDisplayMode = displayMode
-    
-    // Get what categories and styles would be available in the new collection
-    const newCollectionCategories = new Set<string>()
-    const newCollectionStyles = new Set<string>()
-    const newCollectionLanguages = new Set<string>()
-    
-    fonts.forEach(font => {
-      const fontCollection = font.collection || 'Text'
-      if (fontCollection === newDisplayMode) {
-        if (font.categories) {
-          font.categories.forEach(category => newCollectionCategories.add(category))
-        }
-        if (font.styleTags && Array.isArray(font.styleTags)) {
-          font.styleTags.forEach(tag => newCollectionStyles.add(tag))
-        }
-        if (font.languages) {
-          font.languages.forEach(language => newCollectionLanguages.add(language))
-        }
-      }
-    })
-    
-    // Remove selected categories that don't exist in new collection
-    const validSelectedCategories = selectedCategories.filter(cat => newCollectionCategories.has(cat))
-    if (validSelectedCategories.length !== selectedCategories.length) {
-      setSelectedCategories(validSelectedCategories)
-    }
-    
-    // Remove selected styles that don't exist in new collection  
-    const validSelectedStyles = selectedStyles.filter(style => newCollectionStyles.has(style))
-    if (validSelectedStyles.length !== selectedStyles.length) {
-      setSelectedStyles(validSelectedStyles)
-    }
-
-    // Remove selected languages that don't exist in new collection
-    const validSelectedLanguages = selectedLanguages.filter(lang => newCollectionLanguages.has(lang))
-    if (validSelectedLanguages.length !== selectedLanguages.length) {
-      setSelectedLanguages(validSelectedLanguages)
-    }
   }
 
   // Post-render font fallback detection using DOM and canvas measurement
@@ -1278,54 +1257,234 @@ export default function FontLibrary() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Load unified appearance order vocabulary on mount
+  useEffect(() => {
+    const loadAppearanceOrder = async () => {
+      try {
+        const response = await fetch('/api/tags/vocab?type=appearance')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && Array.isArray(data.vocabulary)) {
+            // Store unified appearance order globally (no collection key)
+            (window as any).__appearanceOrder__ = data.vocabulary
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load appearance order vocabulary:', error)
+      }
+    }
+    loadAppearanceOrder()
+  }, [])
+
+  // Track font loading for individual fonts
+  useEffect(() => {
+    if (!fonts || fonts.length === 0) return
+
+    const checkFontLoaded = async (font: FontData) => {
+      try {
+        // Get the CSS family name from font selection or default
+        const fontSelection = fontWeightSelections[font.id]
+        const cssFamily = fontSelection?.cssFamily || font.fontFamily
+
+        if (!cssFamily) {
+          // If no cssFamily, mark as loaded immediately
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+          return
+        }
+
+        // Wait for fonts to be ready, then check if this specific font is loaded
+        await document.fonts.ready
+
+        // Check if font is actually loaded
+        const fontSpec = `16px "${cssFamily}"`
+        const isLoaded = document.fonts.check(fontSpec)
+
+        if (isLoaded) {
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+        } else {
+          // Try to load the font
+          await document.fonts.load(fontSpec)
+          setLoadedFonts(prev => new Set(prev).add(font.id))
+        }
+      } catch (error) {
+        // On error, mark as loaded anyway to remove shimmer
+        console.debug('Font load check failed, marking as loaded:', font.name, error)
+        setLoadedFonts(prev => new Set(prev).add(font.id))
+      }
+    }
+
+    // Check all fonts that aren't already marked as loaded
+    const fontsToCheck = fonts.filter(font => !loadedFonts.has(font.id))
+    fontsToCheck.forEach(font => {
+      checkFontLoaded(font)
+    })
+  }, [fonts, fontWeightSelections, loadedFonts])
+
+  // Track fonts that should be animated (only on first load)
+  useEffect(() => {
+    loadedFonts.forEach(fontId => {
+      if (!animatedFonts.has(fontId)) {
+        setAnimatedFonts(prev => new Set(prev).add(fontId))
+      }
+    })
+  }, [loadedFonts, animatedFonts])
+
   // Removed special font readiness and reporting; render normally
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: getCurrentTheme().bg, color: getCurrentTheme().fg }}>
-      {/* Dynamic font loading and fallback character styles */}
-      <style dangerouslySetInnerHTML={{ __html: `.fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}` }} />
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--gray-surface-sec)', color: getCurrentTheme().fg }}>
+      {/* Fallback character styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .fallback-char{opacity:.4!important;color:var(--gray-cont-tert)!important;}
+      ` }} />
+
+      {/* Navbar - над всем контентом */}
+      <div style={{ padding: '16px' }}>
+        <header
+          className="p-4 flex-shrink-0 v2-card"
+          style={{
+            color: getCurrentTheme().fg,
+            zIndex: 20
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {!sidebarOpen && (
+                <button onClick={() => setSidebarOpen(true)} className="icon-btn">
+                  <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                    side_navigation
+                  </span>
+                </button>
+              )}
+              <h1
+                className="cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
+                  fontFamily: "Inter Variable",
+                  fontSize: "22px",
+                  fontStyle: "normal",
+                  fontWeight: 900,
+                  lineHeight: "100%",
+                  textTransform: "lowercase",
+                  color: getCurrentTheme().fg
+                }}
+                onClick={() => window.location.href = '/'}
+              >
+                typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              {isMobile ? (
+                <div className="relative">
+                  <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="icon-btn">
+                    <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                      {mobileMenuOpen ? 'close' : 'menu'}
+                    </span>
+                  </button>
+                  {mobileMenuOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 flex flex-col gap-1 p-2 rounded-lg shadow-lg"
+                      style={{ backgroundColor: getCurrentTheme().bg, border: "1px solid var(--gray-brd-prim)", minWidth: "120px" }}
+                    >
+                      <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>Library</a>
+                      <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>About</a>
+                      <a
+                        href="mailto:make@logictomagic.com"
+                        className="menu-tab"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Feedback
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <nav className="flex flex-row gap-2">
+                    <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
+                    <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
+                  </nav>
+                  <a
+                    href="mailto:make@logictomagic.com"
+                    className="icon-btn"
+                    title="Send feedback"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                      flag_2
+                    </span>
+                  </a>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+      </div>
+
+      {/* Контейнер для сайдбара и каталога */}
+      <div className="flex-1 flex overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {sidebarOpen && (
-        <>
-          {/* Overlay for mobile */}
-          {isMobile && (
-            <div
-              className="fixed inset-0 bg-black/40 z-40"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
+        <div
+          className={`${isMobile ? 'fixed z-50' : 'md:relative'} left-0 md:left-auto top-0 md:top-auto bottom-0 md:bottom-auto md:h-full`}
+          style={{
+            paddingLeft: isMobile ? '0' : '16px',
+            paddingBottom: isMobile ? '0' : '16px',
+            height: '100%'
+          }}
+        >
           <aside
-            className={`${isMobile ? 'fixed left-0 top-0 z-50' : 'flex-shrink-0'} w-[280px] flex flex-col h-full`}
-            style={{ backgroundColor: getCurrentTheme().bg, borderRight: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+            className="w-[280px] flex-shrink-0 flex flex-col h-full v2-card"
+            style={{
+              color: getCurrentTheme().fg
+            }}
           >
             <div
-              className={`sticky top-0 z-10 flex justify-between items-center ${isMobile ? 'p-2' : 'p-4'} flex-shrink-0`}
-              style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
+              className={`sticky top-0 z-10 flex items-center ${isMobile ? 'p-2' : 'p-4'} flex-shrink-0`}
+              style={{
+                backgroundColor: 'var(--v2-card-bg)',
+                borderBottom: "1px solid var(--gray-brd-prim)",
+                color: getCurrentTheme().fg,
+                borderTopLeftRadius: isMobile ? '0' : '16px',
+                borderTopRightRadius: isMobile ? '0' : '16px',
+                gap: '12px'
+              }}
             >
-              <button onClick={() => setSidebarOpen(false)} className="icon-btn">
-                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                  tune
-                </span>
-              </button>
-              <button onClick={resetFilters} className="icon-btn">
-                <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                  refresh
-                </span>
-              </button>
-            </div>
+            <button onClick={() => setSidebarOpen(false)} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                side_navigation
+              </span>
+            </button>
+            <span className="text-sidebar-title flex-1">{getFilteredFonts().length} font families</span>
+            <button onClick={resetFilters} className="icon-btn">
+              <span className="material-symbols-outlined" style={{ fontWeight: 400, fontSize: "20px" }}>
+                refresh
+              </span>
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-hide">
-              <div className={isMobile ? "p-2 space-y-8" : "p-4 space-y-8"}>
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <div className={`${isMobile ? 'p-2' : 'p-4'} space-y-8`}>
 
               <div>
-                <div className="segmented-control">
+                <div className="flex gap-2">
                   {(["Text", "Display", "Weirdo"] as const).map((mode) => (
                     <button
                       key={mode}
                       onClick={() => {
-                        // Clean filters before switching collection
-                        cleanFiltersForCollection(mode)
-                        setDisplayMode(mode)
-                        // Scroll to top of the list when switching modes
+                        // Toggle collection filter
+                        setSelectedCollections(prev =>
+                          prev.includes(mode)
+                            ? prev.filter(c => c !== mode)
+                            : [...prev, mode]
+                        )
+                        // Scroll to top of the list when changing filters
                         setTimeout(() => {
                           const mainElement = document.querySelector('main')
                           if (mainElement) {
@@ -1333,7 +1492,7 @@ export default function FontLibrary() {
                           }
                         }, 100)
                       }}
-                      className={`segmented-control-button ${displayMode === mode ? "active" : ""}`}
+                      className={`v2-approach-button ${selectedCollections.includes(mode) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       <span
                         className="segmented-control-ag"
@@ -1366,7 +1525,7 @@ export default function FontLibrary() {
                         if (preset === "Paragraph") setTextSize([20]); else setTextSize([56])
                         if (preset === "Names") setCustomText(""); else if (fonts[0]) setCustomText(getPresetContent(preset, fonts[0].name))
                       }}
-                      className={`btn-sm ${selectedPreset === preset ? "active" : ""}`}
+                      className={`v2-button ${selectedPreset === preset ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {preset}
                     </button>
@@ -1433,6 +1592,33 @@ export default function FontLibrary() {
                 </div>
               </div>
 
+              {/* Сортировка */}
+              <div>
+                <h3 className="text-sidebar-title mb-3">Sort by</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSort("Date")}
+                    className={`v2-button ${sortBy === "Date" ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  >
+                    {sortBy === "Date" && sortDirection === "desc" ? "New" :
+                     sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
+                  </button>
+                  <button
+                    onClick={() => handleSort("Alphabetical")}
+                    className={`v2-button ${sortBy === "Alphabetical" ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  >
+                    {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" :
+                     sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
+                  </button>
+                  <button
+                    onClick={() => handleSort("Random")}
+                    className={`v2-button ${sortBy === "Random" ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  >
+                    Random
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <h3 className="text-sidebar-title mb-3">Font categories</h3>
                 <div className="flex flex-wrap gap-2">
@@ -1440,7 +1626,7 @@ export default function FontLibrary() {
                     <button
                       key={category}
                       onClick={() => toggleCategory(category)}
-                      className={`btn-sm ${selectedCategories.includes(category) ? "active" : ""}`}
+                      className={`v2-button ${selectedCategories.includes(category) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {category}
                     </button>
@@ -1455,7 +1641,7 @@ export default function FontLibrary() {
                     <button
                       key={style}
                       onClick={() => toggleStyle(style)}
-                      className={`btn-sm ${selectedStyles.includes(style) ? "active" : ""}`}
+                      className={`v2-button ${selectedStyles.includes(style) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {style}
                     </button>
@@ -1478,12 +1664,12 @@ export default function FontLibrary() {
                           prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language],
                         )
                       }
-                      className={`btn-sm ${selectedLanguages.includes(language) ? "active" : ""}`}
+                      className={`v2-button ${selectedLanguages.includes(language) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {language}
                     </button>
                   )) : (
-                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available in {displayMode} collection</span>
+                    <span className="text-sm" style={{ color: "var(--gray-cont-tert)" }}>No languages available{selectedCollections.length > 0 ? ` in ${selectedCollections.join(', ')} collection${selectedCollections.length > 1 ? 's' : ''}` : ''}</span>
                   )}
                 </div>
               </div>
@@ -1497,12 +1683,15 @@ export default function FontLibrary() {
                     <button
                       key={weight}
                       onClick={() => toggleWeight(weight)}
-                      className={`btn-sm ${selectedWeights.includes(weight) ? "active" : ""}`}
+                      className={`v2-button ${selectedWeights.includes(weight) ? 'v2-button-active' : 'v2-button-inactive'}`}
                     >
                       {weight}
                     </button>
                   ))}
-                  <button onClick={() => setIsItalic(!isItalic)} className={`btn-sm ${isItalic ? "active" : ""}`}>
+                  <button
+                    onClick={() => setIsItalic(!isItalic)}
+                    className={`v2-button ${isItalic ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  >
                     Italic
                   </button>
                 </div>
@@ -1510,119 +1699,37 @@ export default function FontLibrary() {
             </div>
           </div>
         </aside>
-        </>
+        </div>
       )}
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <header
-          className="sticky top-0 z-10 p-4 flex-shrink-0"
-          style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {!sidebarOpen && (
-                <div className="w-[32px] h-[32px] flex items-center justify-center">
-                  <button onClick={() => setSidebarOpen(true)} className="icon-btn">
-                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      tune
-                    </span>
-                  </button>
-                </div>
-              )}
-              <h1 
-                className="cursor-pointer hover:opacity-80 transition-opacity"
-                style={{
-                  fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
-                  fontFamily: "Inter Variable",
-                  fontSize: "22px",
-                  fontStyle: "normal",
-                  fontWeight: 900,
-                  lineHeight: "100%",
-                  textTransform: "lowercase",
-                  color: getCurrentTheme().fg
-                }}
-                onClick={() => window.location.href = '/'}
-              >
-                typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
-              </h1>
-            </div>
-            <div className="flex items-center gap-4">
-              {isMobile ? (
-                <div className="relative">
-                  <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="icon-btn">
-                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      {mobileMenuOpen ? 'close' : 'menu'}
-                    </span>
-                  </button>
-                  {mobileMenuOpen && (
-                    <div
-                      className="absolute right-0 top-full mt-2 flex flex-col gap-1 p-2 rounded-lg shadow-lg"
-                      style={{ backgroundColor: getCurrentTheme().bg, border: "1px solid var(--gray-brd-prim)", minWidth: "120px" }}
-                    >
-                      <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>Library</a>
-                      <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`} onClick={() => setMobileMenuOpen(false)}>About</a>
-                      <a
-                        href="mailto:make@logictomagic.com"
-                        className="menu-tab"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Feedback
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <nav className="flex flex-row gap-2">
-                    <a href="/" className={`menu-tab ${pathname === "/" ? "active" : ""}`}>Library</a>
-                    <a href="/about" className={`menu-tab ${pathname === "/about" ? "active" : ""}`}>About</a>
-                  </nav>
-                  <a
-                    href="mailto:make@logictomagic.com"
-                    className="icon-btn"
-                    title="Send feedback"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontWeight: 300, fontSize: "20px" }}>
-                      flag_2
-                    </span>
-                  </a>
-                </>
-              )}
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto pb-16">
-          <div
-            className="sticky top-0 z-10 px-4 py-3 flex justify-between items-center"
-            style={{ backgroundColor: getCurrentTheme().bg, borderBottom: "1px solid var(--gray-brd-prim)", color: getCurrentTheme().fg }}
-          >
-            <span className="text-sidebar-title">{getFilteredFonts().length} font families</span>
-            <div className="flex gap-2">
-              <button onClick={() => handleSort("Random")} className={`btn-sm ${sortBy === "Random" ? "active" : ""}`}>
-                Random
-              </button>
-              <button onClick={() => handleSort("Date")} className={`btn-sm ${sortBy === "Date" ? "active" : ""}`}>
-                {sortBy === "Date" && sortDirection === "desc" ? "New" : 
-                 sortBy === "Date" && sortDirection === "asc" ? "Old" : "New"}
-              </button>
-              <button
-                onClick={() => handleSort("Alphabetical")}
-                className={`btn-sm ${sortBy === "Alphabetical" ? "active" : ""}`}
-              >
-                {sortBy === "Alphabetical" && sortDirection === "asc" ? "A–Z" : 
-                 sortBy === "Alphabetical" && sortDirection === "desc" ? "Z–A" : "A–Z"}
-              </button>
-            </div>
-          </div>
-
-          <div className={`min-h-[100vh] ${isMobile ? 'p-2 space-y-2' : ''}`}>
+      <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
+          <div className={`min-h-[100vh] ${isMobile ? 'p-2 space-y-2' : 'px-4 pb-4 space-y-4'}`}>
             {isLoadingFonts ? (
-              <div className={isMobile ? "p-2 text-center" : "p-6 text-center"}>
-                <div style={{ color: "var(--gray-cont-tert)" }}>Loading fonts...</div>
-              </div>
+              // Show skeleton cards during loading to prevent layout shift
+              Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="v2-card"
+                  style={{
+                    padding: '24px',
+                    minHeight: '200px'
+                  }}
+                >
+                  <div className="v2-shimmer" style={{
+                    height: '40px',
+                    width: '200px',
+                    borderRadius: '8px',
+                    marginBottom: '16px'
+                  }} />
+                  <div className="v2-shimmer" style={{
+                    height: '80px',
+                    width: '100%',
+                    borderRadius: '8px'
+                  }} />
+                </div>
+              ))
             ) : fonts.length === 0 ? (
-              <div className={isMobile ? "p-2 text-center" : "p-6 text-center"}>
+              <div className="p-6 text-center">
                 <div style={{ color: "var(--gray-cont-tert)" }}>
                   Temporary maintenance in progress. Font catalog will be restored shortly.
                 </div>
@@ -1653,21 +1760,17 @@ export default function FontLibrary() {
               return (
                 <div
                   key={font.id}
-                  className="transition-colors"
-                  style={{ borderBottom: "1px solid var(--gray-brd-prim)" }}
+                  className="transition-colors v2-card"
                 >
-                  <div className={isMobile ? "p-2" : "p-6"}>
+                  <div className={isMobile ? 'p-2' : 'p-6'}>
                     <div className="flex justify-between items-start gap-4 mb-4">
                       <div className="flex-1">
-                        <div className="flex items-center mb-2 flex-row gap-2">
-                          <div
-                            className="flex items-center px-2 py-1.5 rounded-md"
-                            style={{ border: "1px solid var(--gray-brd-prim)" }}
-                          >
-                            <h2 className="text-font-name">{font.name}</h2>
+                        <div className="flex items-center mb-2 flex-row flex-wrap gap-2">
+                          <div className="v2-badge flex items-center">
+                            <span>{font.name}</span>
                           </div>
-                          {font._availableStyles && font._availableStyles.length > 1 ? (
-                            <div className="dropdown-wrap">
+                          {font._availableStyles && font._availableStyles.length > 1 && (
+                            <div className="relative v2-dropdown">
                               <select
                                 ref={(el) => { selectRefs.current[font.id] = el }}
                                 value={`${fontSelection.weight}|${fontSelection.italic}|${fontSelection.cssFamily || ''}`}
@@ -1676,7 +1779,19 @@ export default function FontLibrary() {
                                   updateFontSelection(font.id, Number.parseInt(weight), italic === "true", cssFamily)
                                   setFontVariableAxes(prev => ({ ...prev, [font.id]: { ...prev[font.id], wght: Number.parseInt(weight) } }))
                                 }}
-                                className={`dropdown-select text-sidebar-title appearance-none`}
+                                className="appearance-none cursor-pointer"
+                                style={{
+                                  padding: '10px 36px 10px 12px',
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  outline: 'none',
+                                  fontFamily: '"Inter Variable", sans-serif',
+                                  fontSize: '14px',
+                                  fontWeight: 500,
+                                  lineHeight: '20px',
+                                  color: 'var(--gray-cont-prim)',
+                                  height: '40px'
+                                }}
                               >
                                 {font._availableStyles?.map((style, index) => (
                                   <option key={`${style.weight}-${style.isItalic}-${index}`} value={`${style.weight}|${style.isItalic}|${(style as any).cssFamily || ''}`}>
@@ -1684,22 +1799,55 @@ export default function FontLibrary() {
                                   </option>
                                 ))}
                               </select>
-                              <span className="material-symbols-outlined dropdown-icon" style={{ fontWeight: 300, fontSize: "20px", pointerEvents: 'none' }}>expand_more</span>
-                            </div>
-                          ) : (
-                            <div className="dropdown-wrap" aria-disabled>
-                              <div className="text-sidebar-title" style={{ color: 'var(--gray-cont-tert)', padding: '6px 10px' }}>Single Style</div>
+                              <span
+                                className="material-symbols-outlined absolute right-0 top-1/2"
+                                style={{
+                                  fontWeight: 400,
+                                  fontSize: '20px',
+                                  pointerEvents: 'none',
+                                  transform: 'translateY(-50%)',
+                                  padding: '8px',
+                                  color: 'var(--gray-cont-tert)'
+                                }}
+                              >
+                                expand_more
+                              </span>
                             </div>
                           )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-author">
-                            {(() => {
-                              const count = (font._availableStyles?.length || font.styles || 1)
-                              return `${font.type}, ${count} style${count !== 1 ? 's' : ''}`
-                            })()}
+
+                          {/* Type badge (Variable only, hide Static) */}
+                          {font.type !== "Static" && (
+                            <div className="hidden md:flex items-center v2-badge">
+                              <span>{font.type}</span>
+                            </div>
+                          )}
+
+                          {/* Styles count */}
+                          {(() => {
+                            const count = (font._availableStyles?.length || font.styles || 1)
+                            return count > 1 ? (
+                              <div className="hidden md:flex items-center v2-badge">
+                                <span>{count} styles</span>
+                              </div>
+                            ) : null
+                          })()}
+
+                          {/* Alternates count */}
+                          {getStyleAlternates(font.id).length > 0 && (
+                            <div className="hidden md:flex items-center v2-badge">
+                              <span>
+                                {getStyleAlternates(font.id).length} alternate{getStyleAlternates(font.id).length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Author */}
+                          <span
+                            className="text-author truncate max-w-[200px]"
+                            title={`by ${font.author}`}
+                          >
+                            by {font.author}
                           </span>
-                          <span className="text-author">by {font.author}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1711,14 +1859,11 @@ export default function FontLibrary() {
                         if (hasAdminDownloadLink) {
                           return (
                             <button
-                              className="download-btn"
-                              style={{
-                                color: "#fcfcfc",
-                                backgroundColor: "#0a0a0a",
-                              }}
+                              className="v2-badge v2-button-active"
                               onClick={() => window.open(adminDownloadLink, '_blank')}
+                              style={{ cursor: 'pointer' }}
                             >
-                              Download
+                              Get font
                             </button>
                           )
                         }
@@ -1727,12 +1872,25 @@ export default function FontLibrary() {
                       </div>
                     </div>
                     <div className="relative">
+                      {/* Shimmer placeholder while font is loading */}
+                      {!loadedFonts.has(font.id) && (
+                        <div
+                          className="v2-shimmer absolute inset-0 rounded"
+                          style={{
+                            height: `${textSize[0] * (lineHeight[0] / 100)}px`,
+                            minHeight: '40px',
+                            zIndex: 1,
+                            pointerEvents: 'none'
+                          }}
+                        />
+                      )}
+
                       <ControlledPreviewInput
                       value={getPreviewContent(font.name)}
                       onChangeText={(val, pos) => {
                         // Only set global customText when user actually changes text
                         // Avoid setting it on focus/cursor events that pass the same value
-                        setTextCursorPosition(pos)
+                        setTextCursorPosition(prev => ({ ...prev, [font.id]: pos }))
                         if (val !== customText) {
                           // If preset is in effect (customText empty) and val equals preset content, skip
                           const presetValue = getPresetContent(selectedPreset, font.name)
@@ -1740,8 +1898,8 @@ export default function FontLibrary() {
                           if (!isPreset) setCustomText(val)
                         }
                       }}
-                      cursorPosition={textCursorPosition}
-                      className="whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0"
+                      cursorPosition={textCursorPosition[font.id] || 0}
+                      className={`whitespace-pre-line break-words cursor-text focus:outline-none w-full bg-transparent border-0 ${!animatedFonts.has(font.id) && loadedFonts.has(font.id) ? 'v2-font-fade-in' : ''}`}
                       style={{
                         fontSize: `${textSize[0]}px`,
                         lineHeight: `${lineHeight[0]}%`,
@@ -1749,7 +1907,7 @@ export default function FontLibrary() {
                         fontWeight: effectiveStyle.weight,
                         fontStyle: effectiveStyle.italic ? "italic" : "normal",
                         color: "var(--gray-cont-prim)",
-                        opacity: 1,
+                        opacity: loadedFonts.has(font.id) ? 1 : 0,
                         fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures || {}),
                         fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes || {}),
                       }}
@@ -1760,7 +1918,7 @@ export default function FontLibrary() {
                       {/* No bullet overlay while loading */}
                     </div>
 
-                    {expandedCards.has(font.id) && (
+                    {expandedCards.has(font.id) && (getStyleAlternates(font.id).length > 0 || getVariableAxes(font.id).length > 0) && (
                       <div className="mt-6 space-y-4 pt-4" style={{ borderTop: "1px solid var(--gray-brd-prim)" }}>
                         {/* Style Alternates */}
                         {getStyleAlternates(font.id).length > 0 && (
@@ -1770,27 +1928,6 @@ export default function FontLibrary() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                               {getStyleAlternates(font.id).map((feature) => (
-                                <button
-                                  key={feature.tag}
-                                  onClick={() => toggleOTFeature(font.id, feature.tag)}
-                                  className={`btn-sm ${fontOTFeatures[font.id]?.[feature.tag] ? "active" : ""}`}
-                                  title={feature.title}
-                                >
-                                  {feature.title}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Other OpenType Features */}
-                        {getOtherOTFeatures(font.id).length > 0 && (
-                          <div>
-                            <div className="text-sidebar-title mb-2" style={{ color: "var(--gray-cont-tert)" }}>
-                              OpenType Features
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {getOtherOTFeatures(font.id).map((feature) => (
                                 <button
                                   key={feature.tag}
                                   onClick={() => toggleOTFeature(font.id, feature.tag)}
@@ -1901,8 +2038,8 @@ export default function FontLibrary() {
             </footer>
           </div>
         </main>
-
       </div>
+
     </div>
   )
 }
