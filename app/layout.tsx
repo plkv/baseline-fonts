@@ -23,13 +23,13 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Free Font Collection - Professional Typography for Designers | typedump",
+  title: "typedump | Free font collection – typography for designers",
   description: "Curated collection of 150+ professional free fonts including variable fonts, display fonts, and text fonts. Perfect for web design, branding, and creative projects. Browse by category, language support, and style. All fonts verified with proper licensing.",
   keywords: "free fonts, variable fonts, typography, font collection, web fonts, display fonts, design fonts, font download, professional fonts, curated fonts, open source fonts",
   generator: 'v0.app',
   metadataBase: new URL('https://baseline-fonts.vercel.app'),
   openGraph: {
-    title: "Free Font Collection - Professional Typography for Designers | typedump",
+    title: "typedump | Free font collection – typography for designers",
     description: "150+ curated professional free fonts for designers. Variable fonts, display fonts, multilingual support. Perfect for web design and branding.",
     url: "https://baseline-fonts.vercel.app",
     siteName: "typedump",
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free Font Collection - Professional Typography | typedump",
+    title: "typedump | Free font collection – typography for designers",
     description: "150+ curated professional free fonts for designers. Variable fonts, display fonts, multilingual support.",
     images: ["/og-image.webp"],
   },
