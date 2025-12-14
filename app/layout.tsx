@@ -23,13 +23,14 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "typedump",
-  description: "Preselected free font collections curated by pro community",
+  title: "Free Font Collection - Professional Typography for Designers | typedump",
+  description: "Curated collection of 150+ professional free fonts including variable fonts, display fonts, and text fonts. Perfect for web design, branding, and creative projects. Browse by category, language support, and style. All fonts verified with proper licensing.",
+  keywords: "free fonts, variable fonts, typography, font collection, web fonts, display fonts, design fonts, font download, professional fonts, curated fonts, open source fonts",
   generator: 'v0.app',
   metadataBase: new URL('https://baseline-fonts.vercel.app'),
   openGraph: {
-    title: "typedump",
-    description: "Preselected free font collections curated by pro community",
+    title: "Free Font Collection - Professional Typography for Designers | typedump",
+    description: "150+ curated professional free fonts for designers. Variable fonts, display fonts, multilingual support. Perfect for web design and branding.",
     url: "https://baseline-fonts.vercel.app",
     siteName: "typedump",
     images: [
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
         url: "/og-image.webp",
         width: 1200,
         height: 630,
-        alt: "typedump - Preselected free font collections",
+        alt: "typedump - Curated free font collection for professional designers",
         type: "image/webp",
       },
     ],
@@ -46,8 +47,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "typedump",
-    description: "Preselected free font collections curated by pro community",
+    title: "Free Font Collection - Professional Typography | typedump",
+    description: "150+ curated professional free fonts for designers. Variable fonts, display fonts, multilingual support.",
     images: ["/og-image.webp"],
   },
   icons: {

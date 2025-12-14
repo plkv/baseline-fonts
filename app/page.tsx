@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider"
 import { ControlledTextPreview } from "@/components/ui/font/ControlledTextPreview"
 import { canonicalFamilyName } from "@/lib/font-naming"
 import { shortHash } from "@/lib/hash"
+import { generateFontSEOText } from "@/lib/font-descriptions"
 import "./v2.css"
 
 // Font interface for our API data
@@ -1356,7 +1357,7 @@ export default function FontLibrary() {
                   </span>
                 </button>
               )}
-              <h1
+              <div
                 className="cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
                   fontFeatureSettings: "'ss03' on, 'cv06' on, 'cv11' on",
@@ -1371,7 +1372,7 @@ export default function FontLibrary() {
                 onClick={() => window.location.href = '/'}
               >
                 typedump<sup style={{ fontWeight: 400, fontSize: "12px" }}> β</sup>
-              </h1>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               {isMobile ? (
@@ -1703,6 +1704,8 @@ export default function FontLibrary() {
       )}
 
       <main className="flex-1 overflow-y-auto pb-16" style={{ backgroundColor: 'transparent' }}>
+          {/* SEO H1 - visually hidden but accessible to search engines */}
+          <h1 className="sr-only">Free Font Collection - Professional Typography for Designers</h1>
           <div className={`min-h-[100vh] ${isMobile ? 'p-2 space-y-2' : 'px-4 pb-4 space-y-4'}`}>
             {isLoadingFonts ? (
               // Show skeleton cards during loading to prevent layout shift
@@ -1871,6 +1874,12 @@ export default function FontLibrary() {
                       })()}
                       </div>
                     </div>
+
+                    {/* SEO-friendly font description */}
+                    <p className="text-sm mt-3" style={{ color: "var(--gray-cont-sec)", lineHeight: "1.5" }}>
+                      {generateFontSEOText(font.name, font)}
+                    </p>
+
                     <div className="relative py-6">
                       {/* Shimmer placeholder while font is loading */}
                       {!loadedFonts.has(font.id) && (
