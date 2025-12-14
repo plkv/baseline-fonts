@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { kv } from '@vercel/kv'
 import { get } from '@vercel/blob'
 import { parseFontFile } from '@/lib/font-parser'
-
-const FONTS_KEY = 'fonts:metadata'
-const FONTS_CACHE_KEY = 'fonts_cache'
+import { fontStorageClean } from '@/lib/font-storage-clean'
+import { kv } from '@vercel/kv'
 
 /**
  * Re-parse variable axes for all fonts to fix default values
@@ -14,9 +12,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🔄 Starting variable axes re-parse for all fonts...')
 
-    // Fetch all fonts from KV
-    const fonts = await kv.get<any[]>(FONTS_KEY)
-    if (!fonts || !Array.isArray(fonts)) {
+    // Fetch all fonts using the storage system
+    const fonts = await fontStorageClean.getAllFonts()
+    if (!fonts || !Array.isArray(fonts) || fonts.length === 0) {
       return NextResponse.json({ error: 'No fonts found in database' }, { status: 404 })
     }
 
@@ -30,17 +28,18 @@ export async function POST(request: NextRequest) {
     for (const font of fonts) {
       try {
         // Only process variable fonts with a blob URL
-        if (font.type !== 'Variable' || !font.url) {
-          console.log(`⏭️  Skipping ${font.name} (not variable or no URL)`)
+        const blobUrl = font.blobUrl || font.url
+        if (!font.isVariable || !blobUrl) {
+          console.log(`⏭️  Skipping ${font.family} (not variable or no URL)`)
           continue
         }
 
-        console.log(`🔍 Re-parsing ${font.name}...`)
+        console.log(`🔍 Re-parsing ${font.family}...`)
 
         // Fetch the font file from blob
-        const blob = await get(font.url)
+        const blob = await get(blobUrl)
         if (!blob) {
-          throw new Error(`Failed to fetch blob for ${font.name}`)
+          throw new Error(`Failed to fetch blob for ${font.family}`)
         }
 
         // Download the blob content
@@ -49,34 +48,35 @@ export async function POST(request: NextRequest) {
         // Re-parse the font
         const metadata = await parseFontFile(
           arrayBuffer,
-          font.filename || `${font.name}.ttf`,
+          font.filename || `${font.family}.ttf`,
           blob.size
         )
 
         // Update only the variableAxes field in the existing font object
         if (metadata.variableAxes && metadata.variableAxes.length > 0) {
-          font.variableAxes = metadata.variableAxes
+          // Update the font in KV directly
+          const updatedFont = { ...font, variableAxes: metadata.variableAxes }
+          await kv.set(font.id, updatedFont)
+
           updatedCount++
-          console.log(`✅ Updated ${font.name} with ${metadata.variableAxes.length} axes`)
+          console.log(`✅ Updated ${font.family} with ${metadata.variableAxes.length} axes`)
           console.log(`   Axes:`, metadata.variableAxes.map(a => `${a.axis}=${a.default}`).join(', '))
         } else {
-          console.log(`⚠️  ${font.name} has no variable axes in re-parsed metadata`)
+          console.log(`⚠️  ${font.family} has no variable axes in re-parsed metadata`)
         }
 
       } catch (fontError: any) {
         errorCount++
-        const errorMsg = `Error processing ${font.name}: ${fontError.message}`
+        const errorMsg = `Error processing ${font.family || 'unknown'}: ${fontError.message}`
         console.error(`❌ ${errorMsg}`)
         errors.push(errorMsg)
       }
     }
 
-    // Save updated fonts back to KV
+    // Invalidate cache to force reload
     if (updatedCount > 0) {
-      await kv.set(FONTS_KEY, fonts)
-      // Also update cache
-      await kv.set(FONTS_CACHE_KEY, fonts)
-      console.log(`💾 Saved updated metadata for ${updatedCount} fonts`)
+      await kv.del('fonts_cache')
+      console.log(`💾 Updated ${updatedCount} fonts and invalidated cache`)
     }
 
     return NextResponse.json({
@@ -99,8 +99,8 @@ export async function POST(request: NextRequest) {
 
 // Allow GET to check status
 export async function GET(request: NextRequest) {
-  const fonts = await kv.get<any[]>(FONTS_KEY)
-  const variableFonts = fonts?.filter(f => f.type === 'Variable') || []
+  const fonts = await fontStorageClean.getAllFonts()
+  const variableFonts = fonts?.filter(f => f.isVariable) || []
 
   return NextResponse.json({
     totalFonts: fonts?.length || 0,
