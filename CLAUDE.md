@@ -47,20 +47,40 @@ Vercel KV + Blob are used in production for uploads and metadata persistence, bu
 Each family has:
 ```json
 {
-  "name": "Cormorant",
-  "collection": "Text",           // "Text" | "Display" | "Weirdo"
-  "category": ["Serif"],          // font type — used by Font categories filter
-  "styleTags": ["Old Style"],     // appearance — used by Appearance filter
-  "languages": ["Latin", "Cyrillic", "Vietnamese"],
-  "variants": [...]
+  "name": "Geist",
+  "collection": "Text",              // "Text" | "Display" | "Brutal"
+  "category": ["Sans"],              // structural type — Font categories filter
+  "styleTags": ["Neutral", "New Face"], // appearance — Appearance filter
+  "languages": ["Latin", "Cyrillic"],
+  "downloadLink": "https://github.com/vercel/geist-font",
+  "alternativeTo": [
+    { "name": "SF Pro", "foundry": "Apple", "motive": "original", "gets": "wght 100–900" }
+  ],
+  "variants": [
+    { "filename": "…", "url": "/fonts/…", "previewUrl": "/fonts/preview/…", "isDefaultStyle": true }
+  ]
 }
 ```
 
 `category` and `styleTags` are the two distinct tag dimensions. They are different things:
-- **category** — structural type (Sans, Serif, Script, Mono, Pixel, Decorative, etc.)
+- **category** — structural type (Sans, Serif, Semi Serif, Script, Mono, Pixel)
 - **styleTags** — aesthetic character (Narrow, Fatface, Vintage, Geometry, etc.)
 
-`collection` is a third dimension shown as cards in the sidebar (Text / Display / Weirdo).
+`collection` is a third dimension shown as cards in the sidebar (Text / Display / Brutal).
+
+The vocabulary is not guessable from the tag names — the definitions live in
+`.claude/skills/add-font/taxonomy.md`, and `node scripts/check-taxonomy.mjs`
+enforces the machine-checkable half of them.
+
+Three fields that carry more weight than they look:
+- **`downloadLink`** — the upstream repository or the project's own site, never
+  a Google Fonts URL. It is what the "Get font" button opens.
+- **`previewUrl`** — the cut-down file the catalogue cards load at rest, built
+  by `scripts/build-preview-subsets.py`. The full file stays for the download
+  link and the detail page.
+- **`alternativeTo`** — the faces this one can stand in for. The page title, the
+  meta description, the sentence under About and both `llms.txt` files are
+  generated from it; none of that is written by hand.
 
 ### Font Detail page (`/font/[slug]`)
 Key file: `app/font/[slug]/FontDetail.tsx` (client component).

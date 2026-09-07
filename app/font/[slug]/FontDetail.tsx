@@ -8,6 +8,8 @@ import { IconReset, IconAlignLeft, IconAlignCenter, IconAlignRight } from '@/com
 import { Slider } from '@/components/ui/slider'
 import { getFontFeatureSettings, getFontVariationSettings } from '@/lib/font-style-utils'
 import { cleanAuthor } from '@/lib/author'
+import { ControlledTextPreview } from '@/components/ui/font/ControlledTextPreview'
+import { segmentByCoverage } from '@/lib/glyph-coverage'
 
 
 function weightLabel(w: number) {
@@ -22,6 +24,27 @@ function weightLabel(w: number) {
 
 const TEXT_PRESETS = ['Names', 'Key Glyphs', 'Basic', 'Paragraph', 'Brands'] as const
 type TextPreset = typeof TEXT_PRESETS[number]
+
+// Case is applied for display only — the text the reader typed is untouched, so
+// switching back to Default returns exactly what they wrote.
+//
+// Small caps is deliberately not `font-variant-caps`, which a browser fakes by
+// shrinking the capitals when the font has none. On a site whose whole point is
+// showing what a face actually holds, drawn small caps and squashed capitals
+// must not look the same, so the control asks for the `smcp` feature directly
+// and is offered only to the 13 families that carry it (see
+// scripts/detect-small-caps.py).
+const CASE_MODES = ['Default', 'Uppercase', 'Lowercase', 'Small caps'] as const
+type CaseMode = typeof CASE_MODES[number]
+
+function caseStyle(mode: CaseMode): React.CSSProperties {
+  switch (mode) {
+    case 'Uppercase': return { textTransform: 'uppercase' }
+    case 'Lowercase': return { textTransform: 'lowercase' }
+    case 'Small caps': return { textTransform: 'lowercase', fontFeatureSettings: '"smcp" 1, "c2sc" 1' }
+    default: return {}
+  }
+}
 
 function getPresetContent(preset: TextPreset, fontName: string): string {
   switch (preset) {
@@ -51,6 +74,7 @@ interface FontSearchItem { name: string; author: string }
 
 export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?: FontSearchItem[] }) {
   const [selectedPreset, setSelectedPreset] = useState<TextPreset>('Names')
+  const [caseMode, setCaseMode] = useState<CaseMode>('Default')
   const [previewText, setPreviewText] = useState(() => family.name)
   const [fontSize, setFontSize] = useState(40)
   const [lineHeight, setLineHeight] = useState(1.2)
@@ -197,7 +221,7 @@ export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?:
           // the specimen — the hero must render the font's own default glyphs.
           fontFeatureSettings: 'normal',
         }}>
-          {family.name}
+          <HeroName name={family.name} family={heroFont} />
         </h1>
         <div style={{
           fontFamily: '"Instrument Sans UI", sans-serif',
@@ -262,13 +286,32 @@ export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?:
               </div>
               <button
                 aria-label="Reset preview settings"
-                onClick={() => { setFontSize(80); setLineHeight(1.2); setLetterSpacing(0); setAlign('left'); setSelectedPreset('Names'); setPreviewText(family.name); setRowOtFeatures({}); setRowVarAxes({}); setExpandedRowKey(null) }}
+                onClick={() => { setFontSize(80); setLineHeight(1.2); setLetterSpacing(0); setAlign('left'); setSelectedPreset('Names'); setCaseMode('Default'); setPreviewText(family.name); setRowOtFeatures({}); setRowVarAxes({}); setExpandedRowKey(null) }}
                 className="v2-button v2-button-inactive"
                 style={{ padding: 0, width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               >
                 <IconReset size={20} />
               </button>
             </div>
+          </div>
+
+          {/* Case row */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--gray-brd-prim)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {CASE_MODES.map(mode => {
+              const unavailable = mode === 'Small caps' && !family.hasSmallCaps
+              return (
+                <button
+                  key={mode}
+                  onClick={() => !unavailable && setCaseMode(mode)}
+                  disabled={unavailable}
+                  title={unavailable ? 'This font has no small caps of its own' : undefined}
+                  className={`v2-button ${caseMode === mode ? 'v2-button-active' : 'v2-button-inactive'}`}
+                  style={unavailable ? { opacity: 0.35, cursor: 'not-allowed' } : undefined}
+                >
+                  {mode}
+                </button>
+              )
+            })}
           </div>
 
           {/* Controls row */}
@@ -287,7 +330,14 @@ export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?:
             const varAxes = rowVarAxes[vr.key] ?? {}
             const varSettings = getFontVariationSettings({ wght: vr.weight, ...varAxes })
             // 'normal' resets the body-level UI stylistic sets on the specimen.
-            const featureSettings = getFontFeatureSettings(otFeatures) ?? 'normal'
+            const rowFeatures = getFontFeatureSettings(otFeatures) ?? 'normal'
+            // Small caps rides on the same property as the row's own feature
+            // toggles, so the two are merged rather than one silently replacing
+            // the other.
+            const cs = caseStyle(caseMode)
+            const featureSettings = cs.fontFeatureSettings
+              ? (rowFeatures === 'normal' ? String(cs.fontFeatureSettings) : `${rowFeatures}, ${cs.fontFeatureSettings}`)
+              : rowFeatures
             return (
               <VariantRow
                 key={vr.key}
@@ -304,6 +354,7 @@ export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?:
                 isLast={i === variantRows.length - 1}
                 fontVariationSettings={varSettings}
                 fontFeatureSettings={featureSettings}
+                textTransform={cs.textTransform}
                 hasSettings={hasSettings}
                 isExpanded={isExpanded}
                 onToggleExpand={() => setExpandedRowKey(isExpanded ? null : vr.key)}
@@ -444,51 +495,37 @@ export function FontDetail({ family, fonts = [] }: { family: FontFamily; fonts?:
   )
 }
 
-// ─── Hero preview ────────────────────────────────────────────────────────────
+// ─── Hero heading ───────────────────────────────────────────────────────────
 
-function HeroPreview({
-  text, onChange, fontFamily, fontSize, lineHeight, letterSpacing, fontWeight, fontStyle, align,
-}: {
-  text: string
-  onChange: (t: string) => void
-  fontFamily: string
-  fontSize: number
-  lineHeight: number
-  letterSpacing: number
-  fontWeight: number
-  fontStyle: string
-  align: 'left' | 'center' | 'right'
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null)
+// The <h1> is both the page's heading and its largest specimen, so a character
+// the font lacks used to sit there in the primary colour as though the face had
+// drawn it. Greys the missing runs the way every other preview does.
+//
+// Starts as plain text and only segments in an effect: coverage needs a canvas
+// and a loaded face, neither of which exists on the server, and rendering the
+// spans straight away would make the first client frame disagree with the
+// server's HTML.
+function HeroName({ name, family }: { name: string; family: string }) {
+  const [segments, setSegments] = useState<Array<{ text: string; missing: boolean }> | null>(null)
 
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 'px'
-  }, [text, fontSize, lineHeight, letterSpacing])
+    if (!family) return
+    const recompute = () => setSegments(segmentByCoverage(name, family))
+    recompute()
+    if (typeof document === 'undefined' || !document.fonts) return
+    document.fonts.addEventListener('loadingdone', recompute)
+    return () => document.fonts.removeEventListener('loadingdone', recompute)
+  }, [name, family])
 
+  if (!segments) return <>{name}</>
   return (
-    <textarea
-      ref={ref}
-      value={text}
-      onChange={e => onChange(e.target.value)}
-      rows={1}
-      style={{
-        width: '100%', display: 'block',
-        fontFamily, fontSize: `${fontSize}px`,
-        lineHeight, letterSpacing: `${letterSpacing}px`,
-        fontWeight, fontStyle,
-        textAlign: align,
-        color: 'var(--gray-cont-prim)',
-        backgroundColor: 'transparent',
-        border: 'none', outline: 'none', resize: 'none',
-        padding: '16px 0',
-        overflowY: 'hidden',
-      }}
-      spellCheck={false}
-      autoComplete="off"
-    />
+    <>
+      {segments.map((s, i) =>
+        s.missing
+          ? <span key={i} style={{ color: 'var(--gray-cont-tert)' }}>{s.text}</span>
+          : <span key={i}>{s.text}</span>
+      )}
+    </>
   )
 }
 
@@ -497,7 +534,7 @@ function HeroPreview({
 function VariantRow({
   label, fontFamily, weight, isItalic,
   fontSize, lineHeight, letterSpacing, align, text, onChange, isLast,
-  fontVariationSettings, fontFeatureSettings,
+  fontVariationSettings, fontFeatureSettings, textTransform,
   hasSettings, isExpanded, onToggleExpand,
   styleAlternates, otFeatures, onToggleOtFeature,
   axesDef, varAxes, onAxisChange,
@@ -515,6 +552,7 @@ function VariantRow({
   isLast?: boolean
   fontVariationSettings?: string
   fontFeatureSettings?: string
+  textTransform?: React.CSSProperties['textTransform']
   hasSettings?: boolean
   isExpanded?: boolean
   onToggleExpand?: () => void
@@ -525,14 +563,9 @@ function VariantRow({
   varAxes?: Record<string, number>
   onAxisChange?: (tag: string, val: number) => void
 }) {
-  const ref = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = el.scrollHeight + 'px'
-  }, [text, fontSize, lineHeight, letterSpacing, fontVariationSettings])
+  // Auto-height and re-measure on font load now live inside
+  // ControlledTextPreview, which this row renders.
+  const [cursor, setCursor] = useState(0)
 
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (isExpanded && !e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -559,12 +592,14 @@ function VariantRow({
       </div>
 
       {/* Preview textarea */}
-      <textarea
-        ref={ref}
+      <ControlledTextPreview
         value={text}
-        onChange={e => onChange(e.target.value)}
+        cursorPosition={cursor}
+        onChange={(v, pos) => { onChange(v); setCursor(pos) }}
+        onCursorChange={setCursor}
         onFocus={() => { if (hasSettings && !isExpanded) onToggleExpand?.() }}
-        rows={1}
+        multiline
+        highlightMissingGlyphs
         style={{
           width: '100%', display: 'block',
           fontFamily, fontSize, lineHeight, letterSpacing: `${letterSpacing}px`,
@@ -578,9 +613,8 @@ function VariantRow({
           overflowY: 'hidden',
           fontVariationSettings,
           fontFeatureSettings,
+          textTransform,
         }}
-        spellCheck={false}
-        autoComplete="off"
       />
 
       {/* Expanded settings — always rendered, animated via CSS grid */}

@@ -25,3 +25,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Machine-specific: the preview config carries an absolute path.
+.claude/launch.json

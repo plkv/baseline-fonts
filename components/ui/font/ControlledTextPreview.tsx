@@ -57,11 +57,44 @@ export const ControlledTextPreview = forwardRef<
     return () => document.fonts.removeEventListener('loadingdone', bump)
   }, [])
 
+  // Coverage is measured with a canvas, which the server does not have: there
+  // every character comes back present, while the very first client render
+  // measures for real and can mark the lot missing (an unloaded face falls back
+  // for everything). Two different trees, and React threw a hydration error.
+  // Hold off until after mount so the first client frame matches the HTML.
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => { setHydrated(true) }, [])
+
   const family = highlightMissingGlyphs ? firstFamily(String(style.fontFamily || '')) : ''
-  const segments = useMemo(
-    () => (highlightMissingGlyphs ? segmentByCoverage(String(value ?? ''), family) : null),
+
+  // Coverage is measured by comparing advance widths against a generic, so an
+  // unloaded face — which the browser draws with that same generic — reads as
+  // missing every single character. That produced a real bug, not just a wrong
+  // colour: `hasMissing` switches the component between two different trees, so
+  // the textarea was being unmounted and remounted the moment the face landed.
+  // A click during that window focused an element that no longer existed, and
+  // the user had to click again about half a second later. Measure only once
+  // the face is actually loaded.
+  const familyLoaded = useMemo(() => {
+    if (!family || typeof document === 'undefined' || !document.fonts) return false
+    let declared = false
+    let loaded = false
+    document.fonts.forEach(f => {
+      if (f.family.replace(/^["']|["']$/g, '') !== family) return
+      declared = true
+      if (f.status === 'loaded') loaded = true
+    })
+    // A family we do not declare (a system stack) has nothing to wait for.
+    return !declared || loaded
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [highlightMissingGlyphs, value, family, fontEpoch],
+  }, [family, fontEpoch, hydrated])
+
+  const segments = useMemo(
+    () => (highlightMissingGlyphs && hydrated && familyLoaded
+      ? segmentByCoverage(String(value ?? ''), family)
+      : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [highlightMissingGlyphs, hydrated, familyLoaded, value, family, fontEpoch],
   )
   const hasMissing = !!segments && segments.some(s => s.missing)
   

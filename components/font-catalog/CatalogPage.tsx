@@ -122,6 +122,17 @@ type EffectiveStyleValue = {
   otFeatures: Record<string, boolean>
 }
 
+// Case is display only — the text a reader typed stays exactly as typed, so
+// switching back to Default gives it back untouched.
+//
+// Small caps asks for the `smcp`/`c2sc` features rather than
+// `font-variant-caps`, which browsers fake by shrinking the capitals. Faked
+// small caps and drawn ones must not look alike on a site that exists to show
+// what a face actually holds, so a card only offers the mode when its family
+// carries the glyphs (see scripts/detect-small-caps.py).
+const CASE_MODES = ['Default', 'Uppercase', 'Lowercase', 'Small caps'] as const
+type CaseMode = typeof CASE_MODES[number]
+
 export default function CatalogPage({ initialFonts, initialFilters }: { initialFonts: FontData[], initialFilters?: InitialFilters }) {
   const toArr = (v: string | string[] | undefined) => v ? (Array.isArray(v) ? v : [v]) : []
   // UI State
@@ -154,6 +165,7 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
   const [selectedAuthor, setSelectedAuthor] = useState<string>(() => typeof initialFilters?.author === 'string' ? initialFilters.author : '')
   const [previewWeight, setPreviewWeight] = useState(400)
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
+  const [caseMode, setCaseMode] = useState<CaseMode>('Default')
   const [fontWeightSelections, setFontWeightSelections] = useState<Record<number, { weight: number; italic: boolean; cssFamily?: string; styleName?: string }>>(
     {},
   )
@@ -695,11 +707,13 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
     lineHeight[0] !== 120 ||
     textAlign !== 'center' ||
     selectedPreset !== 'Names' ||
+    caseMode !== 'Default' ||
     customText !== ''
 
   const resetFilters = () => {
     setCustomText("")
     setSelectedPreset("Names")
+    setCaseMode("Default")
     setSelectedCollections([]) // Reset collection filters
     setSelectedCategories([])
     setSelectedStyles([])
@@ -1375,6 +1389,7 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
                   font={font as any}
                   isMobile={isMobile}
                   fontSelection={fontSelection}
+                  caseMode={caseMode}
                   isLoaded={loadedFonts.has(font.id)}
                   isAnimated={animatedFonts.has(font.id)}
                   isExpanded={expandedCards.has(font.id)}
@@ -1625,6 +1640,19 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
                           }}
                           className={`v2-button ${selectedPreset === preset ? 'v2-button-active' : 'v2-button-inactive'}`}
                         >{preset}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sidebar-title mb-3">Case</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {CASE_MODES.map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => setCaseMode(mode)}
+                          className={`v2-button ${caseMode === mode ? 'v2-button-active' : 'v2-button-inactive'}`}
+                        >{mode}</button>
                       ))}
                     </div>
                   </div>

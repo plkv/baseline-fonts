@@ -737,13 +737,14 @@
   transition: opacity 0.25s ease;
 }
 
-.preview-shimmer {
+.card-shimmer-host { position: relative; }
+
+.card-shimmer {
   position: absolute;
-  /* Inset by the wrapper's own 16px padding, so the sweep covers the line of
-     text rather than the whitespace around it. */
-  inset: 16px 0;
+  inset: 0;
+  z-index: 0;
   pointer-events: none;
-  border-radius: var(--radius-component);
+  border-radius: var(--radius-card);
   background: linear-gradient(
     to right,
     transparent 0%,
@@ -756,5 +757,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .preview-shimmer { animation: none; }
+  .card-shimmer { animation: none; }
 }

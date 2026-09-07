@@ -50,6 +50,8 @@ export interface FontFamily {
   // Well-known faces this family stands in for. `motive` says why someone is
   // looking: paid (costs money), unlicensable (free to use, not to embed),
   // overused (free and everywhere). `gets` names what this family does better.
+  /** The font carries real `smcp` glyphs, so the case switch may offer small caps. */
+  hasSmallCaps?: boolean
   alternativeTo?: {
     name: string
     foundry: string

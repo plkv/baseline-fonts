@@ -1,0 +1,111 @@
+---
+name: add-font
+description: Add a typeface to the TypeDump catalogue, or check one that is already in it — file preparation, the fonts-data.json record, tagging, description, alternatives, the npm/MCP mirror, and the checks to run before publishing. Use whenever a font is being added, a batch is being reviewed, or tags, descriptions, downloadLink or alternativeTo are being written or corrected.
+---
+
+# Adding a font to TypeDump
+
+The catalogue is one file: `public/fonts/fonts-data.json`. Everything else — the
+site, the stylesheet, the npm package, `llms.txt` — is generated from it. Get the
+record right and the rest follows.
+
+## 1. Prepare the file
+
+Take the **upstream variable file** where one exists, not a static instance and
+not the Google Fonts copy. Convert to woff2:
+
+```bash
+python3 -c "from fontTools.ttLib import TTFont; f=TTFont('IN.ttf'); f.flavor='woff2'; f.save('public/fonts/OUT.woff2')"
+```
+
+Keep the original `.ttf`/`.otf` next to it — the download link and the detail
+page use it.
+
+## 2. Write the record
+
+Copy the shape of an existing entry (Geist is the cleanest) rather than
+inventing fields. Required: `name`, `collection`, `category`, `styleTags`,
+`languages`, `downloadLink`, `variants[]`. Each variant needs `filename`, `url`,
+`weight`, `styleName`, `isItalic`, `isDefaultStyle` on exactly one of them.
+
+**`downloadLink` is the upstream repository or the project's own site** — from
+`repository_url` / `minisite_url` in METADATA.pb when the font comes from Google
+Fonts. Never a Google Fonts URL.
+
+## 3. Tag it
+
+Read `taxonomy.md` next to this file. It carries the definitions; they are not
+guessable from the tag names.
+
+Tag by **looking at the letterforms**, never from the name, the foundry blurb or
+a general impression. Render a specimen first:
+
+```bash
+python3 -c "
+from PIL import Image, ImageDraw, ImageFont
+img=Image.new('RGB',(1400,140),'white'); d=ImageDraw.Draw(img)
+d.text((14,20),'Hamburgefonstiv 123',font=ImageFont.truetype('FILE.ttf',64),fill='black')
+img.save('/tmp/spec.png')"
+```
+
+Then read the diagnostic glyphs: the axis of the `o`, the contrast, the serif
+shape, the stroke terminals. The recurring mistakes are all "did not actually
+look": high contrast is not a serif, a soft look is not Rounded, a characterful
+face is not automatically Display.
+
+## 4. Description
+
+One paragraph, plain, in the voice of someone who has used the font. Say what it
+is for and what is unusual about it — variable axes, alternates, scripts, an
+optical size. No marketing, no em-dashes, no slogans.
+
+## 5. Alternatives (`alternativeTo`)
+
+Only fill this in when the font is a credible substitute for a face people
+actually search for:
+
+```json
+"alternativeTo": [{ "name": "Söhne", "foundry": "Klim", "motive": "paid", "gets": "wght 100–900, Cyrillic" }]
+```
+
+- `motive` is `"paid"` (the original costs money) or `"original"` (the original
+  is everywhere and the reader wants something less worn out).
+- **Every claim needs a source.** A resemblance you assert from memory is not
+  one. Check it against the foundry's own page or a documented lineage.
+- **Never map one unknown free font to another unknown free font.** The point is
+  discoverability: the target has to be a name people type.
+- A clone is fine. The value is that the free one may do something better —
+  more weights, more scripts, real italics — and `gets` is where that goes.
+
+Generated from this field: the page title, the meta description, the sentence
+under About, and both `llms.txt` files. Nothing is written by hand in those.
+
+## 6. Regenerate
+
+```bash
+node scripts/generate-font-css.mjs        # public/fonts/fonts.css
+python3 scripts/build-preview-subsets.py  # cut previews + bumps lastUpdated
+```
+
+`lastUpdated` is the cache key for `fonts.css?v=`. If the subsets script does not
+run, browsers keep the old stylesheet and point at the old files.
+
+## 7. Mirror to npm (MCP)
+
+`typedump-npm/data/fonts-data.json` is the package's copy — woff2 only. It
+serves the MCP server, so a font missing there is invisible to every editor
+integration. Ships by `npm publish` with a version bump, and only when asked.
+
+## 8. Check before publishing
+
+```bash
+node scripts/check-taxonomy.mjs
+```
+
+It reports unknown tags, serifs missing their mandatory class, `Modern` on a
+non-serif, `Pixel` outside Display/Brutal, missing categories, empty
+`downloadLink`, files referenced but absent, and fonts with no lowercase or no
+digits — the last one matters because the card's default preview is the font's
+own name.
+
+Then: build, look at the cards, and only then commit.

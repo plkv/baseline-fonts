@@ -7,6 +7,17 @@ import { familyToSlug } from '@/lib/font-slug'
 import { getFontFeatureSettings, getFontVariationSettings } from '@/lib/font-style-utils'
 import { IconReset, IconChevronDown } from '@/components/icons'
 
+// Display-only case for the specimen. Small caps asks for the OpenType feature
+// rather than font-variant-caps, which browsers fake by shrinking capitals.
+function caseCss(mode: 'Default' | 'Uppercase' | 'Lowercase' | 'Small caps') {
+  switch (mode) {
+    case 'Uppercase': return { textTransform: 'uppercase' as const, features: '' }
+    case 'Lowercase': return { textTransform: 'lowercase' as const, features: '' }
+    case 'Small caps': return { textTransform: 'lowercase' as const, features: '"smcp" 1, "c2sc" 1' }
+    default: return { textTransform: undefined, features: '' }
+  }
+}
+
 // ─── Font readiness ─────────────────────────────────────────────────────────
 
 // One `loadingdone` listener for the whole catalogue rather than one per card.
@@ -84,6 +95,8 @@ export interface FontCardProps {
   effectiveStyle: EffectiveStyle
   textSize: number
   lineHeight: number
+  /** Display-only case for the specimen: Default | Uppercase | Lowercase | Small caps. */
+  caseMode?: 'Default' | 'Uppercase' | 'Lowercase' | 'Small caps'
   textAlign: 'left' | 'center' | 'right'
   // Callbacks
   onSelectRef: (el: HTMLSelectElement | null) => void
@@ -104,7 +117,7 @@ function FontCardImpl({
   font, isMobile, fontSelection, isLoaded, isAnimated, isExpanded,
   previewContent, alternatesMode, cursorPosition, otFeatures, variableAxesState,
   styleAlternates, variableAxesDef, effectiveStyle,
-  textSize, lineHeight, textAlign,
+  textSize, lineHeight, textAlign, caseMode = 'Default',
   onSelectRef, onInputRef, onStyleChange, onTextChange, onFocus, onToggleExpand,
   onToggleOTFeature, onVariableAxisChange, onTagFilter, isTagActive,
 }: FontCardProps) {
@@ -152,6 +165,31 @@ function FontCardImpl({
     return onFontsChanged(recheck)
   }, [previewFamily, textSize])
 
+  // The shimmer waits before it appears and stays a beat once it has. A cut
+  // preview lands in about 76ms, so tying the sweep straight to `fontReady`
+  // flashed it on and off inside a couple of frames — which reads as a glitch,
+  // not as loading. Below the delay nothing is drawn at all; past it the card
+  // holds the sweep long enough to be seen as deliberate.
+  const SHIMMER_DELAY_MS = 220
+  const SHIMMER_MIN_MS = 420
+  const [showShimmer, setShowShimmer] = useState(false)
+  const shimmerShownAt = useRef(0)
+
+  useEffect(() => {
+    if (!fontReady) {
+      const t = setTimeout(() => {
+        shimmerShownAt.current = Date.now()
+        setShowShimmer(true)
+      }, SHIMMER_DELAY_MS)
+      return () => clearTimeout(t)
+    }
+    if (!showShimmer) return
+    const left = SHIMMER_MIN_MS - (Date.now() - shimmerShownAt.current)
+    if (left <= 0) { setShowShimmer(false); return }
+    const t = setTimeout(() => setShowShimmer(false), left)
+    return () => clearTimeout(t)
+  }, [fontReady, showShimmer])
+
   const downloadLink = font.downloadLink ||
     font._familyFonts?.find(f => f.downloadLink?.trim())?.downloadLink
 
@@ -162,7 +200,12 @@ function FontCardImpl({
   }
 
   return (
-    <div className="transition-colors v2-card" onBlur={handleBlur} data-card-id={font.id}>
+    <div className="transition-colors v2-card card-shimmer-host" onBlur={handleBlur} data-card-id={font.id}>
+      {/* While the face is still arriving the whole card carries the shimmer,
+          not the line of text: the card is the thing that is not ready yet, and
+          a sweep over one line read as a defect in the specimen rather than as
+          loading. Sits behind the content and takes no clicks. */}
+      {showShimmer && <div className="card-shimmer" aria-hidden="true" />}
       <div className="p-4">
 
         {/* ── Header row ── */}
@@ -308,10 +351,9 @@ function FontCardImpl({
           )
         })() : (
         <div
-          className={`relative${fontReady ? '' : ' preview-loading'}`}
+          className={`relative${showShimmer ? ' preview-loading' : ''}`}
           style={{ paddingTop: '16px', paddingBottom: '16px' }}
         >
-          {!fontReady && <div className="preview-shimmer" aria-hidden="true" />}
           <ControlledTextPreview
             ref={inputRef as any}
             value={previewContent}
@@ -336,8 +378,14 @@ function FontCardImpl({
               textAlign,
               // 'normal' resets the body-level UI stylistic sets so they never
               // bleed into the font specimen.
-              fontFeatureSettings: getFontFeatureSettings(effectiveStyle.otFeatures) ?? 'normal',
+              fontFeatureSettings: (() => {
+                const own = getFontFeatureSettings(effectiveStyle.otFeatures) ?? 'normal'
+                const cc = caseCss(caseMode).features
+                if (!cc) return own
+                return own === 'normal' ? cc : `${own}, ${cc}`
+              })(),
               fontVariationSettings: getFontVariationSettings(effectiveStyle.variableAxes),
+              textTransform: caseCss(caseMode).textTransform,
             }}
             multiline
           />
@@ -478,5 +526,6 @@ export const FontCard = memo(FontCardImpl, (a, b) =>
   a.effectiveStyle === b.effectiveStyle &&
   a.textSize === b.textSize &&
   a.lineHeight === b.lineHeight &&
+  a.caseMode === b.caseMode &&
   a.textAlign === b.textAlign
 )

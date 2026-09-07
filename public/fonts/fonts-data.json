@@ -2430,7 +2430,8 @@
           "ss02"
         ]
       ],
-      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥¢°±×÷≠«»“”"
+      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥¢°±×÷≠«»“”",
+      "hasSmallCaps": true
     },
     {
       "name": "Outfit",
@@ -2900,7 +2901,8 @@
           "ss01"
         ]
       ],
-      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑"
+      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑",
+      "hasSmallCaps": true
     },
     {
       "name": "Zodiak",
@@ -10555,7 +10557,8 @@
           "motive": "paid",
           "gets": "italics, free"
         }
-      ]
+      ],
+      "hasSmallCaps": true
     },
     {
       "name": "enjoy please 3",
@@ -10721,7 +10724,8 @@
         "Poster"
       ],
       "altPairs": [],
-      "specialChars": "&@#%©•¡¿€£°«»“”‘’…–—"
+      "specialChars": "&@#%©•¡¿€£°«»“”‘’…–—",
+      "hasSmallCaps": true
     },
     {
       "name": "Director",
@@ -11888,7 +11892,8 @@
         "Poster"
       ],
       "altPairs": [],
-      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑"
+      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑",
+      "hasSmallCaps": true
     },
     {
       "name": "Cormorant Unicase",
@@ -12417,7 +12422,8 @@
           "ss13"
         ]
       ],
-      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑"
+      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑",
+      "hasSmallCaps": true
     },
     {
       "name": "Tanklager Kompakt",
@@ -23011,7 +23017,8 @@
           "motive": "paid",
           "gets": "italics, 24 alternate pairs"
         }
-      ]
+      ],
+      "hasSmallCaps": true
     },
     {
       "name": "Affigere",
@@ -23679,7 +23686,8 @@
         ]
       ],
       "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥¢°±×÷≠«»“”",
-      "description": "Junicode is a serif by Peter S. Baker made for medievalists and linguists. It follows the Medieval Unicode Font Initiative and is packed with small caps, mark positioning and scholarly characters, so it can set old and specialized texts accurately. It comes in five weights and five widths, with Weight, Width and an Enlarge axis. Free under the Open Font License 1.1."
+      "description": "Junicode is a serif by Peter S. Baker made for medievalists and linguists. It follows the Medieval Unicode Font Initiative and is packed with small caps, mark positioning and scholarly characters, so it can set old and specialized texts accurately. It comes in five weights and five widths, with Weight, Width and an Enlarge axis. Free under the Open Font License 1.1.",
+      "hasSmallCaps": true
     },
     {
       "name": "Luperca",
@@ -26881,7 +26889,8 @@
           "salt"
         ]
       ],
-      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑"
+      "specialChars": "&@#%‰§©®™¶†‡•¡¿€£¥₽¢°±×÷≠→←↑",
+      "hasSmallCaps": true
     },
     {
       "name": "Abordage",
@@ -27345,7 +27354,8 @@
           "motive": "paid",
           "gets": "a width axis (75–100) and wght 400–900 with italics"
         }
-      ]
+      ],
+      "hasSmallCaps": true
     },
     {
       "name": "Mutern",
@@ -27510,7 +27520,8 @@
           "motive": "overused",
           "gets": "optical size, width and weight axes, four writing systems"
         }
-      ]
+      ],
+      "hasSmallCaps": true
     },
     {
       "name": "Aboreto",
@@ -28001,7 +28012,7 @@
       "name": "Averia Serif Libre",
       "collection": "Display",
       "styleTags": [
-        "Curly",
+        "Rounded",
         "Old Face"
       ],
       "languages": [
@@ -28319,12 +28330,14 @@
         "Tech / Digital",
         "Experimental"
       ],
-      "altPairs": []
+      "altPairs": [],
+      "hasSmallCaps": true
     },
     {
       "name": "Caudex",
       "collection": "Text",
       "styleTags": [
+        "Low Poly",
         "Old Face"
       ],
       "languages": [
@@ -28440,7 +28453,7 @@
         "Vietnamese"
       ],
       "category": [
-        "Serif"
+        "Semi Serif"
       ],
       "foundry": "Victor Pennetier",
       "isVariable": false,
@@ -29012,8 +29025,7 @@
       "name": "LINE Seed Sans",
       "collection": "Text",
       "styleTags": [
-        "Geometry",
-        "Rounded"
+        "Geometry"
       ],
       "languages": [
         "Latin"
@@ -29410,7 +29422,7 @@
       "name": "Modelo",
       "collection": "Display",
       "styleTags": [
-        "Bauhaus",
+        "Modular",
         "Geometry"
       ],
       "languages": [
@@ -30344,7 +30356,7 @@
     },
     {
       "name": "Tomorrow",
-      "collection": "Text",
+      "collection": "Display",
       "styleTags": [
         "Tech",
         "Squared"
@@ -31374,7 +31386,8 @@
         "Editorial",
         "Culture"
       ],
-      "altPairs": []
+      "altPairs": [],
+      "hasSmallCaps": true
     },
     {
       "name": "RRR Climax",
@@ -32156,6 +32169,7 @@
       "name": "Bonbance",
       "collection": "Display",
       "styleTags": [
+        "Rounded",
         "Narrow",
         "Contrast"
       ],
@@ -32221,6 +32235,7 @@
       "name": "Caramel",
       "collection": "Display",
       "styleTags": [
+        "Rounded",
         "Fatface",
         "Narrow"
       ],
@@ -32284,6 +32299,7 @@
       "name": "Faktory",
       "collection": "Display",
       "styleTags": [
+        "Low Poly",
         "Tech",
         "Rounded"
       ],
@@ -32447,6 +32463,7 @@
       "name": "Bricolage Grotesque",
       "collection": "Text",
       "styleTags": [
+        "Inktrap",
         "Neutral",
         "Grotesque"
       ],

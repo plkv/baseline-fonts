@@ -1,10 +1,22 @@
-# typedump Font Collection
+# typedump
 
-Font management system with admin panel at /admin
+A curated index of open-source typefaces — [www.typedump.com](https://www.typedump.com).
 
-Environment variables needed:
-- ADMIN_PASSWORD=your-secure-password
+Next.js, exported as static files and served from Cloudflare Pages. The whole
+catalogue is one file, `public/fonts/fonts-data.json`; the stylesheet, the cut
+previews, the npm package and `llms.txt` are all generated from it.
 
-Deployment: среда,  3 сентября 2025 г. 21:01:57 (CEST)
-🚀 Force deployment trigger
-Deploy trigger четверг,  4 сентября 2025 г. 18:19:14 (CEST)
+```bash
+npm run dev     # local
+npm run build   # static export into out/
+```
+
+Adding or checking a font: `.claude/skills/add-font/SKILL.md`, with the tag
+vocabulary next to it in `taxonomy.md`. Before publishing a batch:
+
+```bash
+node scripts/check-taxonomy.mjs --new-only
+python3 scripts/check-glyphs.py --new-only
+```
+
+Architecture and conventions: `CLAUDE.md`.
