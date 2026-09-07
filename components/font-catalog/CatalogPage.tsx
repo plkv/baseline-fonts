@@ -1239,15 +1239,15 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
     return () => clearTimeout(timer)
   }, [loadedFonts, animatedFonts])
 
-  // Scroll-driven hero fade + scale
-  // Scroll-driven hero fade + save position
-  useEffect(() => {
+  // Scroll-driven hero fade, and the restore that comes back to the catalogue.
+  //
+  // Before paint, not after: coming back from a font page the reader should
+  // land where they left, and a restore in a plain effect happens a frame late,
+  // which shows the top of the list first.
+  useLayoutEffect(() => {
     const main = mainRef.current
     const hero = heroRef.current
     if (!main || !hero) return
-    // Restore scroll position from sessionStorage
-    const saved = sessionStorage.getItem('catalog-scroll')
-    if (saved) main.scrollTop = parseInt(saved, 10)
     const onScroll = () => {
       sessionStorage.setItem('catalog-scroll', String(main.scrollTop))
       const heroHeight = hero.offsetHeight
@@ -1268,8 +1268,40 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
       const leave = heroHeight * 0.45
       setCatalogVisible(prev => (main.scrollTop > enter ? true : main.scrollTop < leave ? false : prev))
     }
+    // Restoring the offset is only half of it. The hero's fade, its
+    // pointer-events and the filter bar all live in `onScroll`, so a restore
+    // that only moved the scroller left a fully opaque hero pinned over the
+    // list: the reader saw the first screen, and the moment they nudged the
+    // wheel `onScroll` finally ran and the hero vanished — which read as the
+    // page jumping to where they had been. It had been there all along.
+    //
+    // And the offset itself has to be insisted on. Assigning scrollTop before
+    // the list has its height clamps to whatever exists at that instant, which
+    // is usually nothing, so a single attempt silently lands at the top. Keep
+    // asking across frames until the scroller is tall enough to hold the
+    // position, then stop. Half a second is far longer than the list needs and
+    // still short enough that a genuinely shorter page — a filter that leaves
+    // three cards — gives up rather than fighting the reader.
+    const saved = sessionStorage.getItem('catalog-scroll')
+    const target = saved ? parseInt(saved, 10) : 0
+    let frame = 0
+    let rafId = 0
+
+    const restore = () => {
+      if (!Number.isFinite(target) || target <= 0) return
+      main.scrollTop = target
+      onScroll()
+      // Landed, or the page simply is not that long: either way we are done.
+      if (Math.abs(main.scrollTop - target) < 2 || frame++ > 30) return
+      rafId = requestAnimationFrame(restore)
+    }
+    restore()
+
     main.addEventListener('scroll', onScroll, { passive: true })
-    return () => main.removeEventListener('scroll', onScroll)
+    return () => {
+      cancelAnimationFrame(rafId)
+      main.removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   const scrollToCatalog = useCallback(() => {
