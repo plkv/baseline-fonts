@@ -91,10 +91,10 @@ export const ControlledTextPreview = forwardRef<
 
   const segments = useMemo(
     () => (highlightMissingGlyphs && hydrated && familyLoaded
-      ? segmentByCoverage(String(value ?? ''), family)
+      ? segmentByCoverage(String(value ?? ''), family, String(style.textTransform ?? ''))
       : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [highlightMissingGlyphs, hydrated, familyLoaded, value, family, fontEpoch],
+    [highlightMissingGlyphs, hydrated, familyLoaded, value, family, fontEpoch, style.textTransform],
   )
   const hasMissing = !!segments && segments.some(s => s.missing)
   

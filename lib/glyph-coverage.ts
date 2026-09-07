@@ -53,12 +53,32 @@ export function makeMissingChecker(family: string): (ch: string) => boolean {
 
 export interface GlyphSegment { text: string; missing: boolean }
 
-/** Split text into runs of consecutive present / missing characters. */
-export function segmentByCoverage(text: string, family: string): GlyphSegment[] {
+/** Split text into runs of consecutive present / missing characters.
+ *
+ * `transform` is the CSS text-transform in force on the element. Coverage has
+ * to be judged on the character the browser will actually draw, not on the one
+ * in the value: with the case switch set to Uppercase, a font that has capitals
+ * but no lowercase — Golden Goose Uppercase is exactly that — was still being
+ * marked as missing everywhere, because the check ran against the lowercase
+ * original. The segment keeps the original character; CSS does the transform.
+ */
+export function segmentByCoverage(
+  text: string,
+  family: string,
+  transform?: string,
+): GlyphSegment[] {
   const missingOf = makeMissingChecker(family)
+  const asDrawn = (ch: string) =>
+    transform === 'uppercase' ? ch.toUpperCase()
+      : transform === 'lowercase' ? ch.toLowerCase()
+      : transform === 'capitalize' ? ch.toUpperCase()
+      : ch
   const segs: GlyphSegment[] = []
   for (const ch of text) {
-    const missing = missingOf(ch)
+    // A transform can map one character to several (ß → SS); if any part of it
+    // is missing the run is missing.
+    const drawn = asDrawn(ch)
+    const missing = [...drawn].some(c => missingOf(c))
     const last = segs[segs.length - 1]
     if (last && last.missing === missing) last.text += ch
     else segs.push({ text: ch, missing })
