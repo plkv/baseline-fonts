@@ -92,9 +92,20 @@ run, browsers keep the old stylesheet and point at the old files.
 
 ## 7. Mirror to npm (MCP)
 
-`typedump-npm/data/fonts-data.json` is the package's copy — woff2 only. It
-serves the MCP server, so a font missing there is invisible to every editor
-integration. Ships by `npm publish` with a version bump, and only when asked.
+```bash
+python3 scripts/sync-npm-mirror.py --dry-run   # what would change
+python3 scripts/sync-npm-mirror.py             # do it
+```
+
+The package is what the MCP server reads, so a font that is on the site and not
+in the package is invisible to every editor integration. The two drifted 44
+families apart once because syncing them was something to remember rather than
+run. The package carries the full face as woff2, not the cut preview the cards
+use — someone installing it wants the whole font.
+
+Then, in `typedump-npm`: bump the version (`npm version <x.y.z>
+--no-git-tag-version`, no tag — the package has no git of its own), `npm run
+build`, and `npm publish`. Publishing is Stas's, and only when asked.
 
 ## 8. Check before publishing
 
