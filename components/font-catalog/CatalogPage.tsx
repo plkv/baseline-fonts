@@ -1443,6 +1443,7 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
                   isMobile={isMobile}
                   fontSelection={fontSelection}
                   caseMode={caseMode}
+                  isEditing={focusedFontId === font.id}
                   isLoaded={loadedFonts.has(font.id)}
                   isAnimated={animatedFonts.has(font.id)}
                   isExpanded={expandedCards.has(font.id)}

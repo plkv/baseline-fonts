@@ -759,3 +759,41 @@
 @media (prefers-reduced-motion: reduce) {
   .card-shimmer { animation: none; }
 }
+
+/* Hint in the corner of the card being edited: typing stays in this card until
+   the reader leaves it, and nothing on screen said so. Only while the caret is
+   actually in the preview, and only where there is a keyboard to press Esc on —
+   below the tablet breakpoint there is neither the key nor the room. */
+.card-edit-hint {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  pointer-events: none;
+  /* Same face, size and colour as the author line in the same card — 14/20 at
+     weight 500 on the tertiary token — rather than a smaller, paler thing of
+     its own. It is a note inside the card, not a separate widget. */
+  font-family: "Instrument Sans UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  font-feature-settings: "ss01" 1, "ss02" 1, "ss06" 1, "ss08" 1;
+  color: var(--gray-cont-tert);
+  animation: fadeIn 0.2s ease;
+}
+
+/* Esc drawn as the key it is: a border, not a filled chip, so it reads as a
+   thing to press without competing with the card's own controls. Inherits the
+   hint's size and colour rather than setting its own. */
+.card-edit-key {
+  font: inherit;
+  color: inherit;
+  border: 1px solid var(--gray-brd-prim);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-right: 2px;
+}
+
+@media (max-width: 767px) {
+  .card-edit-hint { display: none; }
+}

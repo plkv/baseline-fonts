@@ -84,6 +84,8 @@ export interface FontCardProps {
   isLoaded: boolean
   isAnimated: boolean
   isExpanded: boolean
+  /** The caret is in this card's preview, so the hint about publishing applies. */
+  isEditing?: boolean
   previewContent: string
   /** When true, render the read-only default→alternate + special-glyph showcase. */
   alternatesMode?: boolean
@@ -114,7 +116,7 @@ export interface FontCardProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 function FontCardImpl({
-  font, isMobile, fontSelection, isLoaded, isAnimated, isExpanded,
+  font, isMobile, fontSelection, isLoaded, isAnimated, isExpanded, isEditing = false,
   previewContent, alternatesMode, cursorPosition, otFeatures, variableAxesState,
   styleAlternates, variableAxesDef, effectiveStyle,
   textSize, lineHeight, textAlign, caseMode = 'Default',
@@ -206,6 +208,11 @@ function FontCardImpl({
           a sweep over one line read as a defect in the specimen rather than as
           loading. Sits behind the content and takes no clicks. */}
       {showShimmer && <div className="card-shimmer" aria-hidden="true" />}
+      {isEditing && (
+        <div className="card-edit-hint" aria-hidden="true">
+          <kbd className="card-edit-key">Esc</kbd> or click outside to apply everywhere
+        </div>
+      )}
       <div className="p-4">
 
         {/* ── Header row ── */}
@@ -516,6 +523,7 @@ export const FontCard = memo(FontCardImpl, (a, b) =>
   a.isLoaded === b.isLoaded &&
   a.isAnimated === b.isAnimated &&
   a.isExpanded === b.isExpanded &&
+  a.isEditing === b.isEditing &&
   a.previewContent === b.previewContent &&
   a.alternatesMode === b.alternatesMode &&
   a.cursorPosition === b.cursorPosition &&
