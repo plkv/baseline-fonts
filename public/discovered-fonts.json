@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-07T06:14:40.770Z",
+  "generatedAt": "2026-09-08T06:00:49.467Z",
   "months": 3,
   "since": "2026-01-01",
   "count": 101,
@@ -120,6 +120,18 @@
       "url": "https://fontesk.com/super-warming-font/",
       "date": "2026-06-03",
       "image": "https://fontesk.com/wp-content/uploads/2026/06/super_warming.jpg",
+      "googleFamily": null,
+      "category": null,
+      "license": "Free for commercial"
+    },
+    {
+      "name": "Super Nugget",
+      "author": "",
+      "source": "fontesk.com",
+      "sourceLabel": "Fontesk",
+      "url": "https://fontesk.com/super-nugget-font/",
+      "date": "2026-06-03",
+      "image": "https://fontesk.com/wp-content/uploads/2026/06/super_nugget.jpg",
       "googleFamily": null,
       "category": null,
       "license": "Free for commercial"
@@ -363,18 +375,6 @@
       "googleFamily": null,
       "category": null,
       "license": "Free for commercial"
-    },
-    {
-      "name": "Miranda Sans",
-      "author": "",
-      "source": "fonts.google.com",
-      "sourceLabel": "Google Fonts",
-      "url": "https://fonts.google.com/specimen/Miranda+Sans",
-      "date": "2026-04-02",
-      "image": null,
-      "googleFamily": "Miranda Sans",
-      "category": "Sans Serif",
-      "license": null
     },
     {
       "name": "Saira Stencil",
@@ -797,18 +797,6 @@
       "license": null
     },
     {
-      "name": "Bricolage Grotesque",
-      "author": "",
-      "source": "bestfreefonts.com",
-      "sourceLabel": "BestFreeFonts",
-      "url": "https://bestfreefonts.com/bricolage-grotesque",
-      "date": null,
-      "image": "https://bestfreefonts.com/bricolage-grotesque/opengraph-image?05f7a8514b6e85e7",
-      "googleFamily": null,
-      "category": null,
-      "license": null
-    },
-    {
       "name": "Funnel Display",
       "author": "",
       "source": "bestfreefonts.com",
@@ -1212,6 +1200,18 @@
       "url": "https://bestfreefonts.com/tagger",
       "date": null,
       "image": "https://bestfreefonts.com/tagger/opengraph-image?05f7a8514b6e85e7",
+      "googleFamily": null,
+      "category": null,
+      "license": null
+    },
+    {
+      "name": "Kulim Park",
+      "author": "",
+      "source": "bestfreefonts.com",
+      "sourceLabel": "BestFreeFonts",
+      "url": "https://bestfreefonts.com/kulim-park",
+      "date": null,
+      "image": "https://bestfreefonts.com/kulim-park/opengraph-image?05f7a8514b6e85e7",
       "googleFamily": null,
       "category": null,
       "license": null
