@@ -745,6 +745,11 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
   const draftRef = useRef<{ fontId: number; text: string } | null>(null)
   useEffect(() => { draftRef.current = draft }, [draft])
 
+  // The document-level Escape listener is registered once, so it cannot read
+  // `focusedFontId` from the closure without getting a stale one.
+  const focusedFontIdRef = useRef<number | null>(null)
+  useEffect(() => { focusedFontIdRef.current = focusedFontId }, [focusedFontId])
+
   const commitDraft = useCallback(() => {
     const current = draftRef.current
     if (!current) return
@@ -791,11 +796,27 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
       const card = (e.target as HTMLElement | null)?.closest?.('[data-card-id]')
       if (Number(card?.getAttribute('data-card-id')) !== current.fontId) commitDraft()
     }
+    // Escape leaves the card: publish whatever was typed, drop the caret, and
+    // fold the card back up.
+    //
+    // It used to require a draft, so it only worked once the reader had typed
+    // something — putting the caret in a preview and pressing Escape did
+    // nothing at all. And it never collapsed the card, though focusing the
+    // preview is what expanded it. Keyed on the focused card now, with the
+    // draft as a fallback for the case where focus has already moved on.
     const onKey = (e: KeyboardEvent) => {
-      const current = draftRef.current
-      if (!current || e.key !== 'Escape') return
+      if (e.key !== 'Escape') return
+      const active = focusedFontIdRef.current ?? draftRef.current?.fontId ?? null
+      if (active === null) return
       commitDraft()
-      inputRefs.current[current.fontId]?.blur()
+      inputRefs.current[active]?.blur()
+      setFocusedFontId(null)
+      setExpandedCards(prev => {
+        if (!prev.has(active)) return prev
+        const next = new Set(prev)
+        next.delete(active)
+        return next
+      })
     }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
