@@ -33,17 +33,21 @@ export function transformFamilies(families: FontFamily[]): FontData[] {
     let availableWeights: number[] = []
     let availableStyles: FontData['_availableStyles'] = []
 
-    if (isVariable) {
-      const weightAxes = variants
-        .flatMap(v => v.variableAxes || [])
-        .filter(a => ((a as any).tag ?? a.axis) === 'wght')
-      if (weightAxes.length > 0) {
-        const min = Math.min(...weightAxes.map(a => a.min))
-        const max = Math.max(...weightAxes.map(a => a.max))
-        availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900].filter(w => w >= min && w <= max)
-      } else {
-        availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-      }
+    const weightAxes = variants
+      .flatMap(v => v.variableAxes || [])
+      .filter(a => ((a as any).tag ?? a.axis) === 'wght')
+
+    // A variable font is not necessarily variable in *weight*. Jaro varies only
+    // by optical size, Geist Pixel by element shape, LCT Mogi by width — eight
+    // families in the catalogue have no wght axis at all. They were being given
+    // the full 100–900 ladder anyway, so their cards offered nine weights that
+    // did nothing when picked and that the font page, which lists real styles,
+    // did not show. Where there is no weight axis the styles are simply the
+    // variants there are, which is what the branch below builds.
+    if (isVariable && weightAxes.length > 0) {
+      const min = Math.min(...weightAxes.map(a => a.min))
+      const max = Math.max(...weightAxes.map(a => a.max))
+      availableWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900].filter(w => w >= min && w <= max)
       availableStyles = availableWeights.map(weight => ({
         weight,
         styleName: styleNameFromWeight(weight, false),

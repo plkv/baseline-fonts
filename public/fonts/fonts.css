@@ -298,10 +298,10 @@
 @font-face{font-family:"Ultra-04e0a7__v_0cebea";src:url("/fonts/preview/Ultra-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Chaumont Script-731718";src:url("/fonts/preview/ChaumontScript-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Chaumont Script-731718__v_3c42f7";src:url("/fonts/preview/ChaumontScript-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
-@font-face{font-family:"Baskervville-7675b7";src:url("/fonts/preview/Baskervville[wght].woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}
-@font-face{font-family:"Baskervville-7675b7__v_02111f";src:url("/fonts/preview/Baskervville[wght].woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}
-@font-face{font-family:"Baskervville-7675b7";src:url("/fonts/Baskervville-Italic[wght].woff2") format("woff2");font-weight:100 900;font-style:italic;font-display:swap;}
-@font-face{font-family:"Baskervville-7675b7__v_e50b91";src:url("/fonts/Baskervville-Italic[wght].woff2") format("woff2");font-weight:100 900;font-style:italic;font-display:swap;}
+@font-face{font-family:"Baskervville-7675b7";src:url("/fonts/preview/Baskervville[wght].woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Baskervville-7675b7__v_02111f";src:url("/fonts/preview/Baskervville[wght].woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
+@font-face{font-family:"Baskervville-7675b7";src:url("/fonts/Baskervville-Italic[wght].woff2") format("woff2");font-weight:400;font-style:italic;font-display:swap;}
+@font-face{font-family:"Baskervville-7675b7__v_e50b91";src:url("/fonts/Baskervville-Italic[wght].woff2") format("woff2");font-weight:400;font-style:italic;font-display:swap;}
 @font-face{font-family:"enjoy please 3-cc546f";src:url("/fonts/preview/enjoyplease2-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"enjoy please 3-cc546f__v_e5c9ba";src:url("/fonts/preview/enjoyplease2-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Fat Porn Font XXL-405783";src:url("/fonts/preview/Fat Porn Font.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
@@ -622,8 +622,8 @@
 @font-face{font-family:"Frick-040fd6__v_0c75cb";src:url("/fonts/preview/Frick0.3-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Frick-040fd6";src:url("/fonts/Frick0.3-Condensed.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
 @font-face{font-family:"Frick-040fd6__v_37da5d";src:url("/fonts/Frick0.3-Condensed.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}
-@font-face{font-family:"Lineal-87ab7b";src:url("/fonts/preview/LinealVF.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}
-@font-face{font-family:"Lineal-87ab7b__v_5b98bb";src:url("/fonts/preview/LinealVF.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap;}
+@font-face{font-family:"Lineal-87ab7b";src:url("/fonts/preview/LinealVF.woff2") format("woff2");font-weight:1 1000;font-style:normal;font-display:swap;}
+@font-face{font-family:"Lineal-87ab7b__v_5b98bb";src:url("/fonts/preview/LinealVF.woff2") format("woff2");font-weight:1 1000;font-style:normal;font-display:swap;}
 @font-face{font-family:"National Park-f1da11";src:url("/fonts/preview/NationalPark-VariableVF.woff2") format("woff2");font-weight:200 800;font-style:normal;font-display:swap;}
 @font-face{font-family:"National Park-f1da11__v_2cf9a6";src:url("/fonts/preview/NationalPark-VariableVF.woff2") format("woff2");font-weight:200 800;font-style:normal;font-display:swap;}
 @font-face{font-family:"Whois Mono-c3f83a";src:url("/fonts/preview/whois-mono.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;}

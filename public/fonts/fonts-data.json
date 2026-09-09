@@ -29,9 +29,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -461,9 +461,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -690,9 +690,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -749,9 +749,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -916,9 +916,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 400
+              "min": 100.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -967,9 +967,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 400
+              "min": 100.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1264,9 +1264,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1336,9 +1336,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1552,9 +1552,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1594,9 +1594,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1676,9 +1676,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 800
+              "min": 100.0,
+              "max": 800.0,
+              "default": 800.0
             }
           ],
           "openTypeFeatures": [
@@ -1716,9 +1716,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 800
+              "min": 100.0,
+              "max": 800.0,
+              "default": 800.0
             }
           ],
           "openTypeFeatures": [
@@ -1797,9 +1797,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 900,
-              "default": 400
+              "min": 400.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1843,9 +1843,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 900,
-              "default": 400
+              "min": 400.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -1935,9 +1935,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 700,
-              "default": 300
+              "min": 300.0,
+              "max": 700.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -2463,9 +2463,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -2581,9 +2581,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 900
+              "min": 300.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -2646,9 +2646,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 900
+              "min": 300.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -2933,9 +2933,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 900
+              "min": 100.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -2972,9 +2972,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 900
+              "min": 100.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -3184,16 +3184,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 100
+              "min": 75.0,
+              "max": 125.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -3270,16 +3270,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 100
+              "min": 75.0,
+              "max": 125.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -3495,16 +3495,16 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             },
             {
               "name": "Slant",
               "tag": "slnt",
-              "min": -10,
-              "max": 1000,
-              "default": -10
+              "min": -10.0,
+              "max": 0.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -4555,9 +4555,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 700
+              "min": 200.0,
+              "max": 700.0,
+              "default": 700.0
             }
           ],
           "openTypeFeatures": [
@@ -4613,9 +4613,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 700
+              "min": 200.0,
+              "max": 700.0,
+              "default": 700.0
             }
           ],
           "openTypeFeatures": [
@@ -4755,9 +4755,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -4914,16 +4914,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 100,
-              "max": 200,
-              "default": 100
+              "min": 100.0,
+              "max": 200.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 10,
-              "max": 200,
-              "default": 10
+              "min": 10.0,
+              "max": 200.0,
+              "default": 10.0
             }
           ],
           "openTypeFeatures": [
@@ -5997,16 +5997,16 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             },
             {
               "name": "Slant",
               "tag": "slnt",
-              "min": 0,
-              "max": 10,
-              "default": 0
+              "min": 0.0,
+              "max": 10.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -6987,9 +6987,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 900
+              "min": 300.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -7062,12 +7062,7 @@
             "Standard Ligatures",
             "Kerning"
           ],
-          "openTypeFeatureTags": [
-            {
-              "tag": "ss01",
-              "title": "Stylistic Set 1"
-            }
-          ],
+          "openTypeFeatureTags": [],
           "isDefaultStyle": false,
           "uploadedAt": "2025-09-08T13:34:18.534Z",
           "id": "variant_family_america_xix_1757807923031_1757807923072",
@@ -7351,9 +7346,9 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -7501,9 +7496,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 400
+              "min": 300.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -7672,9 +7667,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -7905,9 +7900,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -7952,9 +7947,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -8319,16 +8314,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 75
+              "min": 75.0,
+              "max": 125.0,
+              "default": 75.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -8385,16 +8380,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 75
+              "min": 75.0,
+              "max": 125.0,
+              "default": 75.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -8582,9 +8577,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 90,
-              "max": 120,
-              "default": 90
+              "min": 90.0,
+              "max": 120.0,
+              "default": 90.0
             }
           ],
           "openTypeFeatures": [
@@ -9933,23 +9928,23 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 900
+              "min": 100.0,
+              "max": 900.0,
+              "default": 900.0
             },
             {
               "name": "Contrast",
               "tag": "CNTR",
-              "min": 0,
-              "max": 100,
-              "default": 400
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Italic",
               "tag": "ital",
-              "min": 0,
-              "max": 14,
-              "default": 400
+              "min": 0.0,
+              "max": 14.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -10449,7 +10444,7 @@
         "Serif"
       ],
       "foundry": "ANRT",
-      "isVariable": true,
+      "isVariable": false,
       "published": true,
       "id": "family_baskervville_1757807921243",
       "variants": [
@@ -10458,16 +10453,8 @@
           "weight": 400,
           "styleName": "Regular",
           "isItalic": false,
-          "isVariable": true,
-          "variableAxes": [
-            {
-              "name": "Weight",
-              "tag": "wght",
-              "min": 400,
-              "max": 400,
-              "default": 400
-            }
-          ],
+          "isVariable": false,
+          "variableAxes": [],
           "openTypeFeatures": [
             "Small Capitals From Capitals",
             "Case-Sensitive Forms",
@@ -10501,16 +10488,8 @@
           "weight": 400,
           "styleName": "Italic",
           "isItalic": true,
-          "isVariable": true,
-          "variableAxes": [
-            {
-              "name": "Weight",
-              "tag": "wght",
-              "min": 400,
-              "max": 400,
-              "default": 400
-            }
-          ],
+          "isVariable": false,
+          "variableAxes": [],
           "openTypeFeatures": [
             "Contextual Alternates",
             "Case-Sensitive Forms",
@@ -10930,23 +10909,23 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Element Shape",
               "tag": "ESHP",
-              "min": 0,
-              "max": 16,
-              "default": 2
+              "min": 0.0,
+              "max": 16.0,
+              "default": 2.0
             },
             {
               "name": "Element Grid",
               "tag": "EGRD",
-              "min": 1,
-              "max": 2,
-              "default": 1
+              "min": 1.0,
+              "max": 2.0,
+              "default": 1.0
             }
           ],
           "openTypeFeatures": [
@@ -11340,9 +11319,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 700
+              "min": 200.0,
+              "max": 700.0,
+              "default": 700.0
             }
           ],
           "openTypeFeatures": [
@@ -11523,23 +11502,16 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             },
             {
               "name": "Italic",
               "axis": "ital",
-              "min": 0,
-              "max": 12,
-              "default": 400
-            },
-            {
-              "name": "Mono",
-              "axis": "mono",
-              "min": 100,
-              "max": 100,
-              "default": 100
+              "min": 0.0,
+              "max": 12.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -12454,9 +12426,9 @@
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 80,
-              "max": 100,
-              "default": 80
+              "min": 80.0,
+              "max": 100.0,
+              "default": 80.0
             }
           ],
           "openTypeFeatures": [
@@ -13498,9 +13470,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 150,
-              "default": 100
+              "min": 100.0,
+              "max": 150.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -13807,9 +13779,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 900
+              "min": 100.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [
@@ -14047,9 +14019,9 @@
             {
               "name": "Optical size",
               "axis": "opsz",
-              "min": 6,
-              "max": 72,
-              "default": 14
+              "min": 6.0,
+              "max": 72.0,
+              "default": 14.0
             }
           ],
           "openTypeFeatures": [
@@ -14139,16 +14111,16 @@
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 75,
-              "max": 100,
-              "default": 100
+              "min": 75.0,
+              "max": 100.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -14250,16 +14222,16 @@
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 75,
-              "max": 100,
-              "default": 100
+              "min": 75.0,
+              "max": 100.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -14729,9 +14701,9 @@
             {
               "name": "Optical size",
               "axis": "opsz",
-              "min": 12,
-              "max": 24,
-              "default": 24
+              "min": 12.0,
+              "max": 24.0,
+              "default": 24.0
             }
           ],
           "openTypeFeatures": [
@@ -14882,9 +14854,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 200
+              "min": 200.0,
+              "max": 700.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -15266,9 +15238,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 800,
-              "default": 400
+              "min": 400.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -15660,9 +15632,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -16426,9 +16398,9 @@
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 1,
-              "max": 9,
-              "default": 1
+              "min": 1.0,
+              "max": 9.0,
+              "default": 1.0
             }
           ],
           "openTypeFeatures": [
@@ -16524,9 +16496,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -16792,9 +16764,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 72,
-              "max": 200,
-              "default": 72
+              "min": 72.0,
+              "max": 200.0,
+              "default": 72.0
             }
           ],
           "openTypeFeatures": [
@@ -17799,9 +17771,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -18174,9 +18146,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 400
+              "min": 200.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -18259,16 +18231,16 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 700,
-              "default": 700
+              "min": 100.0,
+              "max": 700.0,
+              "default": 700.0
             },
             {
               "name": "Optical size",
               "axis": "opsz",
-              "min": 16,
-              "max": 144,
-              "default": 144
+              "min": 16.0,
+              "max": 144.0,
+              "default": 144.0
             }
           ],
           "openTypeFeatures": [
@@ -18794,9 +18766,9 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 400
+              "min": 100.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -18978,30 +18950,30 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             },
             {
               "name": "Informality",
               "axis": "INFM",
-              "min": 0,
-              "max": 100,
-              "default": 400
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Bounce",
               "axis": "BNCE",
-              "min": -100,
-              "max": 100,
-              "default": 400
+              "min": -100.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Spacing",
               "axis": "SPAC",
-              "min": 0,
-              "max": 100,
-              "default": 400
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -19074,30 +19046,30 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 300,
-              "max": 800,
-              "default": 300
+              "min": 300.0,
+              "max": 800.0,
+              "default": 300.0
             },
             {
               "name": "Informality",
               "axis": "INFM",
-              "min": 0,
-              "max": 100,
-              "default": 400
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Bounce",
               "axis": "BNCE",
-              "min": -100,
-              "max": 100,
-              "default": 400
+              "min": -100.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Spacing",
               "axis": "SPAC",
-              "min": 0,
-              "max": 100,
-              "default": 400
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -19261,30 +19233,30 @@
             {
               "name": "Optical size",
               "axis": "opsz",
-              "min": 12,
-              "max": 36,
-              "default": 36
+              "min": 12.0,
+              "max": 36.0,
+              "default": 36.0
             },
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 75,
-              "max": 150,
-              "default": 100
+              "min": 75.0,
+              "max": 150.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             },
             {
               "name": "Slant",
               "axis": "slnt",
-              "min": -6,
-              "max": 0,
-              "default": 0
+              "min": -6.0,
+              "max": 0.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -19557,23 +19529,23 @@
             {
               "name": "Weight",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             },
             {
               "name": "Width",
               "axis": "wdth",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             },
             {
               "name": "Italic",
               "axis": "ital",
-              "min": 0,
-              "max": 900,
-              "default": 400
+              "min": 0.0,
+              "max": 900.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -19846,44 +19818,44 @@
             {
               "name": "Optical Size",
               "tag": "opsz",
-              "min": 6,
-              "max": 144,
-              "default": 18
+              "min": 6.0,
+              "max": 144.0,
+              "default": 18.0
             },
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 25,
-              "max": 151,
-              "default": 100
+              "min": 25.0,
+              "max": 151.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 1,
-              "max": 1000,
-              "default": 400
+              "min": 1.0,
+              "max": 1000.0,
+              "default": 400.0
             },
             {
               "name": "Grade",
               "tag": "GRAD",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Roundness",
               "tag": "ROND",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Slant",
               "tag": "slnt",
-              "min": -10,
-              "max": 0,
-              "default": 0
+              "min": -10.0,
+              "max": 0.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [
@@ -20121,9 +20093,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -20219,9 +20191,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -20281,9 +20253,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 900,
-              "default": 200
+              "min": 200.0,
+              "max": 900.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -20470,9 +20442,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 200
+              "min": 200.0,
+              "max": 700.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -20652,9 +20624,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 200
+              "min": 200.0,
+              "max": 700.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -20834,9 +20806,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 700,
-              "default": 200
+              "min": 200.0,
+              "max": 700.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -21026,9 +20998,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [],
@@ -21055,9 +21027,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [],
@@ -21313,9 +21285,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 0.0,
+              "max": 1500.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [],
@@ -21466,9 +21438,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [],
@@ -21668,9 +21640,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -21692,9 +21664,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -22612,9 +22584,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 100,
-              "max": 700,
-              "default": 400
+              "min": 100.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -22636,9 +22608,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 100,
-              "max": 700,
-              "default": 400
+              "min": 100.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -24042,21 +24014,21 @@
           "variableAxes": [
             {
               "axis": "HORZ",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "axis": "CHNK",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "axis": "SPED",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [],
@@ -24314,9 +24286,9 @@
           "variableAxes": [
             {
               "axis": "wght",
-              "min": 45,
-              "max": 930,
-              "default": 400
+              "min": 45.0,
+              "max": 930.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -24532,9 +24504,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -24655,8 +24627,7 @@
         "Geometry"
       ],
       "languages": [
-        "Latin",
-        "Vietnamese"
+        "Latin"
       ],
       "foundry": "FontBob",
       "isVariable": true,
@@ -24685,9 +24656,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 200
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [],
@@ -24713,8 +24684,7 @@
       ],
       "languages": [
         "Latin",
-        "Greek",
-        "Vietnamese"
+        "Greek"
       ],
       "foundry": "Andrés Briganti, Evil Rabbit, Guillermo Rauch",
       "isVariable": true,
@@ -24743,9 +24713,9 @@
               "name": "Element Shape",
               "tag": "ELSH",
               "axis": "ELSH",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             }
           ],
           "openTypeFeatures": [],
@@ -24901,17 +24871,17 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 100,
-              "max": 125,
-              "default": 100
+              "min": 100.0,
+              "max": 125.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -24934,17 +24904,17 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 100,
-              "max": 125,
-              "default": 100
+              "min": 100.0,
+              "max": 125.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -25056,9 +25026,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 500
+              "min": 100.0,
+              "max": 900.0,
+              "default": 500.0
             }
           ],
           "openTypeFeatures": [],
@@ -25081,9 +25051,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 500
+              "min": 100.0,
+              "max": 900.0,
+              "default": 500.0
             }
           ],
           "openTypeFeatures": [],
@@ -25206,9 +25176,7 @@
         "Tech"
       ],
       "languages": [
-        "Latin",
-        "Greek",
-        "Vietnamese"
+        "Latin"
       ],
       "foundry": "René Bieder",
       "isVariable": true,
@@ -25237,17 +25205,17 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 400,
-              "max": 900,
-              "default": 400
+              "min": 400.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 100,
-              "max": 200,
-              "default": 100
+              "min": 100.0,
+              "max": 200.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -25350,16 +25318,16 @@
             {
               "name": "Roundness",
               "tag": "ROND",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 900
+              "min": 100.0,
+              "max": 900.0,
+              "default": 900.0
             }
           ],
           "openTypeFeatures": [],
@@ -25421,16 +25389,16 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 200
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             },
             {
               "name": "Monospace",
               "tag": "MONO",
-              "min": 0,
-              "max": 1,
-              "default": 1
+              "min": 0.0,
+              "max": 1.0,
+              "default": 1.0
             }
           ],
           "openTypeFeatures": [],
@@ -25665,9 +25633,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -25693,9 +25661,9 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [],
@@ -25767,16 +25735,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 50,
-              "max": 150,
-              "default": 100
+              "min": 50.0,
+              "max": 150.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -25807,16 +25775,16 @@
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 50,
-              "max": 150,
-              "default": 100
+              "min": 50.0,
+              "max": 150.0,
+              "default": 100.0
             },
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 100
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -26097,17 +26065,17 @@
               "name": "Optical Size",
               "axis": "opsz",
               "tag": "opsz",
-              "min": 6,
-              "default": 18,
-              "max": 72
+              "min": 6.0,
+              "default": 18.0,
+              "max": 72.0
             },
             {
               "name": "Weight",
               "axis": "wght",
               "tag": "wght",
-              "min": 200,
-              "default": 400,
-              "max": 800
+              "min": 200.0,
+              "default": 400.0,
+              "max": 800.0
             }
           ],
           "openTypeFeatures": [],
@@ -26134,17 +26102,17 @@
               "name": "Optical Size",
               "axis": "opsz",
               "tag": "opsz",
-              "min": 6,
-              "default": 18,
-              "max": 72
+              "min": 6.0,
+              "default": 18.0,
+              "max": 72.0
             },
             {
               "name": "Weight",
               "axis": "wght",
               "tag": "wght",
-              "min": 200,
-              "default": 400,
-              "max": 800
+              "min": 200.0,
+              "default": 400.0,
+              "max": 800.0
             }
           ],
           "openTypeFeatures": [],
@@ -27275,16 +27243,16 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 900,
-              "default": 400
+              "min": 400.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 100,
-              "default": 100
+              "min": 75.0,
+              "max": 100.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -27315,16 +27283,16 @@
             {
               "name": "Weight",
               "tag": "wght",
-              "min": 400,
-              "max": 900,
-              "default": 400
+              "min": 400.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Width",
               "tag": "wdth",
-              "min": 75,
-              "max": 100,
-              "default": 100
+              "min": 75.0,
+              "max": 100.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [],
@@ -27389,25 +27357,25 @@
               "name": "Optical size",
               "tag": "opsz",
               "axis": "opsz",
-              "min": 14,
-              "max": 32,
-              "default": 14
+              "min": 14.0,
+              "max": 32.0,
+              "default": 14.0
             },
             {
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 100
+              "min": 75.0,
+              "max": 125.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -27616,9 +27584,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -27675,9 +27643,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -27792,9 +27760,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -27880,9 +27848,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 400
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -28230,40 +28198,40 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             },
             {
               "name": "Element Expansion",
               "tag": "ELXP",
               "axis": "ELXP",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Element Shape",
               "tag": "ELSH",
               "axis": "ELSH",
-              "min": 0,
-              "max": 100,
-              "default": 0
+              "min": 0.0,
+              "max": 100.0,
+              "default": 0.0
             },
             {
               "name": "Slant",
               "tag": "slnt",
               "axis": "slnt",
-              "min": -8,
-              "max": 0,
-              "default": 0
+              "min": -8.0,
+              "max": 0.0,
+              "default": 0.0
             },
             {
               "name": "Cursive",
               "tag": "CRSV",
               "axis": "CRSV",
-              "min": 0,
-              "max": 1,
+              "min": 0.0,
+              "max": 1.0,
               "default": 0.5
             }
           ],
@@ -28669,9 +28637,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 900,
-              "default": 400
+              "min": 100.0,
+              "max": 900.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -28771,9 +28739,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 700,
-              "default": 400
+              "min": 100.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -28895,9 +28863,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 700,
-              "default": 400
+              "min": 100.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -29255,12 +29223,7 @@
           "openTypeFeatures": [
             "Kerning"
           ],
-          "openTypeFeatureTags": [
-            {
-              "tag": "ss01",
-              "title": "alt J"
-            }
-          ],
+          "openTypeFeatureTags": [],
           "isDefaultStyle": true,
           "uploadedAt": "2026-09-01T00:00:00.000Z",
           "id": "variant_family_mart_1756700012000_1756700012001",
@@ -29279,12 +29242,7 @@
           "openTypeFeatures": [
             "Kerning"
           ],
-          "openTypeFeatureTags": [
-            {
-              "tag": "ss01",
-              "title": "alt J"
-            }
-          ],
+          "openTypeFeatureTags": [],
           "isDefaultStyle": false,
           "uploadedAt": "2026-09-01T00:00:00.000Z",
           "id": "variant_family_mart_1756700012000_1756700012002",
@@ -29337,9 +29295,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -29376,9 +29334,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -29740,9 +29698,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 200
+              "min": 200.0,
+              "max": 800.0,
+              "default": 200.0
             }
           ],
           "openTypeFeatures": [
@@ -29819,9 +29777,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 100,
-              "max": 800,
-              "default": 400
+              "min": 100.0,
+              "max": 800.0,
+              "default": 400.0
             }
           ],
           "openTypeFeatures": [
@@ -29925,7 +29883,7 @@
           ],
           "openTypeFeatureTags": [
             {
-              "tag": "ss01",
+              "tag": "ss06",
               "title": "alt J"
             }
           ],
@@ -29984,9 +29942,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 300,
-              "max": 900,
-              "default": 300
+              "min": 300.0,
+              "max": 900.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -30140,17 +30098,17 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 400,
-              "max": 700,
-              "default": 400
+              "min": 400.0,
+              "max": 700.0,
+              "default": 400.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 75,
-              "max": 125,
-              "default": 100
+              "min": 75.0,
+              "max": 125.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -30787,9 +30745,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 300,
-              "max": 700,
-              "default": 300
+              "min": 300.0,
+              "max": 700.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -30845,9 +30803,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 300,
-              "max": 700,
-              "default": 300
+              "min": 300.0,
+              "max": 700.0,
+              "default": 300.0
             }
           ],
           "openTypeFeatures": [
@@ -30999,9 +30957,9 @@
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 10,
-              "max": 200,
-              "default": 10
+              "min": 10.0,
+              "max": 200.0,
+              "default": 10.0
             }
           ],
           "openTypeFeatures": [],
@@ -31420,9 +31378,9 @@
               "name": "Contrast",
               "tag": "CNTR",
               "axis": "CNTR",
-              "min": 0,
-              "max": 100,
-              "default": 100
+              "min": 0.0,
+              "max": 100.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
@@ -32494,25 +32452,25 @@
               "name": "Optical Size",
               "tag": "opsz",
               "axis": "opsz",
-              "min": 12,
-              "max": 96,
-              "default": 96
+              "min": 12.0,
+              "max": 96.0,
+              "default": 96.0
             },
             {
               "name": "Weight",
               "tag": "wght",
               "axis": "wght",
-              "min": 200,
-              "max": 800,
-              "default": 800
+              "min": 200.0,
+              "max": 800.0,
+              "default": 800.0
             },
             {
               "name": "Width",
               "tag": "wdth",
               "axis": "wdth",
-              "min": 75,
-              "max": 100,
-              "default": 100
+              "min": 75.0,
+              "max": 100.0,
+              "default": 100.0
             }
           ],
           "openTypeFeatures": [
