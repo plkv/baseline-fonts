@@ -258,7 +258,7 @@
     },
     {
       "name": "Boldonse",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Narrow",
         "Fatface"
@@ -3019,7 +3019,6 @@
       "name": "New Century Schoolbook (C095)",
       "collection": "Text",
       "styleTags": [
-        "Modern",
         "Old Face"
       ],
       "languages": [
@@ -3791,7 +3790,10 @@
     {
       "name": "Alpha Lyrae",
       "collection": "Display",
-      "styleTags": [],
+      "styleTags": [
+        "Neutral",
+        "Tech"
+      ],
       "languages": [
         "Latin"
       ],
@@ -4105,7 +4107,7 @@
     },
     {
       "name": "Antique Série",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Narrow",
         "Fatface",
@@ -4247,7 +4249,7 @@
     },
     {
       "name": "Nouvelle Grotesquerie",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Wide",
         "Vintage"
@@ -4326,7 +4328,7 @@
     },
     {
       "name": "Excessive Extra Condensed",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Narrow",
         "Vintage"
@@ -4978,13 +4980,16 @@
       "name": "Insolente",
       "collection": "Brutal",
       "styleTags": [
+        "Old Face",
         "Contrast",
         "Sharp"
       ],
       "languages": [
         "Latin"
       ],
-      "category": [],
+      "category": [
+        "Serif"
+      ],
       "foundry": "Fanny Coulez, Julien Saurin",
       "isVariable": false,
       "published": true,
@@ -5030,7 +5035,11 @@
     {
       "name": "Crozet",
       "collection": "Brutal",
-      "styleTags": [],
+      "styleTags": [
+        "Pixel",
+        "Calligraphy",
+        "Stroked"
+      ],
       "languages": [
         "Latin"
       ],
@@ -7997,7 +8006,10 @@
     {
       "name": "Terminal Grotesque",
       "collection": "Brutal",
-      "styleTags": [],
+      "styleTags": [
+        "Neutral",
+        "Pixel"
+      ],
       "languages": [
         "Latin"
       ],
@@ -10878,7 +10890,7 @@
     },
     {
       "name": "Handjet",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Narrow"
       ],
@@ -11739,7 +11751,7 @@
     },
     {
       "name": "Néo-castel",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Vintage",
         "Contrast",
@@ -13443,7 +13455,7 @@
     },
     {
       "name": "Kobata",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Modular",
         "Geometry"
@@ -14450,7 +14462,7 @@
     },
     {
       "name": "Milkman",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Vintage",
         "Multi Style"
@@ -14510,6 +14522,7 @@
       "name": "Saint",
       "collection": "Brutal",
       "styleTags": [
+        "Modern",
         "Multi Style",
         "Wavy",
         "Sharp"
@@ -14621,8 +14634,11 @@
     },
     {
       "name": "Phosphène Font",
-      "collection": "Display",
-      "styleTags": [],
+      "collection": "Brutal",
+      "styleTags": [
+        "Pixel",
+        "Handwritten"
+      ],
       "languages": [
         "Latin"
       ],
@@ -18572,7 +18588,7 @@
     },
     {
       "name": "Astloch",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Vintage"
       ],
@@ -18649,7 +18665,7 @@
     },
     {
       "name": "Srisakdi",
-      "collection": "Display",
+      "collection": "Brutal",
       "styleTags": [
         "Sharp",
         "Calligraphy"
@@ -19805,7 +19821,7 @@
       "foundry": "Google, Font Bureau",
       "isVariable": true,
       "published": true,
-      "downloadLink": "https://fonts.google.com/specimen/Google+Sans+Flex",
+      "downloadLink": "https://github.com/googlefonts/googlesans-flex",
       "id": "family_google_sans_flex_1747180802000",
       "variants": [
         {
@@ -21460,7 +21476,10 @@
       "category": [
         "Mono"
       ],
-      "styleTags": [],
+      "styleTags": [
+        "Neutral",
+        "Tech"
+      ],
       "languages": [
         "Latin"
       ],
@@ -22996,7 +23015,7 @@
       "name": "Affigere",
       "collection": "Display",
       "category": [
-        "Serif"
+        "Sans"
       ],
       "styleTags": [
         "Vintage",
@@ -23171,7 +23190,7 @@
       "name": "Bajaderka",
       "collection": "Display",
       "category": [
-        "Serif"
+        "Script"
       ],
       "styleTags": [
         "Calligraphy"
@@ -23665,9 +23684,10 @@
       "name": "Luperca",
       "collection": "Display",
       "category": [
-        "Serif"
+        "Semi Serif"
       ],
       "styleTags": [
+        "Modern",
         "Sharp"
       ],
       "languages": [
@@ -30876,7 +30896,7 @@
         "Latin"
       ],
       "category": [
-        "Serif"
+        "Script"
       ],
       "foundry": "Julienne Richard",
       "isVariable": false,
@@ -31527,6 +31547,7 @@
       "name": "Golden Goose Uppercase",
       "collection": "Display",
       "styleTags": [
+        "Modern",
         "Contrast",
         "Banded"
       ],
@@ -32311,6 +32332,7 @@
       "name": "Kintsugi LVRG",
       "collection": "Display",
       "styleTags": [
+        "Modern",
         "Sharp",
         "Cut",
         "Contrast"

@@ -84,7 +84,7 @@ under About, and both `llms.txt` files. Nothing is written by hand in those.
 
 ```bash
 node scripts/generate-font-css.mjs        # public/fonts/fonts.css
-python3 scripts/build-preview-subsets.py  # cut previews + bumps lastUpdated
+python3.13 scripts/build-preview-subsets.py  # cut previews + bumps lastUpdated
 ```
 
 `lastUpdated` is the cache key for `fonts.css?v=`. If the subsets script does not
@@ -93,8 +93,8 @@ run, browsers keep the old stylesheet and point at the old files.
 ## 7. Mirror to npm (MCP)
 
 ```bash
-python3 scripts/sync-npm-mirror.py --dry-run   # what would change
-python3 scripts/sync-npm-mirror.py             # do it
+python3.13 scripts/sync-npm-mirror.py --dry-run   # what would change
+python3.13 scripts/sync-npm-mirror.py             # do it
 ```
 
 The package is what the MCP server reads, so a font that is on the site and not
@@ -111,7 +111,12 @@ build`, and `npm publish`. Publishing is Stas's, and only when asked.
 
 ```bash
 node scripts/check-taxonomy.mjs
+python3.13 scripts/check-glyphs.py
+python3.13 scripts/check-font-claims.py
 ```
+
+`python3.13`, not `python3`: Homebrew moved the default to 3.14 and fontTools is
+installed under 3.13, so the bare name now finds an interpreter without it.
 
 It reports unknown tags, serifs missing their mandatory class, `Modern` on a
 non-serif, `Pixel` outside Display/Brutal, missing categories, empty
