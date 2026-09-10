@@ -765,10 +765,8 @@
    actually in the preview, and only where there is a keyboard to press Esc on —
    below the tablet breakpoint there is neither the key nor the room. */
 .card-edit-hint {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 1;
+  margin-top: 12px;
+  text-align: right;
   pointer-events: none;
   /* Same face, size and colour as the author line in the same card — 14/20 at
      weight 500 on the tertiary token — rather than a smaller, paler thing of

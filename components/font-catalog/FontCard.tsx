@@ -208,11 +208,6 @@ function FontCardImpl({
           a sweep over one line read as a defect in the specimen rather than as
           loading. Sits behind the content and takes no clicks. */}
       {showShimmer && <div className="card-shimmer" aria-hidden="true" />}
-      {isEditing && (
-        <div className="card-edit-hint" aria-hidden="true">
-          <kbd className="card-edit-key">Esc</kbd> or click outside to apply everywhere
-        </div>
-      )}
       <div className="p-4">
 
         {/* ── Header row ── */}
@@ -493,6 +488,17 @@ function FontCardImpl({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Last in the card, in the flow, rather than pinned to the corner.
+            Floating it there put it on top of the axis sliders and the
+            alternates the moment a card was expanded — and an expanded card is
+            exactly when a reader is most likely to be typing. Below everything
+            it can overlap nothing. */}
+        {isEditing && (
+          <div className="card-edit-hint" aria-hidden="true">
+            <kbd className="card-edit-key">Esc</kbd> or click outside to apply everywhere
           </div>
         )}
 
