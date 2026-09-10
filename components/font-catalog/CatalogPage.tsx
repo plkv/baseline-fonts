@@ -204,21 +204,41 @@ export default function CatalogPage({ initialFonts, initialFilters }: { initialF
 
   const getCurrentTheme = () => colorThemes[currentColorTheme]
   
-  // Stable preview font per collection (don't change during session)
-  const previewFontsRef = useRef<Record<'Text'|'Display'|'Brutal', string>>({ Text: '', Display: '', Brutal: '' })
-  const getStablePreviewFontForCollection = (collection: "Text" | "Display" | "Brutal") => {
-    if (!previewFontsRef.current[collection]) {
+  // The specimen shown on each collection button, picked once per visit.
+  //
+  // It used to be Math.random() called during render, which meant the server
+  // picked one font and the client picked another. React found the two trees
+  // disagreeing, threw away the whole server-rendered page and built it again
+  // on the client — a hydration error on every single load, for three letters
+  // of decoration. The pick now happens after mount, so the first client render
+  // matches the HTML exactly, and the fonts appear a frame later.
+  const FALLBACK_PREVIEW = '"Instrument Sans UI", system-ui, sans-serif'
+  const [collectionPreviewFonts, setCollectionPreviewFonts] =
+    useState<Record<'Text' | 'Display' | 'Brutal', string>>({
+      Text: FALLBACK_PREVIEW, Display: FALLBACK_PREVIEW, Brutal: FALLBACK_PREVIEW,
+    })
+
+  useEffect(() => {
+    if (!fonts.length) return
+    const pickFor = (collection: 'Text' | 'Display' | 'Brutal') => {
       const candidates = fonts.filter(f => f.collection === collection)
-      if (candidates.length) {
-        // Prefer variable fonts — only they get a family-level @font-face registration.
-        // Static fonts register variant-level aliases (alias__v_hash) which don't match fontFamily.
-        const pool = candidates.filter(f => f.type === 'Variable')
-        const pick = (pool.length ? pool : candidates)[Math.floor(Math.random() * (pool.length || candidates.length))]
-        previewFontsRef.current[collection] = pick?.fontFamily || '"Instrument Sans UI", system-ui, sans-serif'
-      }
+      if (!candidates.length) return FALLBACK_PREVIEW
+      // Prefer variable fonts — only they get a family-level @font-face
+      // registration. Static fonts register variant-level aliases
+      // (alias__v_hash) which do not match fontFamily.
+      const pool = candidates.filter(f => f.type === 'Variable')
+      const from = pool.length ? pool : candidates
+      return from[Math.floor(Math.random() * from.length)]?.fontFamily || FALLBACK_PREVIEW
     }
-    return previewFontsRef.current[collection] || '"Instrument Sans UI", system-ui, sans-serif'
-  }
+    setCollectionPreviewFonts({
+      Text: pickFor('Text'), Display: pickFor('Display'), Brutal: pickFor('Brutal'),
+    })
+    // Once per visit: the buttons should not reshuffle as the catalogue filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fonts.length])
+
+  const getStablePreviewFontForCollection = (collection: "Text" | "Display" | "Brutal") =>
+    collectionPreviewFonts[collection]
   const [fontOTFeatures, setFontOTFeatures] = useState<Record<number, Record<string, boolean>>>({})
   const [fontVariableAxes, setFontVariableAxes] = useState<Record<number, Record<string, number>>>({})
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({})
